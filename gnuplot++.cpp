@@ -30,15 +30,11 @@ Gnuplot &Gnuplot::operator <<(const char *cmd) {
 	return *this;
 }
 
-template <int N>
-Gnuplot &Gnuplot::operator <<(blitz::Array<blitz::TinyVector<double,N>, 1> &a) {
-	typename blitz::Array<blitz::TinyVector<double,N>, 1>::iterator 
+Gnuplot &Gnuplot::operator <<(blitz::Array<double, 1> &a) {
+	blitz::Array<double, 1>::iterator 
 		p = a.begin(), p_end = a.end();
 	while(p != p_end) {
-		for(int i=0; i<N; i++) {
-			fprintf(gh->fh, "%.18g ", (*p)[i]);
-		}
-		fputs("\n", gh->fh);
+		fprintf(gh->fh, "%.18g\n", *p);
 		p++;
 	}
 	fputs("e\n", gh->fh);
@@ -46,12 +42,12 @@ Gnuplot &Gnuplot::operator <<(blitz::Array<blitz::TinyVector<double,N>, 1> &a) {
 	return *this;
 }
 
-Gnuplot &Gnuplot::operator <<(blitz::Array<double, 1> &a) {
-	blitz::Array<double, 1>::iterator 
-		p = a.begin(), p_end = a.end();
-	while(p != p_end) {
-		fprintf(gh->fh, "%.18g\n", *p);
-		p++;
+Gnuplot &Gnuplot::operator <<(blitz::Array<double, 2> &a) {
+	for(int i=0; i<a.shape()[0]; i++) {
+		for(int j=0; j<a.shape()[1]; j++) {
+			fprintf(gh->fh, "%.18g\n", a(i,j));
+		}
+		fputs("\n", gh->fh);
 	}
 	fputs("e\n", gh->fh);
 	fflush(gh->fh);
@@ -93,6 +89,7 @@ void Gnuplot::GnuplotHandle::allocReader() {
 	fifo_fn = "./gp_pipe"; // FIXME - need unique name
 
 	printf("make pipe\n");
+	unlink(fifo_fn);
 	if(mkfifo(fifo_fn, 0600)) {
 		if(errno != EEXIST) {
 			printf("fail\n");
