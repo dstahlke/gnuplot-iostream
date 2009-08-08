@@ -3,8 +3,8 @@
 
 class Gnuplot {
 public:
-	Gnuplot():
-	Gnuplot(const Gnuplot &right):
+	Gnuplot();
+	Gnuplot(const Gnuplot &right);
 	~Gnuplot();
 	void getMouse(float &mx, float &my, int &mb);
 	Gnuplot &operator <<(const char *cmd);
@@ -22,7 +22,7 @@ private:
 		const char *fifo_fn;
 		int refcnt;
 
-		GnuplotHandle():
+		GnuplotHandle();
 		~GnuplotHandle();
 		void allocReader();
 	};
