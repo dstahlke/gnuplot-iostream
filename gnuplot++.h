@@ -19,7 +19,7 @@ public:
 	// FIXME - avoid cast to double for print
 
 	template <class T>
-	Gnuplot &operator <<(blitz::Array<T, 1> &a) {
+	Gnuplot &send(blitz::Array<T, 1> &a) {
 		typename blitz::Array<T, 1>::iterator 
 			p = a.begin(), p_end = a.end();
 		while(p != p_end) {
@@ -31,7 +31,7 @@ public:
 	}
 
 	template <class T>
-	Gnuplot &operator <<(blitz::Array<T, 2> &a) {
+	Gnuplot &send(blitz::Array<T, 2> &a) {
 		// FIXME - use upper/lower bound functions
 		for(int i=0; i<a.shape()[0]; i++) {
 			for(int j=0; j<a.shape()[1]; j++) {
@@ -44,7 +44,7 @@ public:
 	}
 
 	template <class T, int N>
-	Gnuplot &operator <<(blitz::Array<blitz::TinyVector<T, N>, 1> &a) {
+	Gnuplot &send(blitz::Array<blitz::TinyVector<T, N>, 1> &a) {
 		typename blitz::Array<blitz::TinyVector<T, N>, 1>::iterator 
 			p = a.begin(), p_end = a.end();
 		while(p != p_end) {
@@ -59,7 +59,7 @@ public:
 	}
 
 	template <class T, int N>
-	Gnuplot &operator <<(blitz::Array<blitz::TinyVector<T,N>, 2> &a) {
+	Gnuplot &send(blitz::Array<blitz::TinyVector<T,N>, 2> &a) {
 		// FIXME - use upper/lower bound functions
 		for(int i=0; i<a.shape()[0]; i++) {
 			for(int j=0; j<a.shape()[1]; j++) {
