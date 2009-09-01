@@ -1,13 +1,22 @@
 #include <blitz/array.h>
 #include <stdio.h>
+#include <boost/noncopyable.hpp>
+#include <boost/format.hpp>
+#include <boost/iostreams/device/file_descriptor.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <fstream>
+#include <iostream>
 
-class Gnuplot {
+// FIXME
+using namespace boost::iostreams ;
+
+class Gnuplot : public stream<file_descriptor_sink>, private boost::noncopyable
+{
 public:
 	Gnuplot();
-	Gnuplot(const Gnuplot &right);
 	~Gnuplot();
+
 	void getMouse(float &mx, float &my, int &mb);
-	Gnuplot &operator <<(const char *cmd);
 
 	Gnuplot &operator <<(blitz::Array<double, 1> &a);
 
@@ -19,45 +28,36 @@ public:
 			p = a.begin(), p_end = a.end();
 		while(p != p_end) {
 			for(int i=0; i<N; i++) {
-				fprintf(gh->fh, "%.18g ", (*p)[i]);
+				*this << boost::format("%.18g ") % (*p)[i];
 			}
-			fputs("\n", gh->fh);
+			*this << "\n";
 			p++;
 		}
-		fputs("e\n", gh->fh);
-		fflush(gh->fh);
+		*this << "e" << std::endl;
 		return *this;
 	}
 
 	template <int N>
 	Gnuplot &operator <<(blitz::Array<blitz::TinyVector<double,N>, 2> &a) {
+		// FIXME - use upper/lower bound functions
 		for(int i=0; i<a.shape()[0]; i++) {
 			for(int j=0; j<a.shape()[1]; j++) {
 				for(int k=0; k<N; k++) {
-					fprintf(gh->fh, "%.18g ", a(i,j)[k]);
+					*this << boost::format("%.18g ") % a(i,j)[k];
 				}
-				fputs("\n", gh->fh);
+				*this << "\n";
 			}
-			fputs("\n", gh->fh);
+			*this << "\n";
 		}
-		fputs("e\n", gh->fh);
-		fflush(gh->fh);
+		*this << "e" << std::endl;
 		return *this;
 	}
 
 private:
-	class GnuplotHandle {
-	public:
-		FILE *fh;
-		FILE *fh_read;
-		const char *fifo_fn;
-		int refcnt;
+	void allocReader();
 
-		GnuplotHandle();
-		~GnuplotHandle();
-		void allocReader();
-	};
-
-	void reassign(GnuplotHandle *np);
-	GnuplotHandle *gh;
+	FILE *pout;
+	const char *pty_fn;
+	FILE *pty_fh;
+	int master_fd, slave_fd;
 };

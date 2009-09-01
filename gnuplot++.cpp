@@ -2,114 +2,108 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <pty.h>
 
 #include "gnuplot++.h"
 
 //// Gnuplot /////
 
-Gnuplot::Gnuplot() : gh(0) { reassign(new Gnuplot::GnuplotHandle()); }
+Gnuplot::Gnuplot() : 
+	stream<file_descriptor_sink>(fileno(pout = popen("gnuplot", "w"))),
+	pty_fn(0)
+{ }
 
-Gnuplot::Gnuplot(const Gnuplot &right) : gh(0) { reassign(right.gh); }
+Gnuplot::~Gnuplot() {
+	std::cerr << "closing gnuplot" << std::endl;
 
-Gnuplot::~Gnuplot() { reassign(0); }
-
-void Gnuplot::getMouse(float &mx, float &my, int &mb) {
-	gh->allocReader();
-	operator <<("pause mouse \"Click mouse!\\n\"");
-	operator <<("print MOUSE_X, MOUSE_Y, MOUSE_BUTTON");
-	printf("begin scanf\n");
-	if(3 != fscanf(gh->fh_read, "%f %f %d", &mx, &my, &mb)) {
-		throw "could not parse reply";
-	}
+	close();
+	pclose(pout);
 }
 
-Gnuplot &Gnuplot::operator <<(const char *cmd) {
-	fputs(cmd, gh->fh);
-	fputs("\n", gh->fh);
-	fflush(gh->fh);
-	return *this;
+void Gnuplot::getMouse(float &mx, float &my, int &mb) {
+	allocReader();
+	*this << "pause mouse \"Click mouse!\\n\"" << std::endl;
+	*this << "print MOUSE_X, MOUSE_Y, MOUSE_BUTTON" << std::endl;
+	std::cerr << "begin scanf" << std::endl;
+	if(3 != fscanf(pty_fh, "%f %f %d", &mx, &my, &mb)) {
+		throw "could not parse reply";
+	}
+	std::cerr << "end scanf" << std::endl;
 }
 
 Gnuplot &Gnuplot::operator <<(blitz::Array<double, 1> &a) {
 	blitz::Array<double, 1>::iterator 
 		p = a.begin(), p_end = a.end();
 	while(p != p_end) {
-		fprintf(gh->fh, "%.18g\n", *p);
+		*this << boost::format("%.18g\n") % (*p);
 		p++;
 	}
-	fputs("e\n", gh->fh);
-	fflush(gh->fh);
+	*this << "e" << std::endl;
 	return *this;
 }
 
 Gnuplot &Gnuplot::operator <<(blitz::Array<double, 2> &a) {
+	// FIXME - use upper/lower bound functions
 	for(int i=0; i<a.shape()[0]; i++) {
 		for(int j=0; j<a.shape()[1]; j++) {
-			fprintf(gh->fh, "%.18g\n", a(i,j));
+			*this << boost::format("%.18g\n") % a(i,j);
 		}
-		fputs("\n", gh->fh);
+		*this << "\n";
 	}
-	fputs("e\n", gh->fh);
-	fflush(gh->fh);
+	*this << "e" << std::endl;
 	return *this;
 }
 
-void Gnuplot::reassign(Gnuplot::GnuplotHandle *np) {
-	if(np) np->refcnt++;
-	if(gh) {
-		gh->refcnt--;
-		if(gh->refcnt == 0) delete gh;
-	}
-	gh = np;
-}
-
-//// Gnuplot::GnuplotHandle /////
-
-Gnuplot::GnuplotHandle::GnuplotHandle() : fh_read(0), fifo_fn(0) {
-	printf("opening gnuplot\n");
-	fh = popen("gnuplot", "w");
-	assert(fh);
-
-	printf("constructed\n");
-	refcnt = 0;
-}
-
-Gnuplot::GnuplotHandle::~GnuplotHandle() {
-	printf("closing gnuplot\n");
-	pclose(fh);
-	if(fifo_fn) {
-		printf("removing pipe\n");
-		unlink(fifo_fn);
-	}
-}
-
 // based on http://www.gnuplot.info/files/gpReadMouseTest.c
-void Gnuplot::GnuplotHandle::allocReader() {
-	if(fh_read) return;
-	fifo_fn = "./gp_pipe"; // FIXME - need unique name
+void Gnuplot::allocReader() {
+//	if(fh_read) return;
+//	fifo_fn = "./gp_pipe"; // FIXME - need unique name
+//
+//	std::cerr << "make pipe" << std::endl;
+//	unlink(fifo_fn);
+//	if(mkfifo(fifo_fn, 0600)) {
+//		if(errno != EEXIST) {
+//			std::cerr << "fail" << std::endl;
+//			perror(fifo_fn);
+//			unlink(fifo_fn);
+//			throw "cannot create fifo";
+//		}
+//	}
+//
+//	*this << "set mouse; set print \"%s\"" << std::endl;
+//
+//	std::cerr << "open pipe" << std::endl;
+//	fh_read = fopen(fifo_fn,"r");
+//	if(!fh_read) {
+//		std::cerr << "fail" << std::endl;
+//		perror(fifo_fn);
+//		unlink(fifo_fn);
+//		throw "cannot open fifo";
+//	}
+//
+//	std::cerr << "pipe opened" << std::endl;
 
-	printf("make pipe\n");
-	unlink(fifo_fn);
-	if(mkfifo(fifo_fn, 0600)) {
-		if(errno != EEXIST) {
-			printf("fail\n");
-			perror(fifo_fn);
-			unlink(fifo_fn);
-			throw "cannot create fifo";
-		}
+	if(pty_fn) return;
+
+	openpty(&master_fd, &slave_fd, NULL, NULL, NULL);
+	pty_fn = strdup(ttyname(slave_fd));
+	printf("fn=%s\n", pty_fn);
+
+	// disable echo
+	struct termios tios;
+	if(tcgetattr(slave_fd, &tios) < 0) {
+		perror("tcgetattr");
+		exit(1);
+	}
+	tios.c_lflag &= ~(ECHO | ECHONL);
+	if(tcsetattr(slave_fd, TCSAFLUSH, &tios) < 0) {
+		perror("tcsetattr");
+		exit(1);
 	}
 
-	fprintf(fh, "set mouse; set print \"%s\"\n", fifo_fn);
-	fflush(fh);
+	// FIXME - close everything on destruction
+	pty_fh = fdopen(master_fd, "r");
+	assert(pty_fh);
 
-	printf("open pipe\n");
-	fh_read = fopen(fifo_fn,"r");
-	if(!fh_read) {
-		printf("fail\n");
-		perror(fifo_fn);
-		unlink(fifo_fn);
-		throw "cannot open fifo";
-	}
-
-	printf("pipe opened\n");
+	*this << "set mouse; set print \"" << pty_fn << "\"" << std::endl;
 }

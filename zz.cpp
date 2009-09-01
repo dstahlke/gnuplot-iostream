@@ -20,16 +20,17 @@ int main() {
 	blitz::firstIndex i;
 	blitz::secondIndex j;
 	arr = (i-50) * (j-50);
-	gp << "set pm3d map; set palette";
-	gp << "splot '-'" << arr;
+	gp << "set pm3d map; set palette" << std::endl;
+	gp << "splot '-'" << std::endl;
+	gp << arr;
 
 //	blitz::Array<blitz::TinyVector<double, 2>, 2> arr(10);
 //	blitz::firstIndex i;
 //	blitz::secondIndex j;
 //	arr[0] = (i-5)*(i-5) + (j-5)*(j-5);
 //	arr[1] = i;
-//	gp << "set pm3d map; set palette";
-//	gp << "splot '-' w pm3d" << arr;
+//	gp << "set pm3d map; set palette" << std::endl;
+//	gp << "splot '-' w pm3d" << arr << std::endl;
 
 	Gnuplot gp2;
 	for(;;) {
@@ -37,12 +38,14 @@ int main() {
 		int mb;
 		gp.getMouse(mx, my, mb);
 		printf("You pressed mouse button %d at x=%f y=%f\n", mb, mx, my);
+		if(mb == 3) break;
 
 		blitz::Array<double, 2> arr2(20, 20);
 		blitz::firstIndex i;
 		blitz::secondIndex j;
 		arr2 = pow(pow(i*5-mx, 4) + pow(j*5-my, 4), 0.25);
-		gp2 << "set pm3d; set palette";
-		gp2 << "splot '-'" << arr2;
+		gp2 << "set pm3d; set palette" << std::endl;
+		gp2 << "splot '-'\n";
+		gp2 << arr2;
 	}
 }
