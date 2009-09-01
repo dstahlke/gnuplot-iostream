@@ -21,38 +21,15 @@ Gnuplot::~Gnuplot() {
 	pclose(pout);
 }
 
-void Gnuplot::getMouse(float &mx, float &my, int &mb) {
+void Gnuplot::getMouse(double &mx, double &my, int &mb) {
 	allocReader();
 	*this << "pause mouse \"Click mouse!\\n\"" << std::endl;
 	*this << "print MOUSE_X, MOUSE_Y, MOUSE_BUTTON" << std::endl;
 	std::cerr << "begin scanf" << std::endl;
-	if(3 != fscanf(pty_fh, "%f %f %d", &mx, &my, &mb)) {
+	if(3 != fscanf(pty_fh, "%lf %lf %d", &mx, &my, &mb)) {
 		throw "could not parse reply";
 	}
 	std::cerr << "end scanf" << std::endl;
-}
-
-Gnuplot &Gnuplot::operator <<(blitz::Array<double, 1> &a) {
-	blitz::Array<double, 1>::iterator 
-		p = a.begin(), p_end = a.end();
-	while(p != p_end) {
-		*this << boost::format("%.18g\n") % (*p);
-		p++;
-	}
-	*this << "e" << std::endl;
-	return *this;
-}
-
-Gnuplot &Gnuplot::operator <<(blitz::Array<double, 2> &a) {
-	// FIXME - use upper/lower bound functions
-	for(int i=0; i<a.shape()[0]; i++) {
-		for(int j=0; j<a.shape()[1]; j++) {
-			*this << boost::format("%.18g\n") % a(i,j);
-		}
-		*this << "\n";
-	}
-	*this << "e" << std::endl;
-	return *this;
 }
 
 // based on http://www.gnuplot.info/files/gpReadMouseTest.c

@@ -14,19 +14,42 @@ public:
 	Gnuplot();
 	~Gnuplot();
 
-	void getMouse(float &mx, float &my, int &mb);
+	void getMouse(double &mx, double &my, int &mb);
 
-	Gnuplot &operator <<(blitz::Array<double, 1> &a);
+	// FIXME - avoid cast to double for print
 
-	Gnuplot &operator <<(blitz::Array<double, 2> &a);
+	template <class T>
+	Gnuplot &operator <<(blitz::Array<T, 1> &a) {
+		typename blitz::Array<T, 1>::iterator 
+			p = a.begin(), p_end = a.end();
+		while(p != p_end) {
+			*this << boost::format("%.18g\n") % double(*p);
+			p++;
+		}
+		*this << "e" << std::endl;
+		return *this;
+	}
 
-	template <int N>
-	Gnuplot &operator <<(blitz::Array<blitz::TinyVector<double,N>, 1> &a) {
-		typename blitz::Array<blitz::TinyVector<double,N>, 1>::iterator 
+	template <class T>
+	Gnuplot &operator <<(blitz::Array<T, 2> &a) {
+		// FIXME - use upper/lower bound functions
+		for(int i=0; i<a.shape()[0]; i++) {
+			for(int j=0; j<a.shape()[1]; j++) {
+				*this << boost::format("%.18g\n") % double(a(i,j));
+			}
+			*this << "\n";
+		}
+		*this << "e" << std::endl;
+		return *this;
+	}
+
+	template <class T, int N>
+	Gnuplot &operator <<(blitz::Array<blitz::TinyVector<T, N>, 1> &a) {
+		typename blitz::Array<blitz::TinyVector<T, N>, 1>::iterator 
 			p = a.begin(), p_end = a.end();
 		while(p != p_end) {
 			for(int i=0; i<N; i++) {
-				*this << boost::format("%.18g ") % (*p)[i];
+				*this << boost::format("%.18g ") % double((*p)[i]);
 			}
 			*this << "\n";
 			p++;
@@ -35,13 +58,13 @@ public:
 		return *this;
 	}
 
-	template <int N>
-	Gnuplot &operator <<(blitz::Array<blitz::TinyVector<double,N>, 2> &a) {
+	template <class T, int N>
+	Gnuplot &operator <<(blitz::Array<blitz::TinyVector<T,N>, 2> &a) {
 		// FIXME - use upper/lower bound functions
 		for(int i=0; i<a.shape()[0]; i++) {
 			for(int j=0; j<a.shape()[1]; j++) {
 				for(int k=0; k<N; k++) {
-					*this << boost::format("%.18g ") % a(i,j)[k];
+					*this << boost::format("%.18g ") % double(a(i,j)[k]);
 				}
 				*this << "\n";
 			}
