@@ -7,10 +7,8 @@
 #include <fstream>
 #include <iostream>
 
-// FIXME
-using namespace boost::iostreams ;
-
-class Gnuplot : public stream<file_descriptor_sink>, private boost::noncopyable
+class Gnuplot : public boost::iostreams::stream<
+	boost::iostreams::file_descriptor_sink>, private boost::noncopyable
 {
 public:
 	Gnuplot();

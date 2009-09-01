@@ -9,7 +9,8 @@
 //// Gnuplot /////
 
 Gnuplot::Gnuplot() : 
-	stream<file_descriptor_sink>(fileno(pout = popen("gnuplot", "w"))),
+	boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
+		fileno(pout = popen("gnuplot", "w"))),
 	pty_fn(0)
 { }
 
@@ -56,33 +57,6 @@ Gnuplot &Gnuplot::operator <<(blitz::Array<double, 2> &a) {
 
 // based on http://www.gnuplot.info/files/gpReadMouseTest.c
 void Gnuplot::allocReader() {
-//	if(fh_read) return;
-//	fifo_fn = "./gp_pipe"; // FIXME - need unique name
-//
-//	std::cerr << "make pipe" << std::endl;
-//	unlink(fifo_fn);
-//	if(mkfifo(fifo_fn, 0600)) {
-//		if(errno != EEXIST) {
-//			std::cerr << "fail" << std::endl;
-//			perror(fifo_fn);
-//			unlink(fifo_fn);
-//			throw "cannot create fifo";
-//		}
-//	}
-//
-//	*this << "set mouse; set print \"%s\"" << std::endl;
-//
-//	std::cerr << "open pipe" << std::endl;
-//	fh_read = fopen(fifo_fn,"r");
-//	if(!fh_read) {
-//		std::cerr << "fail" << std::endl;
-//		perror(fifo_fn);
-//		unlink(fifo_fn);
-//		throw "cannot open fifo";
-//	}
-//
-//	std::cerr << "pipe opened" << std::endl;
-
 	if(pty_fn) return;
 
 	openpty(&master_fd, &slave_fd, NULL, NULL, NULL);

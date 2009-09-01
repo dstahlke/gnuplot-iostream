@@ -1,4 +1,4 @@
-// g++ -o zz zz.cpp gnuplot++.cpp -Wall -I/usr/lib64/blitz/include -O0 -g
+// g++ -o zz zz.cpp gnuplot++.cpp -Wall -I/usr/lib64/blitz/include -O0 -g -lutil -lboost_iostreams
 
 #include <blitz/array.h>
 #include <math.h>
