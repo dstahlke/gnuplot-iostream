@@ -10,8 +10,7 @@
 
 Gnuplot::Gnuplot() : 
 	boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
-		fileno(pout = popen("gnuplot", "w"))),
-	pty_fn(0)
+		fileno(pout = popen("gnuplot", "w")))
 { }
 
 Gnuplot::~Gnuplot() {
@@ -34,11 +33,11 @@ void Gnuplot::getMouse(double &mx, double &my, int &mb) {
 
 // based on http://www.gnuplot.info/files/gpReadMouseTest.c
 void Gnuplot::allocReader() {
-	if(pty_fn) return;
+	if(pty_fn.size()) return;
 
 	openpty(&master_fd, &slave_fd, NULL, NULL, NULL);
-	pty_fn = strdup(ttyname(slave_fd));
-	printf("fn=%s\n", pty_fn);
+	pty_fn = ttyname(slave_fd);
+	printf("fn=%s\n", pty_fn.c_str());
 
 	// disable echo
 	struct termios tios;

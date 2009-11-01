@@ -78,7 +78,7 @@ private:
 	void allocReader();
 
 	FILE *pout;
-	const char *pty_fn;
+	std::string pty_fn;
 	FILE *pty_fh;
 	int master_fd, slave_fd;
 };
