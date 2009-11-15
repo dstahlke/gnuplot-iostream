@@ -26,7 +26,7 @@ void Gnuplot::getMouse(double &mx, double &my, int &mb) {
 	*this << "print MOUSE_X, MOUSE_Y, MOUSE_BUTTON" << std::endl;
 	std::cerr << "begin scanf" << std::endl;
 	if(3 != fscanf(pty_fh, "%lf %lf %d", &mx, &my, &mb)) {
-		throw "could not parse reply";
+		throw std::runtime_error("could not parse reply");
 	}
 	std::cerr << "end scanf" << std::endl;
 }
