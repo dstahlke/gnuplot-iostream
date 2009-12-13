@@ -77,8 +77,12 @@ public:
 private:
 	void allocReader();
 
+private:
 	FILE *pout;
 	std::string pty_fn;
 	FILE *pty_fh;
 	int master_fd, slave_fd;
+
+public:
+	bool debug_messages;
 };
