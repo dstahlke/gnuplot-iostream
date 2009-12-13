@@ -16,14 +16,12 @@ public:
 
 	void getMouse(double &mx, double &my, int &mb);
 
-	// FIXME - avoid cast to double for print
-
 	template <class T>
 	Gnuplot &send(blitz::Array<T, 1> &a) {
 		typename blitz::Array<T, 1>::iterator 
 			p = a.begin(), p_end = a.end();
 		while(p != p_end) {
-			*this << boost::format("%.18g\n") % double(*p);
+			*this << boost::format("%.18g\n") % (*p);
 			p++;
 		}
 		*this << "e" << std::endl;
@@ -32,10 +30,9 @@ public:
 
 	template <class T>
 	Gnuplot &send(blitz::Array<T, 2> &a) {
-		// FIXME - use upper/lower bound functions
-		for(int i=0; i<a.shape()[0]; i++) {
-			for(int j=0; j<a.shape()[1]; j++) {
-				*this << boost::format("%.18g\n") % double(a(i,j));
+		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
+			for(int j=a.lbound(1); j<=a.ubound(1); j++) {
+				*this << boost::format("%.18g\n") % a(i,j);
 			}
 			*this << "\n";
 		}
@@ -49,7 +46,7 @@ public:
 			p = a.begin(), p_end = a.end();
 		while(p != p_end) {
 			for(int i=0; i<N; i++) {
-				*this << boost::format("%.18g ") % double((*p)[i]);
+				*this << boost::format("%.18g ") % (*p)[i];
 			}
 			*this << "\n";
 			p++;
@@ -60,11 +57,10 @@ public:
 
 	template <class T, int N>
 	Gnuplot &send(blitz::Array<blitz::TinyVector<T,N>, 2> &a) {
-		// FIXME - use upper/lower bound functions
-		for(int i=0; i<a.shape()[0]; i++) {
-			for(int j=0; j<a.shape()[1]; j++) {
+		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
+			for(int j=a.lbound(1); j<=a.ubound(1); j++) {
 				for(int k=0; k<N; k++) {
-					*this << boost::format("%.18g ") % double(a(i,j)[k]);
+					*this << boost::format("%.18g ") % a(i,j)[k];
 				}
 				*this << "\n";
 			}

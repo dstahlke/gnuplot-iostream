@@ -25,7 +25,7 @@ int main() {
 		printf("You pressed mouse button %d at x=%f y=%f\n", mb, mx, my);
 		if(mb == 3) break;
 
-		blitz::Array<double, 2> arr2(20, 20);
+		blitz::Array<float, 2> arr2(20, 20);
 		{
 			blitz::firstIndex i;
 			blitz::secondIndex j;
