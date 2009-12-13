@@ -1,8 +1,8 @@
-// g++ -o zz zz.cc gnuplot++.cc -Wall -Wextra -I/usr/lib64/blitz/include -O0 -g -lutil -lboost_iostreams
+// g++ -o example-interactive example-interactive.cc gnuplot-iostream.cc -Wall -Wextra -I/usr/lib64/blitz/include -O0 -g -lutil -lboost_iostreams
 
 #include <blitz/array.h>
 #include <math.h>
-#include "gnuplot++.h"
+#include "gnuplot-iostream.h"
 
 int main() {
 	Gnuplot gp;

@@ -1,3 +1,6 @@
+#ifndef GNUPLOT_IOSTREAM_H
+#define GNUPLOT_IOSTREAM_H
+
 #include <blitz/array.h>
 #include <stdio.h>
 #include <boost/noncopyable.hpp>
@@ -82,3 +85,5 @@ private:
 public:
 	bool debug_messages;
 };
+
+#endif // GNUPLOT_IOSTREAM_H

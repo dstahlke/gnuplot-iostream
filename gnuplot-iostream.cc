@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <pty.h>
 
-#include "gnuplot++.h"
+#include "gnuplot-iostream.h"
 
 Gnuplot::Gnuplot() : 
 	boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
