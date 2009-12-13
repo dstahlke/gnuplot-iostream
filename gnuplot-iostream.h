@@ -1,7 +1,10 @@
 #ifndef GNUPLOT_IOSTREAM_H
 #define GNUPLOT_IOSTREAM_H
 
+#if GNUPLOT_ENABLE_BLITZ
 #include <blitz/array.h>
+#endif
+
 #include <stdio.h>
 #include <boost/noncopyable.hpp>
 #include <boost/format.hpp>
@@ -20,12 +23,41 @@ public:
 	void getMouse(double &mx, double &my, int &mb);
 
 	template <class T>
+	void sendEntry(T v) {
+		*this << boost::format("%.18g ") % v;
+	}
+
+	template <class T>
+	Gnuplot &send(T p, T last) {
+		while(p != last) {
+			sendEntry(*p);
+			*this << "\n";
+			++p;
+		}
+		*this << "e" << std::endl;
+		return *this;
+	}
+
+	template <class T>
+	Gnuplot &sendPairs(T p, T last) {
+		while(p != last) {
+			sendEntry(p->first);
+			sendEntry(p->second);
+			*this << "\n";
+			++p;
+		}
+		*this << "e" << std::endl;
+		return *this;
+	}
+
+#if GNUPLOT_ENABLE_BLITZ
+	template <class T>
 	Gnuplot &send(blitz::Array<T, 1> &a) {
 		typename blitz::Array<T, 1>::iterator 
 			p = a.begin(), p_end = a.end();
 		while(p != p_end) {
 			*this << boost::format("%.18g\n") % (*p);
-			p++;
+			++p;
 		}
 		*this << "e" << std::endl;
 		return *this;
@@ -52,7 +84,7 @@ public:
 				*this << boost::format("%.18g ") % (*p)[i];
 			}
 			*this << "\n";
-			p++;
+			++p;
 		}
 		*this << "e" << std::endl;
 		return *this;
@@ -72,6 +104,7 @@ public:
 		*this << "e" << std::endl;
 		return *this;
 	}
+#endif
 
 private:
 	void allocReader();
