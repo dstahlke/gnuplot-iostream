@@ -1,7 +1,7 @@
 #ifndef GNUPLOT_IOSTREAM_H
 #define GNUPLOT_IOSTREAM_H
 
-#if GNUPLOT_ENABLE_BLITZ
+#ifdef GNUPLOT_ENABLE_BLITZ
 #include <blitz/array.h>
 #endif
 
@@ -27,6 +27,12 @@ public:
 		*this << boost::format("%.18g ") % v;
 	}
 
+	template <class T, class U>
+	void sendEntry(std::pair<T, U> v) {
+		sendEntry(v.first);
+		sendEntry(v.second);
+	}
+
 	template <class T>
 	Gnuplot &send(T p, T last) {
 		while(p != last) {
@@ -38,25 +44,14 @@ public:
 		return *this;
 	}
 
-	template <class T>
-	Gnuplot &sendPairs(T p, T last) {
-		while(p != last) {
-			sendEntry(p->first);
-			sendEntry(p->second);
-			*this << "\n";
-			++p;
-		}
-		*this << "e" << std::endl;
-		return *this;
-	}
-
-#if GNUPLOT_ENABLE_BLITZ
+#ifdef GNUPLOT_ENABLE_BLITZ
 	template <class T>
 	Gnuplot &send(blitz::Array<T, 1> &a) {
 		typename blitz::Array<T, 1>::iterator 
 			p = a.begin(), p_end = a.end();
 		while(p != p_end) {
-			*this << boost::format("%.18g\n") % (*p);
+			sendEntry(*p);
+			*this << "\n";
 			++p;
 		}
 		*this << "e" << std::endl;
@@ -67,7 +62,8 @@ public:
 	Gnuplot &send(blitz::Array<T, 2> &a) {
 		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
 			for(int j=a.lbound(1); j<=a.ubound(1); j++) {
-				*this << boost::format("%.18g\n") % a(i,j);
+				sendEntry(a(i, j));
+				*this << "\n";
 			}
 			*this << "\n";
 		}
@@ -81,7 +77,7 @@ public:
 			p = a.begin(), p_end = a.end();
 		while(p != p_end) {
 			for(int i=0; i<N; i++) {
-				*this << boost::format("%.18g ") % (*p)[i];
+				sendEntry((*p)[i]);
 			}
 			*this << "\n";
 			++p;
@@ -95,7 +91,7 @@ public:
 		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
 			for(int j=a.lbound(1); j<=a.ubound(1); j++) {
 				for(int k=0; k<N; k++) {
-					*this << boost::format("%.18g ") % a(i,j)[k];
+					sendEntry(a(i,j)[k]);
 				}
 				*this << "\n";
 			}

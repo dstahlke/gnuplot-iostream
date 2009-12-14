@@ -26,5 +26,5 @@ int main() {
 
 	gp << "set output 'my_graph_2.png'\n";
 	gp << "p '-' w l, sin(x*2*3.14159) w l\n";
-	gp.sendPairs(xy_pts.begin(), xy_pts.end());
+	gp.send(xy_pts.begin(), xy_pts.end());
 }

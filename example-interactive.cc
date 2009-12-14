@@ -2,6 +2,7 @@
 
 #include <blitz/array.h>
 #include <math.h>
+#define GNUPLOT_ENABLE_BLITZ
 #include "gnuplot-iostream.h"
 
 int main() {
