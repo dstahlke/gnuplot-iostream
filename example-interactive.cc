@@ -1,4 +1,4 @@
-// g++ -o example-interactive example-interactive.cc gnuplot-iostream.cc -Wall -Wextra -I/usr/lib64/blitz/include -O0 -g -lutil -lboost_iostreams
+// NOTE: this example requires blitz++
 
 #include <blitz/array.h>
 #include <math.h>
