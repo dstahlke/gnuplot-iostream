@@ -1,17 +1,17 @@
 #ifndef GNUPLOT_IOSTREAM_H
 #define GNUPLOT_IOSTREAM_H
 
-#ifdef GNUPLOT_ENABLE_BLITZ
-#include <blitz/array.h>
-#endif
-
-#include <stdio.h>
 #include <boost/noncopyable.hpp>
-#include <boost/format.hpp>
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <fstream>
 #include <iostream>
+
+#include <stdio.h>
+
+#ifdef GNUPLOT_ENABLE_BLITZ
+#include <blitz/array.h>
+#endif
 
 class Gnuplot : public boost::iostreams::stream<
 	boost::iostreams::file_descriptor_sink>, private boost::noncopyable
@@ -21,17 +21,6 @@ public:
 	~Gnuplot();
 
 	void getMouse(double &mx, double &my, int &mb);
-
-	template <class T>
-	void sendEntry(T v) {
-		*this << boost::format("%.18g ") % v;
-	}
-
-	template <class T, class U>
-	void sendEntry(std::pair<T, U> v) {
-		sendEntry(v.first);
-		sendEntry(v.second);
-	}
 
 	template <class T>
 	Gnuplot &send(T p, T last) {
@@ -100,9 +89,20 @@ public:
 		*this << "e" << std::endl;
 		return *this;
 	}
-#endif
+#endif // GNUPLOT_ENABLE_BLITZ
 
 private:
+	template <class T>
+	void sendEntry(T v) {
+		*this << v << " ";
+	}
+
+	template <class T, class U>
+	void sendEntry(std::pair<T, U> v) {
+		sendEntry(v.first);
+		sendEntry(v.second);
+	}
+
 	void allocReader();
 
 private:

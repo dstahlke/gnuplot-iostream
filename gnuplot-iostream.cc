@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -13,7 +15,10 @@ Gnuplot::Gnuplot() :
 	master_fd(-1),
 	slave_fd(-1),
 	debug_messages(false)
-{ }
+{
+	setf(std::ios::scientific, std::ios::floatfield);
+	precision(18);
+}
 
 Gnuplot::~Gnuplot() {
 	if(debug_messages) {
