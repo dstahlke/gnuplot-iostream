@@ -19,6 +19,10 @@ int main() {
 	gp << "p '-' w l, sin(x/200) w l\n";
 	gp.send(y_pts.begin(), y_pts.end());
 
+	// NOTE: we can use map here because the X values are intended to be
+	// sorted.  If this was not the case, vector<pair<double,double>> could be
+	// used instead.
+
 	std::map<double, double> xy_pts_A;
 	for(double x=-2; x<2; x+=0.01) {
 		double y = x*x*x;

@@ -47,7 +47,7 @@ void Gnuplot::getMouse(double &mx, double &my, int &mb) {
 	}
 }
 
-// based on http://www.gnuplot.info/files/gpReadMouseTest.c
+// adapted from http://www.gnuplot.info/files/gpReadMouseTest.c
 void Gnuplot::allocReader() {
 	if(pty_fh) return;
 
@@ -55,7 +55,12 @@ void Gnuplot::allocReader() {
 		perror("openpty");
 		throw std::runtime_error("openpty failed");
 	}
-	pty_fn = ttyname(slave_fd);
+	char pty_fn_buf[1024];
+	if(ttyname_r(slave_fd, pty_fn_buf, 1024)) {
+		perror("ttyname_r");
+		throw std::runtime_error("ttyname failed");
+	}
+	pty_fn = std::string(pty_fn_buf);
 	if(debug_messages) {
 		std::cerr << "fn=" << pty_fn << std::endl;
 	}

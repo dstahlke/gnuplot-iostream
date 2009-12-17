@@ -6,6 +6,8 @@
 #include <boost/iostreams/stream.hpp>
 #include <fstream>
 #include <iostream>
+#include <utility>
+#include <string>
 
 #include <stdio.h>
 
@@ -35,7 +37,7 @@ public:
 
 #ifdef GNUPLOT_ENABLE_BLITZ
 	template <class T>
-	Gnuplot &send(blitz::Array<T, 1> &a) {
+	Gnuplot &send(const blitz::Array<T, 1> &a) {
 		typename blitz::Array<T, 1>::iterator 
 			p = a.begin(), p_end = a.end();
 		while(p != p_end) {
@@ -48,7 +50,7 @@ public:
 	}
 
 	template <class T>
-	Gnuplot &send(blitz::Array<T, 2> &a) {
+	Gnuplot &send(const blitz::Array<T, 2> &a) {
 		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
 			for(int j=a.lbound(1); j<=a.ubound(1); j++) {
 				sendEntry(a(i, j));
@@ -61,7 +63,7 @@ public:
 	}
 
 	template <class T, int N>
-	Gnuplot &send(blitz::Array<blitz::TinyVector<T, N>, 1> &a) {
+	Gnuplot &send(const blitz::Array<blitz::TinyVector<T, N>, 1> &a) {
 		typename blitz::Array<blitz::TinyVector<T, N>, 1>::iterator 
 			p = a.begin(), p_end = a.end();
 		while(p != p_end) {
@@ -76,7 +78,7 @@ public:
 	}
 
 	template <class T, int N>
-	Gnuplot &send(blitz::Array<blitz::TinyVector<T,N>, 2> &a) {
+	Gnuplot &send(const blitz::Array<blitz::TinyVector<T,N>, 2> &a) {
 		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
 			for(int j=a.lbound(1); j<=a.ubound(1); j++) {
 				for(int k=0; k<N; k++) {
