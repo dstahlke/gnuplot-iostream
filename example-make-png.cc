@@ -62,4 +62,11 @@ int main() {
 	gp << "p '-' w l t 'cubic', '-' w p t 'circle'\n";
 	gp.send(xy_pts_A.begin(), xy_pts_A.end());
 	gp.send(xy_pts_B.begin(), xy_pts_B.end());
+
+	// If this was an interactive session (i.e. not a png terminal),
+	// this would get a mouse press:
+	//double mx, my;
+	//int mb;
+	//gp.getMouse(mx, my, mb);
+	//printf("You pressed mouse button %d at x=%f y=%f\n", mb, mx, my);
 }
