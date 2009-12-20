@@ -40,7 +40,9 @@ int main() {
 
 	gp << "set output 'my_graph_1.png'\n";
 	gp << "p '-' w l, sin(x/200) w l\n";
-	gp.send(y_pts.begin(), y_pts.end());
+	gp.send(y_pts);
+	// Or this:
+	//gp.send(y_pts.begin(), y_pts.end());
 
 	// NOTE: we can use map here because the X values are intended to be
 	// sorted.  If this was not the case, vector<pair<double,double>> could be
@@ -61,8 +63,10 @@ int main() {
 	gp << "set output 'my_graph_2.png'\n";
 	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
 	gp << "p '-' w l t 'cubic', '-' w p t 'circle'\n";
-	gp.send(xy_pts_A.begin(), xy_pts_A.end());
-	gp.send(xy_pts_B.begin(), xy_pts_B.end());
+	gp.send(xy_pts_A).send(xy_pts_B);
+	// Or this:
+	//gp.send(xy_pts_A.begin(), xy_pts_A.end());
+	//gp.send(xy_pts_B.begin(), xy_pts_B.end());
 
 #ifdef GNUPLOT_ENABLE_BLITZ
 	gp << "set output 'my_graph_3.png'\n";
