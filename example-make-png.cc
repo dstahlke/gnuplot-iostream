@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 #include <math.h>
 
+//#define GNUPLOT_ENABLE_BLITZ
 #include "gnuplot-iostream.h"
 
 int main() {
@@ -62,6 +63,21 @@ int main() {
 	gp << "p '-' w l t 'cubic', '-' w p t 'circle'\n";
 	gp.send(xy_pts_A.begin(), xy_pts_A.end());
 	gp.send(xy_pts_B.begin(), xy_pts_B.end());
+
+#ifdef GNUPLOT_ENABLE_BLITZ
+	gp << "set output 'my_graph_3.png'\n";
+	gp << "set auto x\n";
+	gp << "set auto y\n";
+	blitz::Array<double, 1> y_arr(100);
+	blitz::Array<blitz::TinyVector<double, 2>, 1> xy_arr(100);
+	blitz::firstIndex bi;
+	y_arr = cos(bi * 0.1);
+	xy_arr[0] = cos(bi * 0.1) * 100;
+	xy_arr[1] = sin(bi * 0.1);
+	gp << "p '-' w l, '-' w l\n";
+	gp.send(y_arr);
+	gp.send(xy_arr);
+#endif // GNUPLOT_ENABLE_BLITZ
 
 	// If this was an interactive session (i.e. not a png terminal),
 	// this would get a mouse press:

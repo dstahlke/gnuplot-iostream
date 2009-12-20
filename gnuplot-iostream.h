@@ -57,20 +57,16 @@ public:
 		return *this;
 	}
 
-#ifdef GNUPLOT_ENABLE_BLITZ
-	template <class T>
-	Gnuplot &send(const blitz::Array<T, 1> &a) {
-		typename blitz::Array<T, 1>::iterator 
-			p = a.begin(), p_end = a.end();
-		while(p != p_end) {
-			sendEntry(*p);
-			*this << "\n";
-			++p;
-		}
-		*this << "e" << std::endl;
+	// this handles STL containers as well as blitz::Array<T, 1> and
+	// blitz::Array<blitz::TinyVector<T, N>, 1>
+	template <class Iter>
+	Gnuplot &send(Iter arr) {
+		send(arr.begin(), arr.end());
 		return *this;
 	}
 
+#ifdef GNUPLOT_ENABLE_BLITZ
+	// Note: T could be either a scalar or a blitz::TinyVector.
 	template <class T>
 	Gnuplot &send(const blitz::Array<T, 2> &a) {
 		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
@@ -84,34 +80,12 @@ public:
 		return *this;
 	}
 
+private:
 	template <class T, int N>
-	Gnuplot &send(const blitz::Array<blitz::TinyVector<T, N>, 1> &a) {
-		typename blitz::Array<blitz::TinyVector<T, N>, 1>::iterator 
-			p = a.begin(), p_end = a.end();
-		while(p != p_end) {
-			for(int i=0; i<N; i++) {
-				sendEntry((*p)[i]);
-			}
-			*this << "\n";
-			++p;
+	void sendEntry(blitz::TinyVector<T, N> v) {
+		for(int i=0; i<N; i++) {
+			sendEntry(v[i]);
 		}
-		*this << "e" << std::endl;
-		return *this;
-	}
-
-	template <class T, int N>
-	Gnuplot &send(const blitz::Array<blitz::TinyVector<T,N>, 2> &a) {
-		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
-			for(int j=a.lbound(1); j<=a.ubound(1); j++) {
-				for(int k=0; k<N; k++) {
-					sendEntry(a(i,j)[k]);
-				}
-				*this << "\n";
-			}
-			*this << "\n";
-		}
-		*this << "e" << std::endl;
-		return *this;
 	}
 #endif // GNUPLOT_ENABLE_BLITZ
 

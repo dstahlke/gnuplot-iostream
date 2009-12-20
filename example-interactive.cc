@@ -48,16 +48,17 @@ int main() {
 		printf("You pressed mouse button %d at x=%f y=%f\n", mb, mx, my);
 		if(mb == 3) break;
 
-		blitz::Array<float, 2> arr2(20, 20);
+		blitz::Array<blitz::TinyVector<double, 2>, 2> arr2(50, 50);
 		{
 			blitz::firstIndex i;
 			blitz::secondIndex j;
-			arr2 = pow(pow(i*5-mx, 4) + pow(j*5-my, 4), 0.25);
+			arr2[0] = pow(i*2-mx, 4);
+			arr2[1] = pow(j*2-my, 4);
 		}
 		//gp2 << "set pm3d" << std::endl;
 		//gp2 << "set palette" << std::endl;
 		gp2 << "set hidden3d" << std::endl;
-		gp2 << "splot '-' w l\n";
+		gp2 << "splot '-' u (log($1*$2+0.1)) w l\n";
 		gp2.send(arr2);
 	}
 }

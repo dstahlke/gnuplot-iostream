@@ -6,7 +6,7 @@ all: example-interactive example-make-png
 clean:
 	rm -f *.o
 	rm -f example-interactive example-make-png
-	rm -f my_graph_1.png my_graph_2.png
+	rm -f my_graph_*.png
 
 example-interactive: example-interactive.o gnuplot-iostream.o
 	g++ -o $@ $^ $(LDFLAGS)
