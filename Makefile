@@ -1,7 +1,10 @@
 CPPFLAGS=-Wall -Wextra -I/usr/lib64/blitz/include -O0 -g
 LDFLAGS=-lutil -lboost_iostreams
 
-all: example-interactive example-make-png
+all: example-make-png
+	@echo "Now type 'make blitz-demo' if you have blitz installed."
+
+blitz-demo: example-interactive
 
 clean:
 	rm -f *.o
