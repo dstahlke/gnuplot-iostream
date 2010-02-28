@@ -30,6 +30,9 @@ THE SOFTWARE.
 
 int main() {
 	Gnuplot gp;
+	// For debugging or manual editing of commands:
+	//Gnuplot gp("tee plot.gp | gnuplot");
+
 	gp << "set terminal png\n";
 
 	std::vector<double> y_pts;

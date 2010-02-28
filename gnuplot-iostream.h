@@ -41,7 +41,7 @@ class Gnuplot : public boost::iostreams::stream<
 	boost::iostreams::file_descriptor_sink>, private boost::noncopyable
 {
 public:
-	Gnuplot();
+	Gnuplot(std::string cmd = "gnuplot");
 	~Gnuplot();
 
 	void getMouse(double &mx, double &my, int &mb);

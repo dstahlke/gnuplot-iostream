@@ -30,9 +30,9 @@ THE SOFTWARE.
 
 #include "gnuplot-iostream.h"
 
-Gnuplot::Gnuplot() : 
+Gnuplot::Gnuplot(std::string cmd) : 
 	boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
-		fileno(pout = popen("gnuplot", "w"))),
+		fileno(pout = popen(cmd.c_str(), "w"))),
 	pty_fh(NULL),
 	master_fd(-1),
 	slave_fd(-1),
