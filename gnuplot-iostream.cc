@@ -47,8 +47,16 @@ Gnuplot::~Gnuplot() {
 		std::cerr << "closing gnuplot" << std::endl;
 	}
 
-	close();
-	pclose(pout);
+	// FIXME - boost's close method calls close() on the file descriptor, but
+	// we need to use pclose instead.  For now, just skip calling boost's close
+	// and use flush just in case.
+	flush();
+	//close();
+
+	if(pclose(pout)) {
+		std::cerr << "pclose returned error" << std::endl;
+	}
+
 	if(pty_fh) fclose(pty_fh);
 	if(master_fd > 0) ::close(master_fd);
 	if(slave_fd  > 0) ::close(slave_fd);
