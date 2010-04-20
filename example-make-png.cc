@@ -31,6 +31,8 @@ THE SOFTWARE.
 int main() {
 	Gnuplot gp;
 	// For debugging or manual editing of commands:
+	//Gnuplot gp("cat > plot.gp");
+	// or
 	//Gnuplot gp("tee plot.gp | gnuplot");
 
 	gp << "set terminal png\n";
