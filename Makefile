@@ -1,4 +1,4 @@
-CPPFLAGS=-Wall -Wextra -I/usr/lib64/blitz/include -O0 -g
+CXXFLAGS=-Wall -Wextra -I/usr/lib64/blitz/include -O0 -g
 LDFLAGS=-lutil -lboost_iostreams
 
 all: example-make-png
