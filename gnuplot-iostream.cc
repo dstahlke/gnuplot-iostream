@@ -22,11 +22,15 @@ THE SOFTWARE.
 
 #include <stdexcept>
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
+#define GNUPLOT_ENABLE_PTY
+
+#ifdef GNUPLOT_ENABLE_PTY
+#include <termios.h>
+#include <unistd.h>
 #include <pty.h>
+#endif // GNUPLOT_ENABLE_PTY
+
+#include <stdio.h>
 
 #include "gnuplot-iostream.h"
 
@@ -62,6 +66,7 @@ Gnuplot::~Gnuplot() {
 	if(slave_fd  > 0) ::close(slave_fd);
 }
 
+#ifdef GNUPLOT_ENABLE_PTY
 void Gnuplot::getMouse(double &mx, double &my, int &mb) {
 	allocReader();
 	*this << "pause mouse \"Click mouse!\\n\"" << std::endl;
@@ -76,7 +81,9 @@ void Gnuplot::getMouse(double &mx, double &my, int &mb) {
 		std::cerr << "end scanf" << std::endl;
 	}
 }
+#endif // GNUPLOT_ENABLE_PTY
 
+#ifdef GNUPLOT_ENABLE_PTY
 // adapted from http://www.gnuplot.info/files/gpReadMouseTest.c
 void Gnuplot::allocReader() {
 	if(pty_fh) return;
@@ -114,3 +121,4 @@ void Gnuplot::allocReader() {
 
 	*this << "set mouse; set print \"" << pty_fn << "\"" << std::endl;
 }
+#endif // GNUPLOT_ENABLE_PTY
