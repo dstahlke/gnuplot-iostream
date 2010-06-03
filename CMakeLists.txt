@@ -14,8 +14,7 @@ include_directories(${Boost_INCLUDE_DIR})
 SET(CMAKE_CXX_FLAGS "-Wall -Wextra -O0 -g")
 
 add_library(gnuplot-iostream SHARED gnuplot-iostream.cc)
-# TODO
-# what is util
+# util is for openpty
 target_link_libraries(gnuplot-iostream ${Boost_LIBRARIES} util)
 
 add_executable(example-make-png example-make-png.cc)
