@@ -44,6 +44,67 @@ THE SOFTWARE.
 #include <blitz/array.h>
 #endif
 
+#ifdef GNUPLOT_ENABLE_PTY
+// this is a private class
+class GnuplotPty {
+public:
+	GnuplotPty(bool debug_messages);
+	~GnuplotPty();
+
+	std::string pty_fn;
+	FILE *pty_fh;
+	int master_fd, slave_fd;
+};
+
+GnuplotPty::GnuplotPty(bool debug_messages) :
+	pty_fh(NULL),
+	master_fd(-1),
+	slave_fd(-1)
+{
+// adapted from http://www.gnuplot.info/files/gpReadMouseTest.c
+	if(0 > openpty(&master_fd, &slave_fd, NULL, NULL, NULL)) {
+		perror("openpty");
+		throw std::runtime_error("openpty failed");
+	}
+	char pty_fn_buf[1024];
+	if(ttyname_r(slave_fd, pty_fn_buf, 1024)) {
+		perror("ttyname_r");
+		throw std::runtime_error("ttyname failed");
+	}
+	pty_fn = std::string(pty_fn_buf);
+	if(debug_messages) {
+		std::cerr << "fn=" << pty_fn << std::endl;
+	}
+
+	// disable echo
+	struct termios tios;
+	if(tcgetattr(slave_fd, &tios) < 0) {
+		perror("tcgetattr");
+		throw std::runtime_error("tcgetattr failed");
+	}
+	tios.c_lflag &= ~(ECHO | ECHONL);
+	if(tcsetattr(slave_fd, TCSAFLUSH, &tios) < 0) {
+		perror("tcsetattr");
+		throw std::runtime_error("tcsetattr failed");
+	}
+
+	pty_fh = fdopen(master_fd, "r");
+	if(!pty_fh) {
+		throw std::runtime_error("fdopen failed");
+	}
+}
+
+GnuplotPty::~GnuplotPty() {
+	if(pty_fh) fclose(pty_fh);
+	if(master_fd > 0) ::close(master_fd);
+	if(slave_fd  > 0) ::close(slave_fd);
+}
+#else // GNUPLOT_ENABLE_PTY
+class GnuplotPty { };
+#endif // GNUPLOT_ENABLE_PTY
+
+///////////////////////////////////////////////////////////
+
 class Gnuplot : public boost::iostreams::stream<
 	boost::iostreams::file_descriptor_sink>, private boost::noncopyable
 {
@@ -111,14 +172,18 @@ private:
 	}
 
 #ifdef GNUPLOT_ENABLE_PTY
-	void allocReader();
+	void allocPty() {
+		if(!gp_pty) {
+			gp_pty = new GnuplotPty(debug_messages);
+		}
+	}
 #endif // GNUPLOT_ENABLE_PTY
 
 private:
 	FILE *pout;
-	std::string pty_fn;
-	FILE *pty_fh;
-	int master_fd, slave_fd;
+	// this is included even in the absense of GNUPLOT_ENABLE_PTY, to
+	// protect binary compatibility
+	GnuplotPty *gp_pty;
 
 public:
 	bool debug_messages;
@@ -127,9 +192,7 @@ public:
 Gnuplot::Gnuplot(std::string cmd) : 
 	boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
 		fileno(pout = popen(cmd.c_str(), "w"))),
-	pty_fh(NULL),
-	master_fd(-1),
-	slave_fd(-1),
+	gp_pty(NULL),
 	debug_messages(false)
 {
 	setf(std::ios::scientific, std::ios::floatfield);
@@ -151,65 +214,25 @@ Gnuplot::~Gnuplot() {
 		std::cerr << "pclose returned error" << std::endl;
 	}
 
-	if(pty_fh) fclose(pty_fh);
-	if(master_fd > 0) ::close(master_fd);
-	if(slave_fd  > 0) ::close(slave_fd);
+	if(gp_pty) delete(gp_pty);
 }
 
 #ifdef GNUPLOT_ENABLE_PTY
 void Gnuplot::getMouse(double &mx, double &my, int &mb) {
-	allocReader();
+	allocPty();
+
+	*this << "set mouse; set print \"" << gp_pty->pty_fn << "\"" << std::endl;
 	*this << "pause mouse \"Click mouse!\\n\"" << std::endl;
 	*this << "print MOUSE_X, MOUSE_Y, MOUSE_BUTTON" << std::endl;
 	if(debug_messages) {
 		std::cerr << "begin scanf" << std::endl;
 	}
-	if(3 != fscanf(pty_fh, "%lf %lf %d", &mx, &my, &mb)) {
+	if(3 != fscanf(gp_pty->pty_fh, "%lf %lf %d", &mx, &my, &mb)) {
 		throw std::runtime_error("could not parse reply");
 	}
 	if(debug_messages) {
 		std::cerr << "end scanf" << std::endl;
 	}
-}
-#endif // GNUPLOT_ENABLE_PTY
-
-#ifdef GNUPLOT_ENABLE_PTY
-// adapted from http://www.gnuplot.info/files/gpReadMouseTest.c
-void Gnuplot::allocReader() {
-	if(pty_fh) return;
-
-	if(0 > openpty(&master_fd, &slave_fd, NULL, NULL, NULL)) {
-		perror("openpty");
-		throw std::runtime_error("openpty failed");
-	}
-	char pty_fn_buf[1024];
-	if(ttyname_r(slave_fd, pty_fn_buf, 1024)) {
-		perror("ttyname_r");
-		throw std::runtime_error("ttyname failed");
-	}
-	pty_fn = std::string(pty_fn_buf);
-	if(debug_messages) {
-		std::cerr << "fn=" << pty_fn << std::endl;
-	}
-
-	// disable echo
-	struct termios tios;
-	if(tcgetattr(slave_fd, &tios) < 0) {
-		perror("tcgetattr");
-		throw std::runtime_error("tcgetattr failed");
-	}
-	tios.c_lflag &= ~(ECHO | ECHONL);
-	if(tcsetattr(slave_fd, TCSAFLUSH, &tios) < 0) {
-		perror("tcsetattr");
-		throw std::runtime_error("tcsetattr failed");
-	}
-
-	pty_fh = fdopen(master_fd, "r");
-	if(!pty_fh) {
-		throw std::runtime_error("fdopen failed");
-	}
-
-	*this << "set mouse; set print \"" << pty_fn << "\"" << std::endl;
 }
 #endif // GNUPLOT_ENABLE_PTY
 
