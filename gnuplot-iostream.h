@@ -121,12 +121,28 @@ public:
 	);
 #endif // GNUPLOT_ENABLE_PTY
 
+	// used for one STL container
 	template <class T>
 	Gnuplot &send(T p, T last) {
 		while(p != last) {
 			sendEntry(*p);
 			*this << "\n";
 			++p;
+		}
+		*this << "e" << std::endl;
+		return *this;
+	}
+
+	// used for two STL containers
+	template <class T, class U>
+	Gnuplot &send(T x, T x_last, U y, U y_last) {
+		// TODO
+		// assert same size?
+		while(x != x_last && y != y_last) {
+			sendEntry(*x, *y);
+			*this << "\n";
+			++x;
+			++y;
 		}
 		*this << "e" << std::endl;
 		return *this;
@@ -172,8 +188,13 @@ private:
 
 	template <class T, class U>
 	void sendEntry(std::pair<T, U> v) {
-		sendEntry(v.first);
-		sendEntry(v.second);
+		sendEntry(v.first, v.second);
+	}
+
+	template <class T, class U>
+	void sendEntry(T t, U u) {
+		sendEntry(t);
+		sendEntry(u);
 	}
 
 #ifdef GNUPLOT_ENABLE_PTY
