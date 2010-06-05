@@ -55,6 +55,9 @@ int main() {
 		xy_pts_B[cos(theta)] = sin(theta);
 	}
 
+	// NOTE: mouse zoom functions don't work because gnuplot doesn't hold
+	// on to the data.  If you are using gnuplot 4.4 or newer you can use
+	// the 'volatile' keyword here to fix this.
 	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
 	gp << "p '-' w l t 'cubic', '-' w p t 'circle'\n";
 	gp.send(xy_pts_A).send(xy_pts_B);
