@@ -1,0 +1,37 @@
+Gnuplot-Iostream Interface
+==========================
+
+This interface allows gnuplot to be controlled from C++ and is designed to be
+the lowest hanging fruit. In other words, if you know how gnuplot works it
+should only take 30 seconds to learn this library. Basically it is just an
+iostream pipe to gnuplot with some extra functions for pushing data arrays and
+getting mouse clicks. Data sources include STL containers (eg. vector or map)
+and one or two dimensional Blitz++ arrays (of scalars or TinyVectors). Support
+for other data sources should be easy to add.
+
+Basically there are two functions defined: send() sends arrays of data values
+(it is overloaded to do the right thing based upon what type of variable you
+pass) and getMouse() gets the position of a mouse click. Everything else is
+accomplished by sending commands manually to gnuplot via the iostream
+interface. This is in my opinion the easiest way to do it if you are already
+comfortable with using gnuplot. If you would like a more abstract interface
+check out the gnuplot-cpp library (http://code.google.com/p/gnuplot-cpp). 
+
+
+Getting the source code
+=======================
+
+git clone git://gitorious.org/gnuplot-iostream/gnuplot-iostream.git
+
+
+Usage
+=====
+
+See the examples source code for usage information.
+
+
+Authors
+=======
+
+Dan Stahlke
+Jens Mueller

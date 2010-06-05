@@ -22,6 +22,9 @@ SET(CMAKE_CXX_FLAGS "-Wall -Wextra -O0 -g")
 add_executable(example-make-png example-make-png.cc)
 target_link_libraries(example-make-png ${Boost_LIBRARIES})
 
+add_executable(example-popup example-popup.cc)
+target_link_libraries(example-popup ${Boost_LIBRARIES})
+
 if(Blitz_FOUND)
 	include_directories(${Blitz_INCLUDE_DIR})
 	add_executable(example-interactive example-interactive.cc)
