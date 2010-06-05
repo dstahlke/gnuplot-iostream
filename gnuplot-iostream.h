@@ -30,8 +30,15 @@ THE SOFTWARE.
 #include <iostream>
 #include <utility>
 #include <string>
+#include <stdexcept>
 
 #include <stdio.h>
+
+#ifdef GNUPLOT_ENABLE_PTY
+#include <termios.h>
+#include <unistd.h>
+#include <pty.h>
+#endif // GNUPLOT_ENABLE_PTY
 
 #ifdef GNUPLOT_ENABLE_BLITZ
 #include <blitz/array.h>
@@ -44,7 +51,9 @@ public:
 	Gnuplot(std::string cmd = "gnuplot");
 	~Gnuplot();
 
+#ifdef GNUPLOT_ENABLE_PTY
 	void getMouse(double &mx, double &my, int &mb);
+#endif // GNUPLOT_ENABLE_PTY
 
 	template <class T>
 	Gnuplot &send(T p, T last) {
@@ -101,7 +110,9 @@ private:
 		sendEntry(v.second);
 	}
 
+#ifdef GNUPLOT_ENABLE_PTY
 	void allocReader();
+#endif // GNUPLOT_ENABLE_PTY
 
 private:
 	FILE *pout;
@@ -112,5 +123,94 @@ private:
 public:
 	bool debug_messages;
 };
+
+Gnuplot::Gnuplot(std::string cmd) : 
+	boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
+		fileno(pout = popen(cmd.c_str(), "w"))),
+	pty_fh(NULL),
+	master_fd(-1),
+	slave_fd(-1),
+	debug_messages(false)
+{
+	setf(std::ios::scientific, std::ios::floatfield);
+	precision(18);
+}
+
+Gnuplot::~Gnuplot() {
+	if(debug_messages) {
+		std::cerr << "closing gnuplot" << std::endl;
+	}
+
+	// FIXME - boost's close method calls close() on the file descriptor, but
+	// we need to use pclose instead.  For now, just skip calling boost's close
+	// and use flush just in case.
+	flush();
+	//close();
+
+	if(pclose(pout)) {
+		std::cerr << "pclose returned error" << std::endl;
+	}
+
+	if(pty_fh) fclose(pty_fh);
+	if(master_fd > 0) ::close(master_fd);
+	if(slave_fd  > 0) ::close(slave_fd);
+}
+
+#ifdef GNUPLOT_ENABLE_PTY
+void Gnuplot::getMouse(double &mx, double &my, int &mb) {
+	allocReader();
+	*this << "pause mouse \"Click mouse!\\n\"" << std::endl;
+	*this << "print MOUSE_X, MOUSE_Y, MOUSE_BUTTON" << std::endl;
+	if(debug_messages) {
+		std::cerr << "begin scanf" << std::endl;
+	}
+	if(3 != fscanf(pty_fh, "%lf %lf %d", &mx, &my, &mb)) {
+		throw std::runtime_error("could not parse reply");
+	}
+	if(debug_messages) {
+		std::cerr << "end scanf" << std::endl;
+	}
+}
+#endif // GNUPLOT_ENABLE_PTY
+
+#ifdef GNUPLOT_ENABLE_PTY
+// adapted from http://www.gnuplot.info/files/gpReadMouseTest.c
+void Gnuplot::allocReader() {
+	if(pty_fh) return;
+
+	if(0 > openpty(&master_fd, &slave_fd, NULL, NULL, NULL)) {
+		perror("openpty");
+		throw std::runtime_error("openpty failed");
+	}
+	char pty_fn_buf[1024];
+	if(ttyname_r(slave_fd, pty_fn_buf, 1024)) {
+		perror("ttyname_r");
+		throw std::runtime_error("ttyname failed");
+	}
+	pty_fn = std::string(pty_fn_buf);
+	if(debug_messages) {
+		std::cerr << "fn=" << pty_fn << std::endl;
+	}
+
+	// disable echo
+	struct termios tios;
+	if(tcgetattr(slave_fd, &tios) < 0) {
+		perror("tcgetattr");
+		throw std::runtime_error("tcgetattr failed");
+	}
+	tios.c_lflag &= ~(ECHO | ECHONL);
+	if(tcsetattr(slave_fd, TCSAFLUSH, &tios) < 0) {
+		perror("tcsetattr");
+		throw std::runtime_error("tcsetattr failed");
+	}
+
+	pty_fh = fdopen(master_fd, "r");
+	if(!pty_fh) {
+		throw std::runtime_error("fdopen failed");
+	}
+
+	*this << "set mouse; set print \"" << pty_fn << "\"" << std::endl;
+}
+#endif // GNUPLOT_ENABLE_PTY
 
 #endif // GNUPLOT_IOSTREAM_H

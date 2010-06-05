@@ -25,6 +25,7 @@ THE SOFTWARE.
 #include <blitz/array.h>
 #include <math.h>
 #define GNUPLOT_ENABLE_BLITZ
+#define GNUPLOT_ENABLE_PTY
 #include "gnuplot-iostream.h"
 
 int main() {

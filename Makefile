@@ -11,8 +11,8 @@ clean:
 	rm -f example-interactive example-make-png
 	rm -f my_graph_*.png
 
-example-interactive: example-interactive.o gnuplot-iostream.o
+example-interactive: example-interactive.o
 	g++ -o $@ $^ $(LDFLAGS)
 
-example-make-png: example-make-png.o gnuplot-iostream.o
+example-make-png: example-make-png.o
 	g++ -o $@ $^ $(LDFLAGS)
