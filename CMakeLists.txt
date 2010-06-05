@@ -15,11 +15,13 @@ include_directories(${Boost_INCLUDE_DIR})
 include(CheckFunctionExists)
 
 # check for openpty
-set(CMAKE_REQUIRED_LIBRARIES util)
+set(CMAKE_REQUIRED_LIBRARIES ${Boost_LIBRARIES} util)
 check_function_exists(openpty HAVE_OPENPTY)
-if(HAVE_OPENPTY)
-	add_definitions(-DGNUPLOT_ENABLE_PTY)
-endif()
+# the user has to set GNUPLOT_ENABLE_PTY before
+# including the header
+#if(HAVE_OPENPTY)
+#	add_definitions(-DGNUPLOT_ENABLE_PTY)
+#endif()
 
 # common flags
 SET(CMAKE_CXX_FLAGS "-Wall -Wextra -O0 -g")
@@ -29,22 +31,18 @@ SET(CMAKE_CXX_FLAGS "-Wall -Wextra -O0 -g")
 #target_link_libraries(gnuplot-iostream ${Boost_LIBRARIES} ${CMAKE_REQUIRED_LIBRARIES})
 
 add_executable(example-make-png example-make-png.cc)
-target_link_libraries(example-make-png ${Boost_LIBRARIES})
+target_link_libraries(example-make-png ${CMAKE_REQUIRED_LIBRARIES})
 
 add_executable(example-popup example-popup.cc)
-target_link_libraries(example-popup ${Boost_LIBRARIES})
+target_link_libraries(example-popup ${CMAKE_REQUIRED_LIBRARIES})
 
 add_executable(example-interactive example-interactive.cc)
-target_link_libraries(example-interactive ${Boost_LIBRARIES}
-                                          ${CMAKE_REQUIRED_LIBRARIES}
-                     )
+target_link_libraries(example-interactive ${CMAKE_REQUIRED_LIBRARIES})
 
 if(BLITZ_FOUND)
 	include_directories(${BLITZ_INCLUDE_DIR})
 	add_executable(example-blitz example-blitz.cc)
-	target_link_libraries(example-blitz ${Boost_LIBRARIES}
-	                                    ${CMAKE_REQUIRED_LIBRARIES}
-	)
+	target_link_libraries(example-blitz ${CMAKE_REQUIRED_LIBRARIES})
 endif()
 
 install(FILES gnuplot-iostream.h DESTINATION include/gnuplot-iostream/)
