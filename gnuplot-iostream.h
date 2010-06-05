@@ -113,7 +113,10 @@ public:
 	~Gnuplot();
 
 #ifdef GNUPLOT_ENABLE_PTY
-	void getMouse(double &mx, double &my, int &mb);
+	void getMouse(
+		double &mx, double &my, int &mb,
+		std::string msg="Click Mouse!"
+	);
 #endif // GNUPLOT_ENABLE_PTY
 
 	template <class T>
@@ -218,11 +221,14 @@ Gnuplot::~Gnuplot() {
 }
 
 #ifdef GNUPLOT_ENABLE_PTY
-void Gnuplot::getMouse(double &mx, double &my, int &mb) {
+void Gnuplot::getMouse(
+	double &mx, double &my, int &mb,
+	std::string msg
+) {
 	allocPty();
 
 	*this << "set mouse; set print \"" << gp_pty->pty_fn << "\"" << std::endl;
-	*this << "pause mouse \"Click mouse!\\n\"" << std::endl;
+	*this << "pause mouse \"" << msg << "\\n\"" << std::endl;
 	*this << "print MOUSE_X, MOUSE_Y, MOUSE_BUTTON" << std::endl;
 	if(debug_messages) {
 		std::cerr << "begin scanf" << std::endl;

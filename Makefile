@@ -1,14 +1,16 @@
 CXXFLAGS=-Wall -Wextra -I/usr/lib64/blitz/include -O0 -g
 LDFLAGS=-lutil -lboost_iostreams
 
-all: example-make-png example-popup
+PROGS=example-make-png example-popup example-interactive
+
+all: $(PROGS)
 	@echo "Now type 'make blitz-demo' if you have blitz installed."
 
-blitz-demo: example-interactive
+blitz-demo: example-blitz
 
 clean:
 	rm -f *.o
-	rm -f example-interactive example-make-png example-popup
+	rm -f $(PROGS) example-blitz
 	rm -f my_graph_*.png
 
 *.o: gnuplot-iostream.h

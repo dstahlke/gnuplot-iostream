@@ -22,31 +22,51 @@ THE SOFTWARE.
 
 // NOTE: this example requires blitz++
 
-#include <vector>
+#include <blitz/array.h>
 #include <math.h>
-
-#define GNUPLOT_ENABLE_PTY
+#define GNUPLOT_ENABLE_BLITZ
+//#define GNUPLOT_ENABLE_PTY
 #include "gnuplot-iostream.h"
 
 int main() {
+	#ifdef GNUPLOT_ENABLE_PTY
 	Gnuplot gp;
+	#else
+	// -persist option makes the window not disappear when your program exits
+	Gnuplot gp("gnuplot -persist");
+	#endif
 
-	double mx=0, my=0;
-	int mb=1;
-	while(mb != 3) {
-		std::vector<std::pair<double, double> > xy_pts;
-		xy_pts.push_back(std::make_pair(mx, my));
-		for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
-			double theta = alpha*2.0*3.14159;
-			xy_pts.push_back(std::make_pair(
-				mx+cos(theta), my+sin(theta)));
-		}
-
-		gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
-		gp << "p '-' w p t 'circle'\n";
-		gp.send(xy_pts);
-
-		gp.getMouse(mx, my, mb, "Left click to move circle, right click to exit.");
-		printf("You pressed mouse button %d at x=%f y=%f\n", mb, mx, my);
+	blitz::Array<double, 2> arr(100, 100);
+	{
+		blitz::firstIndex i;
+		blitz::secondIndex j;
+		arr = (i-50) * (j-50);
 	}
+	gp << "set pm3d map; set palette" << std::endl;
+	gp << "splot '-'" << std::endl;
+	gp.send(arr);
+
+	#ifdef GNUPLOT_ENABLE_PTY
+	Gnuplot gp2;
+	for(;;) {
+		double mx, my;
+		int mb;
+		gp.getMouse(mx, my, mb);
+		printf("You pressed mouse button %d at x=%f y=%f\n", mb, mx, my);
+		if(mb == 3) break;
+
+		blitz::Array<blitz::TinyVector<double, 2>, 2> arr2(50, 50);
+		{
+			blitz::firstIndex i;
+			blitz::secondIndex j;
+			arr2[0] = pow(i*2-mx, 4);
+			arr2[1] = pow(j*2-my, 4);
+		}
+		//gp2 << "set pm3d" << std::endl;
+		//gp2 << "set palette" << std::endl;
+		gp2 << "set hidden3d" << std::endl;
+		gp2 << "splot '-' u (log($1*$2+0.1)) w l\n";
+		gp2.send(arr2);
+	}
+	#endif
 }
