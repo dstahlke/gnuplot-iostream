@@ -1,3 +1,5 @@
+# cmake stuff by Jens Mueller
+
 cmake_minimum_required(VERSION 2.6.3)
 
 # for finding Blitz

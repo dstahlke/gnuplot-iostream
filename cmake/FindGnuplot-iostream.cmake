@@ -1,3 +1,5 @@
+# cmake stuff by Jens Mueller
+
 find_library(GNUPLOT-IOSTREAM_LIBRARY NAMES gnuplot-iostream)
 find_path(GNUPLOT-IOSTREAM_INCLUDE_DIR PATH_SUFFIXES gnuplot-iostream/ NAMES gnuplot-iostream.h)
 
