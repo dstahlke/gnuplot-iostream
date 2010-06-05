@@ -28,8 +28,9 @@ target_link_libraries(example-popup ${Boost_LIBRARIES})
 add_executable(example-interactive example-interactive.cc)
 target_link_libraries(example-interactive ${Boost_LIBRARIES} util)
 
-if(Blitz_FOUND)
-	include_directories(${Blitz_INCLUDE_DIR})
+
+if(BLITZ_FOUND)
+	include_directories(${BLITZ_INCLUDE_DIR})
 	add_executable(example-blitz example-blitz.cc)
 	target_link_libraries(example-blitz ${Boost_LIBRARIES} util)
 endif()
