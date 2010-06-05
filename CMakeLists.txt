@@ -15,22 +15,22 @@ include_directories(${Boost_INCLUDE_DIR})
 # common flags
 SET(CMAKE_CXX_FLAGS "-Wall -Wextra -O0 -g")
 
-add_library(gnuplot-iostream SHARED gnuplot-iostream.cc)
-# util is for openpty
-target_link_libraries(gnuplot-iostream ${Boost_LIBRARIES} util)
+#add_library(gnuplot-iostream SHARED gnuplot-iostream.cc)
+## util is for openpty
+#target_link_libraries(gnuplot-iostream ${Boost_LIBRARIES} util)
 
 add_executable(example-make-png example-make-png.cc)
-target_link_libraries(example-make-png gnuplot-iostream)
+target_link_libraries(example-make-png ${Boost_LIBRARIES})
 
 if(Blitz_FOUND)
 	include_directories(${Blitz_INCLUDE_DIR})
 	add_executable(example-interactive example-interactive.cc)
-	target_link_libraries(example-interactive gnuplot-iostream)
+	target_link_libraries(example-interactive ${Boost_LIBRARIES} util)
 endif()
 
 install(FILES gnuplot-iostream.h DESTINATION include/gnuplot-iostream/)
-install(TARGETS gnuplot-iostream
-	RUNTIME DESTINATION bin
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib
-)
+#install(TARGETS gnuplot-iostream
+#	RUNTIME DESTINATION bin
+#	LIBRARY DESTINATION lib
+#	ARCHIVE DESTINATION lib
+#)
