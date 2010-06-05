@@ -23,32 +23,34 @@ THE SOFTWARE.
 #ifndef GNUPLOT_IOSTREAM_H
 #define GNUPLOT_IOSTREAM_H
 
-#include <boost/noncopyable.hpp>
-#include <boost/iostreams/device/file_descriptor.hpp>
-#include <boost/iostreams/stream.hpp>
-#include <fstream>
-#include <iostream>
-#include <utility>
-#include <string>
-#include <stdexcept>
-
+// C system includes
 #include <stdio.h>
-
 #ifdef GNUPLOT_ENABLE_PTY
 #include <termios.h>
 #include <unistd.h>
 #include <pty.h>
 #endif // GNUPLOT_ENABLE_PTY
 
+// C++ system includes
+#include <fstream>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+
+// library includes: double quotes make cpplint not complain
+#include "boost/iostreams/device/file_descriptor.hpp"
+#include "boost/iostreams/stream.hpp"
+#include "boost/noncopyable.hpp"
 #ifdef GNUPLOT_ENABLE_BLITZ
-#include <blitz/array.h>
+#include "blitz/array.h"
 #endif
 
 #ifdef GNUPLOT_ENABLE_PTY
 // this is a private class
 class GnuplotPty {
 public:
-	GnuplotPty(bool debug_messages);
+	explicit GnuplotPty(bool debug_messages);
 	~GnuplotPty();
 
 	std::string pty_fn;
@@ -109,7 +111,7 @@ class Gnuplot : public boost::iostreams::stream<
 	boost::iostreams::file_descriptor_sink>, private boost::noncopyable
 {
 public:
-	Gnuplot(std::string cmd = "gnuplot");
+	explicit Gnuplot(std::string cmd = "gnuplot");
 	~Gnuplot();
 
 #ifdef GNUPLOT_ENABLE_PTY

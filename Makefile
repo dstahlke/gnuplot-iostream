@@ -13,6 +13,9 @@ clean:
 	rm -f $(PROGS) example-blitz
 	rm -f my_graph_*.png
 
+lint:
+	cpplint.py --filter=-whitespace,-readability/streams,-build/header_guard gnuplot-iostream.h
+
 *.o: gnuplot-iostream.h
 
 example-interactive: example-interactive.o
