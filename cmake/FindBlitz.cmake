@@ -1,4 +1,4 @@
-# copied from
+# modified version of file from
 # http://code.google.com/p/mcgeometry/source/browse/trunk/tools/FindBlitz.cmake?spec=svn102&r=102
 # TODO
 # check licence issues
@@ -13,7 +13,8 @@
 FIND_PATH(BLITZ_INCLUDE_DIR blitz/blitz.h)
 # FIXME - Fedora keeps this file in a funny place so it needs to be searched
 # separately.  Unfortunately this breaks portability since it won't be called
-# "gnu" on other systems.
+# "gnu" on other systems.  Also, it doesn't even work because cmake still
+# can't find the file.
 FIND_PATH(BLITZ_INCLUDE_DIR2 blitz/gnu/bzconfig.h)
 FIND_LIBRARY(BLITZ_LIBRARY NAMES blitz)
 

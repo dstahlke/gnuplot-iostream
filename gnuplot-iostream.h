@@ -136,14 +136,14 @@ public:
 	// used for two STL containers
 	template <class T, class U>
 	Gnuplot &send(T x, T x_last, U y, U y_last) {
-		// TODO
-		// assert same size?
 		while(x != x_last && y != y_last) {
 			sendEntry(*x, *y);
 			*this << "\n";
 			++x;
 			++y;
 		}
+		// assert inputs same size
+		assert(x==x_last && y==y_last);
 		*this << "e" << std::endl;
 		return *this;
 	}
