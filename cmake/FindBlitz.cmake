@@ -11,6 +11,9 @@
 #  BLITZ_FOUND, If false, do not try to use Blitz.
 
 FIND_PATH(BLITZ_INCLUDE_DIR blitz/blitz.h)
+# FIXME - Fedora keeps this file in a funny place so it needs to be searched
+# separately.  Unfortunately this breaks portability since it won't be called
+# "gnu" on other systems.
 FIND_PATH(BLITZ_INCLUDE_DIR2 blitz/gnu/bzconfig.h)
 FIND_LIBRARY(BLITZ_LIBRARY NAMES blitz)
 
