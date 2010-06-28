@@ -4,3 +4,4 @@ example-make-png
 example-popup
 *.o
 my_graph_*.png
+build
