@@ -217,7 +217,8 @@ public:
 
 Gnuplot::Gnuplot(std::string cmd) : 
 	boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
-		fileno(pout = popen(cmd.c_str(), "w"))),
+		fileno(pout = popen(cmd.c_str(), "w")),
+		boost::iostreams::never_close_handle),
 	gp_pty(NULL),
 	debug_messages(false)
 {
