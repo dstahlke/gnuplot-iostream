@@ -46,6 +46,17 @@ THE SOFTWARE.
 #include "blitz/array.h"
 #endif
 
+// Patch for Windows by Damien Loison
+#ifdef WIN32
+#define PCLOSE _pclose
+#define POPEN  _popen
+#define FILENO _fileno
+#else
+#define PCLOSE pclose
+#define POPEN  popen
+#define FILENO fileno
+#endif
+
 #ifdef GNUPLOT_ENABLE_PTY
 // this is a private class
 class GnuplotPty {
@@ -217,7 +228,7 @@ public:
 
 Gnuplot::Gnuplot(std::string cmd) : 
 	boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
-		fileno(pout = popen(cmd.c_str(), "w")),
+		FILENO(pout = POPEN(cmd.c_str(), "w")),
 		boost::iostreams::never_close_handle),
 	gp_pty(NULL),
 	debug_messages(false)
@@ -237,7 +248,7 @@ Gnuplot::~Gnuplot() {
 	flush();
 	//close();
 
-	if(pclose(pout)) {
+	if(PCLOSE(pout)) {
 		std::cerr << "pclose returned error" << std::endl;
 	}
 

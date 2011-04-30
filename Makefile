@@ -24,5 +24,5 @@ example-interactive: example-interactive.o
 example-make-png: example-make-png.o
 	g++ -o $@ $^ $(LDFLAGS)
 
-example-make-popup: example-make-popup.o
+example-popup: example-popup.o
 	g++ -o $@ $^ $(LDFLAGS)
