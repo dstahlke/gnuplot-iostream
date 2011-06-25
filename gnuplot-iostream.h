@@ -37,6 +37,7 @@ THE SOFTWARE.
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <iomanip>
 
 // library includes: double quotes make cpplint not complain
 #include "boost/iostreams/device/file_descriptor.hpp"
@@ -122,7 +123,7 @@ class Gnuplot : public boost::iostreams::stream<
 	boost::iostreams::file_descriptor_sink>, private boost::noncopyable
 {
 public:
-	explicit Gnuplot(std::string cmd = "gnuplot");
+	explicit Gnuplot(const std::string cmd = "gnuplot");
 	~Gnuplot();
 
 #ifdef GNUPLOT_ENABLE_PTY
@@ -226,26 +227,28 @@ public:
 	bool debug_messages;
 };
 
-Gnuplot::Gnuplot(std::string cmd) : 
+Gnuplot::Gnuplot(const std::string cmd) : 
 	boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
 		FILENO(pout = POPEN(cmd.c_str(), "w")),
 		boost::iostreams::never_close_handle),
+	pout(pout), // keeps '-Weff++' quiet
 	gp_pty(NULL),
 	debug_messages(false)
 {
-	setf(std::ios::scientific, std::ios::floatfield);
-	precision(18);
+	*this << std::scientific << std::setprecision(18);  // refer <iomanip>
 }
 
 Gnuplot::~Gnuplot() {
 	if(debug_messages) {
-		std::cerr << "closing gnuplot" << std::endl;
+		std::cerr << "ending gnuplot session" << std::endl;
 	}
 
 	// FIXME - boost's close method calls close() on the file descriptor, but
 	// we need to use pclose instead.  For now, just skip calling boost's close
 	// and use flush just in case.
-	flush();
+	*this << std::flush;
+	fflush(pout);
+	// Wish boost had a pclose method...
 	//close();
 
 	if(PCLOSE(pout)) {
