@@ -44,7 +44,7 @@ int main() {
 	}
 
 	gp << "set output 'my_graph_1.png'\n";
-	gp << "p '-' w l, sin(x/200) w l\n";
+	gp << "plot '-' with lines, sin(x/200) with lines\n";
 	gp.send(y_pts);
 	// Or this:
 	//gp.send(y_pts.begin(), y_pts.end());
@@ -67,7 +67,7 @@ int main() {
 
 	gp << "set output 'my_graph_2.png'\n";
 	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
-	gp << "p '-' w l t 'cubic', '-' w p t 'circle'\n";
+	gp << "plot '-' with lines title 'cubic', '-' with points title 'circle'\n";
 	gp.send(xy_pts_A).send(xy_pts_B);
 	// Or this:
 	//gp.send(xy_pts_A.begin(), xy_pts_A.end());
@@ -83,7 +83,7 @@ int main() {
 	y_arr = cos(bi * 0.1);
 	xy_arr[0] = cos(bi * 0.1) * 100;
 	xy_arr[1] = sin(bi * 0.1);
-	gp << "p '-' w l, '-' w l\n";
+	gp << "plot '-' with lines, '-' with lines\n";
 	gp.send(y_arr);
 	gp.send(xy_arr);
 #endif // GNUPLOT_ENABLE_BLITZ

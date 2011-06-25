@@ -59,7 +59,7 @@ int main() {
 	// on to the data.  If you are using gnuplot 4.4 or newer you can use
 	// the 'volatile' keyword here to fix this.
 	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
-	gp << "p '-' w l t 'cubic', '-' w p t 'circle'\n";
+	gp << "plot '-' with lines title 'cubic', '-' with points title 'circle'\n";
 	gp.send(xy_pts_A).send(xy_pts_B);
 	// Or this:
 	//gp.send(xy_pts_A.begin(), xy_pts_A.end());

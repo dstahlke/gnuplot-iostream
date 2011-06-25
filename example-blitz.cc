@@ -65,7 +65,7 @@ int main() {
 		//gp2 << "set pm3d" << std::endl;
 		//gp2 << "set palette" << std::endl;
 		gp2 << "set hidden3d" << std::endl;
-		gp2 << "splot '-' u (log($1*$2+0.1)) w l\n";
+		gp2 << "splot '-' using (log($1*$2+0.1)) with lines\n";
 		gp2.send(arr2);
 	}
 	#endif

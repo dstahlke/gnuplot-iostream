@@ -42,7 +42,6 @@ THE SOFTWARE.
 // library includes: double quotes make cpplint not complain
 #include "boost/iostreams/device/file_descriptor.hpp"
 #include "boost/iostreams/stream.hpp"
-#include "boost/noncopyable.hpp"
 #ifdef GNUPLOT_ENABLE_BLITZ
 #include "blitz/array.h"
 #endif

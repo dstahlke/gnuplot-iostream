@@ -43,7 +43,7 @@ int main() {
 		}
 
 		gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
-		gp << "p '-' w p t 'circle'\n";
+		gp << "plot '-' with points title 'circle'\n";
 		gp.send(xy_pts);
 
 		gp.getMouse(mx, my, mb, "Left click to move circle, right click to exit.");
