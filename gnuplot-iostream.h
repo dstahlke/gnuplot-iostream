@@ -65,12 +65,18 @@ public:
 	explicit GnuplotPty(bool debug_messages);
 	~GnuplotPty();
 
+private: // noncopyable
+	GnuplotPty(const GnuplotPty &);
+	const GnuplotPty& operator=(const GnuplotPty &);
+
+public:
 	std::string pty_fn;
 	FILE *pty_fh;
 	int master_fd, slave_fd;
 };
 
 GnuplotPty::GnuplotPty(bool debug_messages) :
+	pty_fn(),
 	pty_fh(NULL),
 	master_fd(-1),
 	slave_fd(-1)
@@ -120,12 +126,17 @@ class GnuplotPty { };
 ///////////////////////////////////////////////////////////
 
 class Gnuplot : public boost::iostreams::stream<
-	boost::iostreams::file_descriptor_sink>, private boost::noncopyable
+	boost::iostreams::file_descriptor_sink>
 {
 public:
 	explicit Gnuplot(const std::string cmd = "gnuplot");
 	~Gnuplot();
 
+private: // noncopyable
+	Gnuplot(const Gnuplot &);
+	const Gnuplot& operator=(const Gnuplot &);
+
+public:
 #ifdef GNUPLOT_ENABLE_PTY
 	void getMouse(
 		double &mx, double &my, int &mb,
