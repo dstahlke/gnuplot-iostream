@@ -151,7 +151,7 @@ public:
 			*this << "\n";
 			++p;
 		}
-		*this << "e" << std::endl;
+		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
 
@@ -166,7 +166,7 @@ public:
 		}
 		// assert inputs same size
 		assert(x==x_last && y==y_last);
-		*this << "e" << std::endl;
+		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
 
@@ -187,9 +187,9 @@ public:
 				sendEntry(a(i, j));
 				*this << "\n";
 			}
-			*this << "\n";
+			*this << "\n"; // blank line between rows
 		}
-		*this << "e" << std::endl;
+		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
 
