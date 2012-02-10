@@ -16,6 +16,9 @@ clean:
 lint:
 	cpplint.py --filter=-whitespace,-readability/streams,-build/header_guard gnuplot-iostream.h
 
+cppcheck:
+	cppcheck *.cc *.h --template gcc --enable=all -q
+
 *.o: gnuplot-iostream.h
 
 example-interactive: example-interactive.o

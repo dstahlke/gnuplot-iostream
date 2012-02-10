@@ -128,7 +128,7 @@ class Gnuplot : public boost::iostreams::stream<
 	boost::iostreams::file_descriptor_sink>
 {
 public:
-	explicit Gnuplot(const std::string cmd = "gnuplot");
+	explicit Gnuplot(const std::string &cmd = "gnuplot");
 	~Gnuplot();
 
 private: // noncopyable
@@ -237,7 +237,7 @@ public:
 	bool debug_messages;
 };
 
-Gnuplot::Gnuplot(const std::string cmd) : 
+Gnuplot::Gnuplot(const std::string &cmd) : 
 	boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
 		FILENO(pout = POPEN(cmd.c_str(), "w")),
 		boost::iostreams::never_close_handle),
@@ -281,7 +281,7 @@ void Gnuplot::getMouse(
 	if(debug_messages) {
 		std::cerr << "begin scanf" << std::endl;
 	}
-	if(3 != fscanf(gp_pty->pty_fh, "%lf %lf %d", &mx, &my, &mb)) {
+	if(3 != fscanf(gp_pty->pty_fh, "%50lf %50lf %50d", &mx, &my, &mb)) {
 		throw std::runtime_error("could not parse reply");
 	}
 	if(debug_messages) {
