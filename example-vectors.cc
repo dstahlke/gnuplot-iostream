@@ -32,13 +32,13 @@ int main() {
 	double mx=0, my=0;
 	int mb=1;
 	while(mb != 3) {
-        std::vector<std::vector<float> > vecs(4);
+		std::vector<std::vector<float> > vecs(4);
 		for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
 			double theta = alpha*2.0*3.14159;
-            vecs[0].push_back(mx+cos(theta));
-            vecs[1].push_back(my+sin(theta));
-            vecs[2].push_back(-cos(theta)*0.1);
-            vecs[3].push_back(-sin(theta)*0.1);
+			vecs[0].push_back(mx+cos(theta));
+			vecs[1].push_back(my+sin(theta));
+			vecs[2].push_back(-cos(theta)*0.1);
+			vecs[3].push_back(-sin(theta)*0.1);
 		}
 
 		gp << "set xrange [-2:2]\nset yrange [-2:2]\n";

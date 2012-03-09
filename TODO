@@ -1,3 +1,4 @@
 better examples
 ability to use temporary files instead of direct data pipe
 better readme file
+maybe use send1d, send2d, send3d functions to avoid ambiguity for multidimensional data vs. iterator pairs
