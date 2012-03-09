@@ -39,6 +39,9 @@ target_link_libraries(example-popup ${CMAKE_REQUIRED_LIBRARIES})
 add_executable(example-interactive example-interactive.cc)
 target_link_libraries(example-interactive ${CMAKE_REQUIRED_LIBRARIES})
 
+add_executable(example-vectors example-vectors.cc)
+target_link_libraries(example-vectors ${CMAKE_REQUIRED_LIBRARIES})
+
 if(BLITZ_FOUND)
 	include_directories(${BLITZ_INCLUDE_DIR})
 	add_executable(example-blitz example-blitz.cc)

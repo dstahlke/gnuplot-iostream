@@ -178,6 +178,26 @@ public:
 		return *this;
 	}
 
+    // send vector of vectors containing data points
+    template <class T>
+    Gnuplot &send(const std::vector<std::vector <T> > &vectors) {
+        // all vectors need to have the same size
+        assert(vectors.size() > 0);
+        for (unsigned int i=1; i<vectors.size(); i++) {
+            assert(vectors[i].size() == vectors[i-1].size());
+        }
+
+        for(unsigned int i=0; i<vectors[0].size(); i++) {
+            for (unsigned int j=0; j<vectors.size(); j++) {
+                sendEntry(vectors[j][i]);
+            }
+            *this << "\n";
+        }
+        *this << "e" << std::endl; // gnuplot's "end of array" token
+        return *this;
+    }
+
+
 #ifdef GNUPLOT_ENABLE_BLITZ
 	// Note: T could be either a scalar or a blitz::TinyVector.
 	template <class T>
