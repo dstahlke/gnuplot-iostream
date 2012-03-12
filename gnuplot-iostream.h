@@ -297,7 +297,7 @@ void Gnuplot::getMouse(
 
 	*this << "set mouse; set print \"" << gp_pty->pty_fn << "\"" << std::endl;
 	*this << "pause mouse \"" << msg << "\\n\"" << std::endl;
-	*this << "print MOUSE_X, MOUSE_Y, MOUSE_BUTTON" << std::endl;
+	*this << "if (exists(\"MOUSE_X\")) print MOUSE_X, MOUSE_Y, MOUSE_BUTTON; else print 0, 0, -1;" << std::endl;
 	if(debug_messages) {
 		std::cerr << "begin scanf" << std::endl;
 	}
