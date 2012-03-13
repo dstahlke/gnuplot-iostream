@@ -2,6 +2,10 @@ example-blitz
 example-interactive
 example-make-png
 example-popup
+example-vectors
 *.o
 my_graph_*.png
 build
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
