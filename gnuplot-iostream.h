@@ -289,6 +289,9 @@ Gnuplot::~Gnuplot() {
 }
 
 #ifdef GNUPLOT_ENABLE_PTY
+// Input variables are set to the mouse position and button.  If the gnuplot
+// window is closed, button -1 is returned.  The msg parameter is the prompt
+// that is printed to the console.
 void Gnuplot::getMouse(
 	double &mx, double &my, int &mb,
 	std::string msg

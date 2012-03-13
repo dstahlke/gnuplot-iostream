@@ -33,7 +33,7 @@ int main() {
 
 	double mx=0, my=0;
 	int mb=1;
-	while(mb != 3) {
+	while(mb != 3 && mb >= 0) {
 		std::vector<std::pair<double, double> > xy_pts;
 		xy_pts.push_back(std::make_pair(mx, my));
 		for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
@@ -48,5 +48,6 @@ int main() {
 
 		gp.getMouse(mx, my, mb, "Left click to move circle, right click to exit.");
 		printf("You pressed mouse button %d at x=%f y=%f\n", mb, mx, my);
+		if(mb < 0) printf("The gnuplot window was closed.\n");
 	}
 }

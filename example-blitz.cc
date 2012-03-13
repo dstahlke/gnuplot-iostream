@@ -53,7 +53,8 @@ int main() {
 		int mb;
 		gp.getMouse(mx, my, mb);
 		printf("You pressed mouse button %d at x=%f y=%f\n", mb, mx, my);
-		if(mb == 3) break;
+		if(mb < 0) printf("The gnuplot window was closed.\n");
+		if(mb == 3 || mb < 0) break;
 
 		blitz::Array<blitz::TinyVector<double, 2>, 2> arr2(50, 50);
 		{
