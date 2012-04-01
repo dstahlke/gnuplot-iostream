@@ -34,6 +34,7 @@ THE SOFTWARE.
 // C++ system includes
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -221,6 +222,23 @@ private:
 			sendEntry(v[i]);
 		}
 	}
+
+public:
+	template <class T, int d>
+	void sendBinary(const blitz::Array<T, d> &arr) {
+		write(reinterpret_cast<const char *>(arr.data()), arr.size() * sizeof(T));
+	}
+
+	template <class T>
+	std::string binfmt(const blitz::Array<T, 2> &arr) {
+		std::ostringstream tmp;
+		tmp << " format='" << binaryFormatCode((T *)NULL) << "'";
+		tmp << " array=(" << arr.extent(0) << "," << arr.extent(1) << ")";
+		if (arr.isMajorRank(0)) tmp << "scan=yx"; // i.e. C-style ordering
+		tmp << " ";
+		return tmp.str();
+	}
+
 #endif // GNUPLOT_ENABLE_BLITZ
 
 private:
@@ -238,6 +256,10 @@ private:
 	void sendEntry(T t, U u) {
 		sendEntry(t);
 		sendEntry(u);
+	}
+
+	std::string binaryFormatCode(float *nil) {
+		return "%float";
 	}
 
 #ifdef GNUPLOT_ENABLE_PTY
