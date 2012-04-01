@@ -44,6 +44,7 @@ THE SOFTWARE.
 // library includes: double quotes make cpplint not complain
 #include "boost/iostreams/device/file_descriptor.hpp"
 #include "boost/iostreams/stream.hpp"
+#include "boost/filesystem.hpp"
 #ifdef GNUPLOT_ENABLE_BLITZ
 #include "blitz/array.h"
 #endif
@@ -126,6 +127,207 @@ class GnuplotPty { };
 
 ///////////////////////////////////////////////////////////
 
+template <class STREAM_T>
+class GnuplotWriter {
+public:
+	explicit GnuplotWriter(STREAM_T *_stream) : stream(_stream) { }
+
+	// used for one STL container
+	template <class T>
+	void sendIter(T p, T last) {
+		while(p != last) {
+			sendEntry(*p);
+			*stream << "\n";
+			++p;
+		}
+		*stream << "e" << std::endl; // gnuplot's "end of array" token
+	}
+
+	// used for two STL containers
+	template <class T, class U>
+	void sendIterPair(T x, T x_last, U y, U y_last) {
+		while(x != x_last && y != y_last) {
+			sendEntry(*x, *y);
+			*stream << "\n";
+			++x;
+			++y;
+		}
+		// assert inputs same size
+		assert(x==x_last && y==y_last);
+		*stream << "e" << std::endl; // gnuplot's "end of array" token
+	}
+
+	// this handles STL containers as well as blitz::Array<T, 1> and
+	// blitz::Array<blitz::TinyVector<T, N>, 1>
+	template <class Iter>
+	void send(Iter arr) {
+		sendIter(arr.begin(), arr.end());
+	}
+
+	// send vector of vectors containing data points
+	template <class T>
+	void send(const std::vector<std::vector <T> > &vectors) {
+		// all vectors need to have the same size
+		assert(vectors.size() > 0);
+		for(size_t i=1; i<vectors.size(); i++) {
+			assert(vectors[i].size() == vectors[i-1].size());
+		}
+
+		for(size_t i=0; i<vectors[0].size(); i++) {
+			for(size_t j=0; j<vectors.size(); j++) {
+				sendEntry(vectors[j][i]);
+			}
+			*stream << "\n";
+		}
+		*stream << "e" << std::endl; // gnuplot's "end of array" token
+	}
+
+
+#ifdef GNUPLOT_ENABLE_BLITZ
+	// Note: T could be either a scalar or a blitz::TinyVector.
+	template <class T>
+	void send(const blitz::Array<T, 2> &a) {
+		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
+			for(int j=a.lbound(1); j<=a.ubound(1); j++) {
+				sendEntry(a(i, j));
+				*stream << "\n";
+			}
+			*stream << "\n"; // blank line between rows
+		}
+		*stream << "e" << std::endl; // gnuplot's "end of array" token
+	}
+
+private:
+	template <class T, int N>
+	void sendEntry(blitz::TinyVector<T, N> v) {
+		for(int i=0; i<N; i++) {
+			sendEntry(v[i]);
+		}
+	}
+#endif // GNUPLOT_ENABLE_BLITZ
+
+private:
+	template <class T>
+	void sendEntry(T v) {
+		*stream << v << " ";
+	}
+
+	template <class T, class U>
+	void sendEntry(std::pair<T, U> v) {
+		sendEntry(v.first, v.second);
+	}
+
+	template <class T, class U>
+	void sendEntry(T t, U u) {
+		sendEntry(t);
+		sendEntry(u);
+	}
+
+private:
+	STREAM_T *stream;
+};
+
+///////////////////////////////////////////////////////////
+
+std::string gnuplotBinaryFormatCode(   float *) { return "%float"; }
+std::string gnuplotBinaryFormatCode(  double *) { return "%double"; }
+std::string gnuplotBinaryFormatCode(  int8_t *) { return "%int8"; }
+std::string gnuplotBinaryFormatCode( uint8_t *) { return "%uint8"; }
+std::string gnuplotBinaryFormatCode( int16_t *) { return "%int16"; }
+std::string gnuplotBinaryFormatCode(uint16_t *) { return "%uint16"; }
+std::string gnuplotBinaryFormatCode( int32_t *) { return "%int32"; }
+std::string gnuplotBinaryFormatCode(uint32_t *) { return "%uint32"; }
+std::string gnuplotBinaryFormatCode( int64_t *) { return "%int64"; }
+std::string gnuplotBinaryFormatCode(uint64_t *) { return "%uint64"; }
+
+#ifdef GNUPLOT_ENABLE_BLITZ
+template <class T, int N>
+std::string gnuplotBinaryFormatCode(blitz::TinyVector<T, N> *) {
+	std::ostringstream tmp;
+	for(int i=0; i<N; i++) {
+		tmp << gnuplotBinaryFormatCode((T*)NULL);
+	}
+	return tmp.str();
+}
+#endif // GNUPLOT_ENABLE_BLITZ
+
+template <class STREAM_T>
+class GnuplotBinaryWriter {
+public:
+	explicit GnuplotBinaryWriter(STREAM_T *_stream) : stream(_stream) { }
+
+	template <class T>
+	void send(const std::vector<T> &arr) {
+		stream->write(reinterpret_cast<const char *>(arr[0]), arr.size() * sizeof(T));
+	}
+
+	template <class T>
+	std::string binfmt(const std::vector<T> &arr) {
+		assert(0); // FIXME
+	}
+
+	// send vector of vectors containing data points
+	template <class T>
+	void send(const std::vector<std::vector <T> > &vectors) {
+		// all vectors need to have the same size
+		assert(vectors.size() > 0);
+		for(size_t i=1; i<vectors.size(); i++) {
+			assert(vectors[i].size() == vectors[i-1].size());
+		}
+
+		for(size_t i=0; i<vectors[0].size(); i++) {
+			for(size_t j=0; j<vectors.size(); j++) {
+				T &val = vectors[j][i];
+				stream->write(reinterpret_cast<const char *>(&val), sizeof(T));
+			}
+		}
+	}
+
+#ifdef GNUPLOT_ENABLE_BLITZ
+	// NOTE: it is also possible to implement this for other array
+	// implementations (e.g. std::vector)
+	template <class T, int d>
+	void send(const blitz::Array<T, d> &arr) {
+		stream->write(reinterpret_cast<const char *>(arr.data()), arr.size() * sizeof(T));
+	}
+
+	template <class T>
+	std::string binfmt(const blitz::Array<T, 2> &arr) {
+		std::ostringstream tmp;
+		tmp << " format='" << gnuplotBinaryFormatCode((T*)NULL) << "'";
+		tmp << " array=(" << arr.extent(0) << "," << arr.extent(1) << ")";
+		if(arr.isMajorRank(0)) tmp << "scan=yx"; // i.e. C-style ordering
+		tmp << " ";
+		return tmp.str();
+	}
+#endif // GNUPLOT_ENABLE_BLITZ
+
+private:
+	STREAM_T *stream;
+};
+
+///////////////////////////////////////////////////////////
+
+class GnuplotTmpfile {
+public:
+	GnuplotTmpfile() :
+		file(boost::filesystem::unique_path("tmp-gp-%%%%-%%%%-%%%%-%%%%"))
+	{ }
+
+	~GnuplotTmpfile() {
+		remove(file);
+	}
+
+private: // noncopyable
+	GnuplotTmpfile(const GnuplotTmpfile &);
+	const GnuplotTmpfile& operator=(const GnuplotTmpfile &);
+
+public:
+	boost::filesystem::path file;
+};
+
+///////////////////////////////////////////////////////////
+
 class Gnuplot : public boost::iostreams::stream<
 	boost::iostreams::file_descriptor_sink>
 {
@@ -145,142 +347,53 @@ public:
 	);
 #endif // GNUPLOT_ENABLE_PTY
 
-	// used for one STL container
-	template <class T>
-	Gnuplot &send(T p, T last) {
-		while(p != last) {
-			sendEntry(*p);
-			*this << "\n";
-			++p;
-		}
-		*this << "e" << std::endl; // gnuplot's "end of array" token
+	template <class T1>
+	Gnuplot &send(T1 arg1) {
+		writer.send(arg1);
 		return *this;
 	}
 
-	// used for two STL containers
-	template <class T, class U>
-	Gnuplot &send(T x, T x_last, U y, U y_last) {
-		while(x != x_last && y != y_last) {
-			sendEntry(*x, *y);
-			*this << "\n";
-			++x;
-			++y;
-		}
-		// assert inputs same size
-		assert(x==x_last && y==y_last);
-		*this << "e" << std::endl; // gnuplot's "end of array" token
+	template <class T1, class T2>
+	Gnuplot &send(T1 arg1, T2 arg2) {
+		writer.sendIter(arg1, arg2);
 		return *this;
 	}
 
-	// this handles STL containers as well as blitz::Array<T, 1> and
-	// blitz::Array<blitz::TinyVector<T, N>, 1>
-	template <class Iter>
-	Gnuplot &send(Iter arr) {
-		send(arr.begin(), arr.end());
+	template <class T1, class T2, class T3, class T4>
+	Gnuplot &send(T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
+		writer.sendIterPair(arg1, arg2, arg3, arg4);
 		return *this;
 	}
 
-	// send vector of vectors containing data points
-	template <class T>
-	Gnuplot &send(const std::vector<std::vector <T> > &vectors) {
-		// all vectors need to have the same size
-		assert(vectors.size() > 0);
-		for(size_t i=1; i<vectors.size(); i++) {
-			assert(vectors[i].size() == vectors[i-1].size());
-		}
-
-		for(size_t i=0; i<vectors[0].size(); i++) {
-			for (size_t j=0; j<vectors.size(); j++) {
-				sendEntry(vectors[j][i]);
-			}
-			*this << "\n";
-		}
-		*this << "e" << std::endl; // gnuplot's "end of array" token
+	template <class T1>
+	Gnuplot &sendBinary(T1 arg1) {
+		binary_writer.send(arg1);
 		return *this;
 	}
 
-
-#ifdef GNUPLOT_ENABLE_BLITZ
-	// Note: T could be either a scalar or a blitz::TinyVector.
 	template <class T>
-	Gnuplot &send(const blitz::Array<T, 2> &a) {
-		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
-			for(int j=a.lbound(1); j<=a.ubound(1); j++) {
-				sendEntry(a(i, j));
-				*this << "\n";
-			}
-			*this << "\n"; // blank line between rows
-		}
-		*this << "e" << std::endl; // gnuplot's "end of array" token
-		return *this;
+	std::string binfmt(T arg) {
+		return binary_writer.binfmt(arg);
 	}
 
-private:
-	template <class T, int N>
-	void sendEntry(blitz::TinyVector<T, N> v) {
-		for(int i=0; i<N; i++) {
-			sendEntry(v[i]);
-		}
+	template <class T1>
+	std::string tmpfile(T1 arg1) {
+		boost::shared_ptr<GnuplotTmpfile> tmp_file(new GnuplotTmpfile());
+		tmp_files.push_back(tmp_file);
+		std::fstream tmp_stream(tmp_file->file.c_str(), std::fstream::out | std::fstream::binary);
+		GnuplotBinaryWriter<std::fstream> tmp_writer(&tmp_stream);
+		tmp_writer.send(arg1);
+		tmp_stream.close();
+
+		std::ostringstream cmdline;
+		cmdline << " '" << tmp_file->file.string() << "' binary" << binfmt(arg1);
+		return cmdline.str();
 	}
 
-public:
-	// NOTE: it is also possible to implement this for other array
-	// implementations (e.g. std::vector)
-	template <class T, int d>
-	void sendBinary(const blitz::Array<T, d> &arr) {
-		write(reinterpret_cast<const char *>(arr.data()), arr.size() * sizeof(T));
+	void clearTmpfiles() {
+		// destructors will cause deletion
+		tmp_files.clear();
 	}
-
-	template <class T>
-	std::string binfmt(const blitz::Array<T, 2> &arr) {
-		std::ostringstream tmp;
-		tmp << " format='" << binaryFormatCode((T*)NULL) << "'";
-		tmp << " array=(" << arr.extent(0) << "," << arr.extent(1) << ")";
-		if(arr.isMajorRank(0)) tmp << "scan=yx"; // i.e. C-style ordering
-		tmp << " ";
-		return tmp.str();
-	}
-
-#endif // GNUPLOT_ENABLE_BLITZ
-
-private:
-	template <class T>
-	void sendEntry(T v) {
-		*this << v << " ";
-	}
-
-	template <class T, class U>
-	void sendEntry(std::pair<T, U> v) {
-		sendEntry(v.first, v.second);
-	}
-
-	template <class T, class U>
-	void sendEntry(T t, U u) {
-		sendEntry(t);
-		sendEntry(u);
-	}
-
-	std::string binaryFormatCode(   float *) { return "%float"; }
-	std::string binaryFormatCode(  double *) { return "%double"; }
-	std::string binaryFormatCode(  int8_t *) { return "%int8"; }
-	std::string binaryFormatCode( uint8_t *) { return "%uint8"; }
-	std::string binaryFormatCode( int16_t *) { return "%int16"; }
-	std::string binaryFormatCode(uint16_t *) { return "%uint16"; }
-	std::string binaryFormatCode( int32_t *) { return "%int32"; }
-	std::string binaryFormatCode(uint32_t *) { return "%uint32"; }
-	std::string binaryFormatCode( int64_t *) { return "%int64"; }
-	std::string binaryFormatCode(uint64_t *) { return "%uint64"; }
-
-#ifdef GNUPLOT_ENABLE_BLITZ
-	template <class T, int N>
-	std::string binaryFormatCode(blitz::TinyVector<T, N> *) {
-		std::ostringstream tmp;
-		for(int i=0; i<N; i++) {
-			tmp << binaryFormatCode((T*)NULL);
-		}
-		return tmp.str();
-	}
-#endif // GNUPLOT_ENABLE_BLITZ
 
 #ifdef GNUPLOT_ENABLE_PTY
 	void allocPty() {
@@ -295,6 +408,9 @@ private:
 	// this is included even in the absense of GNUPLOT_ENABLE_PTY, to
 	// protect binary compatibility
 	GnuplotPty *gp_pty;
+	GnuplotWriter<Gnuplot> writer;
+	GnuplotBinaryWriter<Gnuplot> binary_writer;
+	std::vector<boost::shared_ptr<GnuplotTmpfile> > tmp_files;
 
 public:
 	bool debug_messages;
@@ -303,9 +419,13 @@ public:
 Gnuplot::Gnuplot(const std::string &cmd) : 
 	boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
 		FILENO(pout = POPEN(cmd.c_str(), "w")),
-		boost::iostreams::never_close_handle),
+		boost::iostreams::never_close_handle
+	),
 	pout(pout), // keeps '-Weff++' quiet
 	gp_pty(NULL),
+	writer(this),
+	binary_writer(this),
+	tmp_files(),
 	debug_messages(false)
 {
 	*this << std::scientific << std::setprecision(18);  // refer <iomanip>

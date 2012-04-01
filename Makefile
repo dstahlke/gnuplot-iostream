@@ -1,8 +1,8 @@
 CXXFLAGS+=-Wall -Wextra -Weffc++ -I/usr/lib64/blitz/include -Os -g
-LDFLAGS+=-lutil -lboost_iostreams
+LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 
 PROGS=example-make-png example-popup example-interactive
-BLITZ_PROGS=example-blitz example-blitz-binary
+BLITZ_PROGS=example-blitz example-blitz-binary example-blitz-tmpfile
 
 all: $(PROGS)
 	@echo "Now type 'make blitz-demo' if you have blitz installed."
