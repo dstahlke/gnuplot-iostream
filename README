@@ -28,6 +28,7 @@ Usage
 =====
 
 See the examples source code for usage information.
+To build examples just type 'make'.  Or, if you would prefer to use cmake, just type 'cmake .; make'.
 
 
 Contributors

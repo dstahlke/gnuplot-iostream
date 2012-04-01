@@ -1,4 +1,4 @@
-CXXFLAGS=-Wall -Wextra -Weffc++ -I/usr/lib64/blitz/include -O0 -g
+CXXFLAGS=-Wall -Wextra -Weffc++ -I/usr/lib64/blitz/include -Os -g
 LDFLAGS=-lutil -lboost_iostreams
 
 PROGS=example-make-png example-popup example-interactive

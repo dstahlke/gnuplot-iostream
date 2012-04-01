@@ -38,6 +38,7 @@ THE SOFTWARE.
 #include <string>
 #include <utility>
 #include <iomanip>
+#include <vector>
 
 // library includes: double quotes make cpplint not complain
 #include "boost/iostreams/device/file_descriptor.hpp"
