@@ -1,12 +1,13 @@
-CXXFLAGS=-Wall -Wextra -Weffc++ -I/usr/lib64/blitz/include -Os -g
-LDFLAGS=-lutil -lboost_iostreams
+CXXFLAGS+=-Wall -Wextra -Weffc++ -I/usr/lib64/blitz/include -Os -g
+LDFLAGS+=-lutil -lboost_iostreams
 
 PROGS=example-make-png example-popup example-interactive
+BLITZ_PROGS=example-blitz example-blitz-binary
 
 all: $(PROGS)
 	@echo "Now type 'make blitz-demo' if you have blitz installed."
 
-blitz-demo: example-blitz
+blitz-demo: $(BLITZ_PROGS)
 
 clean:
 	rm -f *.o
@@ -20,12 +21,3 @@ cppcheck:
 	cppcheck *.cc *.h --template gcc --enable=all -q
 
 *.o: gnuplot-iostream.h
-
-example-interactive: example-interactive.o
-	g++ -o $@ $^ $(LDFLAGS)
-
-example-make-png: example-make-png.o
-	g++ -o $@ $^ $(LDFLAGS)
-
-example-popup: example-popup.o
-	g++ -o $@ $^ $(LDFLAGS)
