@@ -27,23 +27,42 @@ THE SOFTWARE.
 #define GNUPLOT_ENABLE_BLITZ
 #include "gnuplot-iostream.h"
 
-int main()
-{
+void test_waves() {
+	Gnuplot gp("gnuplot -persist");
+
 	// example from Blitz manual:
 	int N = 64, cycles = 3;
-	float 
-		midpoint = (N-1)/2., 
-		omega = 2.0 * M_PI * cycles / double(N),
-		tau = - 10.0 / N;
-	blitz::Array<float, 2> F(N,N);
+	double midpoint = (N-1)/2.;
+	double omega = 2.0 * M_PI * cycles / double(N);
+	double tau = - 10.0 / N;
+	blitz::Array<double, 2> F(N, N);
 	blitz::firstIndex i;
 	blitz::secondIndex j;
 	F = cos(omega * sqrt(pow2(i-midpoint) + pow2(j-midpoint)))
 		* exp(tau * sqrt(pow2(i-midpoint) + pow2(j-midpoint)));
 
-	Gnuplot gp("gnuplot -persist");
-	gp << "set xlabel 'X'" << std::endl;
-	gp << "set ylabel 'Y'" << std::endl;
-	gp << "splot '-' binary" << gp.binfmt(F) << "dx=10 dy=10 origin=(5,5,0) with image notitle" << std::endl;
+	gp << "splot '-' binary" << gp.binfmt(F) << "dx=10 dy=10 origin=(5,5,0) with pm3d notitle" << std::endl;
 	gp.sendBinary(F);
+}
+
+void test_sierpinski() {
+	Gnuplot gp("gnuplot -persist");
+
+	int N = 256;
+	blitz::Array<blitz::TinyVector<uint8_t, 4>, 2> F(N, N);
+	for(int i=0; i<N; i++)
+	for(int j=0; j<N; j++) {
+		F(i, j)[0] = i;
+		F(i, j)[1] = j;
+		F(i, j)[2] = 0;
+		F(i, j)[3] = (i&j) ? 0 : 255;
+	}
+
+	gp << "plot '-' binary" << gp.binfmt(F) << "with rgbalpha notitle" << std::endl;
+	gp.sendBinary(F);
+}
+
+int main() {
+	test_waves();
+	test_sierpinski();
 }

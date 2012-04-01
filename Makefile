@@ -11,7 +11,7 @@ blitz-demo: $(BLITZ_PROGS)
 
 clean:
 	rm -f *.o
-	rm -f $(PROGS) example-blitz
+	rm -f $(PROGS) $(BLITZ_PROGS)
 	rm -f my_graph_*.png
 
 lint:

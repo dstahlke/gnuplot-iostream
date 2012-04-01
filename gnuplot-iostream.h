@@ -224,6 +224,8 @@ private:
 	}
 
 public:
+	// NOTE: it is also possible to implement this for other array
+	// implementations (e.g. std::vector)
 	template <class T, int d>
 	void sendBinary(const blitz::Array<T, d> &arr) {
 		write(reinterpret_cast<const char *>(arr.data()), arr.size() * sizeof(T));
@@ -232,9 +234,9 @@ public:
 	template <class T>
 	std::string binfmt(const blitz::Array<T, 2> &arr) {
 		std::ostringstream tmp;
-		tmp << " format='" << binaryFormatCode((T *)NULL) << "'";
+		tmp << " format='" << binaryFormatCode((T*)NULL) << "'";
 		tmp << " array=(" << arr.extent(0) << "," << arr.extent(1) << ")";
-		if (arr.isMajorRank(0)) tmp << "scan=yx"; // i.e. C-style ordering
+		if(arr.isMajorRank(0)) tmp << "scan=yx"; // i.e. C-style ordering
 		tmp << " ";
 		return tmp.str();
 	}
@@ -258,9 +260,27 @@ private:
 		sendEntry(u);
 	}
 
-	std::string binaryFormatCode(float *nil) {
-		return "%float";
+	std::string binaryFormatCode(   float *) { return "%float"; }
+	std::string binaryFormatCode(  double *) { return "%double"; }
+	std::string binaryFormatCode(  int8_t *) { return "%int8"; }
+	std::string binaryFormatCode( uint8_t *) { return "%uint8"; }
+	std::string binaryFormatCode( int16_t *) { return "%int16"; }
+	std::string binaryFormatCode(uint16_t *) { return "%uint16"; }
+	std::string binaryFormatCode( int32_t *) { return "%int32"; }
+	std::string binaryFormatCode(uint32_t *) { return "%uint32"; }
+	std::string binaryFormatCode( int64_t *) { return "%int64"; }
+	std::string binaryFormatCode(uint64_t *) { return "%uint64"; }
+
+#ifdef GNUPLOT_ENABLE_BLITZ
+	template <class T, int N>
+	std::string binaryFormatCode(blitz::TinyVector<T, N> *) {
+		std::ostringstream tmp;
+		for(int i=0; i<N; i++) {
+			tmp << binaryFormatCode((T*)NULL);
+		}
+		return tmp.str();
 	}
+#endif // GNUPLOT_ENABLE_BLITZ
 
 #ifdef GNUPLOT_ENABLE_PTY
 	void allocPty() {
