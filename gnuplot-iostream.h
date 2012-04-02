@@ -223,41 +223,31 @@ private:
 		sendEntry(u);
 	}
 
-private:
-	STREAM_T *stream;
-};
-
-///////////////////////////////////////////////////////////
-
-std::string gnuplotBinaryFormatCode(   float *) { return "%float"; }
-std::string gnuplotBinaryFormatCode(  double *) { return "%double"; }
-std::string gnuplotBinaryFormatCode(  int8_t *) { return "%int8"; }
-std::string gnuplotBinaryFormatCode( uint8_t *) { return "%uint8"; }
-std::string gnuplotBinaryFormatCode( int16_t *) { return "%int16"; }
-std::string gnuplotBinaryFormatCode(uint16_t *) { return "%uint16"; }
-std::string gnuplotBinaryFormatCode( int32_t *) { return "%int32"; }
-std::string gnuplotBinaryFormatCode(uint32_t *) { return "%uint32"; }
-std::string gnuplotBinaryFormatCode( int64_t *) { return "%int64"; }
-std::string gnuplotBinaryFormatCode(uint64_t *) { return "%uint64"; }
+	std::string formatCode(   float *) { return "%float"; }
+	std::string formatCode(  double *) { return "%double"; }
+	std::string formatCode(  int8_t *) { return "%int8"; }
+	std::string formatCode( uint8_t *) { return "%uint8"; }
+	std::string formatCode( int16_t *) { return "%int16"; }
+	std::string formatCode(uint16_t *) { return "%uint16"; }
+	std::string formatCode( int32_t *) { return "%int32"; }
+	std::string formatCode(uint32_t *) { return "%uint32"; }
+	std::string formatCode( int64_t *) { return "%int64"; }
+	std::string formatCode(uint64_t *) { return "%uint64"; }
 
 #ifdef GNUPLOT_ENABLE_BLITZ
-template <class T, int N>
-std::string gnuplotBinaryFormatCode(blitz::TinyVector<T, N> *) {
-	std::ostringstream tmp;
-	for(int i=0; i<N; i++) {
-		tmp << gnuplotBinaryFormatCode((T*)NULL);
+	template <class T, int N>
+	std::string formatCode(blitz::TinyVector<T, N> *) {
+		std::ostringstream tmp;
+		for(int i=0; i<N; i++) {
+			tmp << formatCode((T*)NULL);
+		}
+		return tmp.str();
 	}
-	return tmp.str();
-}
 #endif // GNUPLOT_ENABLE_BLITZ
 
-template <class STREAM_T>
-class GnuplotBinaryWriter {
 public:
-	explicit GnuplotBinaryWriter(STREAM_T *_stream) : stream(_stream) { }
-
 	template <class T>
-	void send(const std::vector<T> &arr) {
+	void sendBinary(const std::vector<T> &arr) {
 		stream->write(reinterpret_cast<const char *>(arr[0]), arr.size() * sizeof(T));
 	}
 
@@ -268,7 +258,7 @@ public:
 
 	// send vector of vectors containing data points
 	template <class T>
-	void send(const std::vector<std::vector <T> > &vectors) {
+	void sendBinary(const std::vector<std::vector <T> > &vectors) {
 		// all vectors need to have the same size
 		assert(vectors.size() > 0);
 		for(size_t i=1; i<vectors.size(); i++) {
@@ -287,14 +277,14 @@ public:
 	// NOTE: it is also possible to implement this for other array
 	// implementations (e.g. std::vector)
 	template <class T, int d>
-	void send(const blitz::Array<T, d> &arr) {
+	void sendBinary(const blitz::Array<T, d> &arr) {
 		stream->write(reinterpret_cast<const char *>(arr.data()), arr.size() * sizeof(T));
 	}
 
 	template <class T>
 	std::string binfmt(const blitz::Array<T, 2> &arr) {
 		std::ostringstream tmp;
-		tmp << " format='" << gnuplotBinaryFormatCode((T*)NULL) << "'";
+		tmp << " format='" << formatCode((T*)NULL) << "'";
 		tmp << " array=(" << arr.extent(0) << "," << arr.extent(1) << ")";
 		if(arr.isMajorRank(0)) tmp << "scan=yx"; // i.e. C-style ordering
 		tmp << " ";
@@ -367,13 +357,13 @@ public:
 
 	template <class T1>
 	Gnuplot &sendBinary(T1 arg1) {
-		binary_writer.send(arg1);
+		writer.sendBinary(arg1);
 		return *this;
 	}
 
 	template <class T>
 	std::string binfmt(T arg) {
-		return binary_writer.binfmt(arg);
+		return writer.binfmt(arg);
 	}
 
 	template <class T1>
@@ -381,8 +371,8 @@ public:
 		boost::shared_ptr<GnuplotTmpfile> tmp_file(new GnuplotTmpfile());
 		tmp_files.push_back(tmp_file);
 		std::fstream tmp_stream(tmp_file->file.c_str(), std::fstream::out | std::fstream::binary);
-		GnuplotBinaryWriter<std::fstream> tmp_writer(&tmp_stream);
-		tmp_writer.send(arg1);
+		GnuplotWriter<std::fstream> tmp_writer(&tmp_stream);
+		tmp_writer.sendBinary(arg1);
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
@@ -409,7 +399,6 @@ private:
 	// protect binary compatibility
 	GnuplotPty *gp_pty;
 	GnuplotWriter<Gnuplot> writer;
-	GnuplotBinaryWriter<Gnuplot> binary_writer;
 	std::vector<boost::shared_ptr<GnuplotTmpfile> > tmp_files;
 
 public:
@@ -424,7 +413,6 @@ Gnuplot::Gnuplot(const std::string &cmd) :
 	pout(pout), // keeps '-Weff++' quiet
 	gp_pty(NULL),
 	writer(this),
-	binary_writer(this),
 	tmp_files(),
 	debug_messages(false)
 {
