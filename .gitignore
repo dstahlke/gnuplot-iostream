@@ -1,12 +1,14 @@
-example-blitz
-example-blitz-binary
-example-interactive
-example-make-png
-example-popup
-example-vectors
+# compiled stuff
+examples
+examples-blitz
+examples-interactive
 *.o
-my_graph_*.png
+
+# cmake stuff
 build
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
+
+# output of example scripts
+my_graph_*.png

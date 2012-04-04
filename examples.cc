@@ -23,9 +23,6 @@ THE SOFTWARE.
 #include <vector>
 #include <math.h>
 
-// FIXME - detect availability
-#define GNUPLOT_ENABLE_PTY
-
 #include "gnuplot-iostream.h"
 
 // Yes, I'm including a *.cc file.  It contains main().
@@ -59,32 +56,6 @@ void demo_basic() {
 	gp << "plot '-' with lines title 'cubic', '-' with points title 'circle'\n";
 	gp.send(xy_pts_A).send(xy_pts_B);
 }
-
-#ifdef GNUPLOT_ENABLE_PTY
-void demo_interactive() {
-	Gnuplot gp;
-
-	double mx=0, my=0;
-	int mb=1;
-	while(mb != 3 && mb >= 0) {
-		std::vector<std::pair<double, double> > xy_pts;
-		xy_pts.push_back(std::make_pair(mx, my));
-		for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
-			double theta = alpha*2.0*3.14159;
-			xy_pts.push_back(std::make_pair(
-				mx+cos(theta), my+sin(theta)));
-		}
-
-		gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
-		gp << "plot '-' with points title 'circle'\n";
-		gp.send(xy_pts);
-
-		gp.getMouse(mx, my, mb, "Left click to move circle, right click to exit.");
-		printf("You pressed mouse button %d at x=%f y=%f\n", mb, mx, my);
-		if(mb < 0) printf("The gnuplot window was closed.\n");
-	}
-}
-#endif // GNUPLOT_ENABLE_PTY
 
 void demo_png() {
 	Gnuplot gp;
@@ -126,32 +97,20 @@ void demo_png() {
 }
 
 void demo_vectors() {
-	Gnuplot gp;
+	Gnuplot gp("gnuplot -persist");
 
-	double mx=0, my=0;
-	int mb=1;
-	while(mb != 3 && mb >= 0) {
-		std::vector<std::vector<float> > vecs(4);
-		for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
-			double theta = alpha*2.0*3.14159;
-			vecs[0].push_back(mx+cos(theta));
-			vecs[1].push_back(my+sin(theta));
-			vecs[2].push_back(-cos(theta)*0.1);
-			vecs[3].push_back(-sin(theta)*0.1);
-		}
-
-		gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
-		gp << "plot '-' with vectors title 'circle'\n";
-		gp.send(vecs);
-
-#ifdef GNUPLOT_ENABLE_PTY
-		gp.getMouse(mx, my, mb, "Left click to move circle, right click to exit.");
-		printf("You pressed mouse button %d at x=%f y=%f\n", mb, mx, my);
-		if(mb < 0) printf("The gnuplot window was closed.\n");
-#else
-		break;
-#endif // GNUPLOT_ENABLE_PTY
+	std::vector<std::vector<float> > vecs(4);
+	for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
+		double theta = alpha*2.0*3.14159;
+		vecs[0].push_back( cos(theta));
+		vecs[1].push_back( sin(theta));
+		vecs[2].push_back(-cos(theta)*0.1);
+		vecs[3].push_back(-sin(theta)*0.1);
 	}
+
+	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
+	gp << "plot '-' with vectors title 'circle'\n";
+	gp.send(vecs);
 }
 
 // FIXME - do without blitz
@@ -174,7 +133,6 @@ void demo_vectors() {
 
 void register_demos() {
 	register_demo("basic",                  demo_basic);
-	register_demo("interactive",            demo_interactive);
 	register_demo("png",                    demo_png);
 	register_demo("vectors",                demo_vectors);
 	//register_demo("waves_binary_file",      demo_waves_binary_file);
