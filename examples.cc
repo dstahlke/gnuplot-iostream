@@ -97,6 +97,7 @@ void demo_png() {
 }
 
 void demo_vectors() {
+	// -persist option makes the window not disappear when your program exits
 	Gnuplot gp("gnuplot -persist");
 
 	std::vector<std::vector<float> > vecs(4);
