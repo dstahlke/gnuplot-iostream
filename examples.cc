@@ -20,21 +20,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include <map>
 #include <vector>
 #include <math.h>
-#include "boost/foreach.hpp"
 
 // FIXME - detect availability
 #define GNUPLOT_ENABLE_PTY
-// FIXME - detect availability
-#define GNUPLOT_ENABLE_BLITZ
-
-#ifdef GNUPLOT_ENABLE_BLITZ
-#include <blitz/array.h>
-#endif // GNUPLOT_ENABLE_BLITZ
 
 #include "gnuplot-iostream.h"
+
+// Yes, I'm including a *.cc file.  It contains main().
+#include "examples-framework.cc"
 
 void demo_basic() {
 	// -persist option makes the window not disappear when your program exits
@@ -159,122 +154,28 @@ void demo_vectors() {
 	}
 }
 
-#ifdef GNUPLOT_ENABLE_BLITZ
-void demo_blitz() {
-	// -persist option makes the window not disappear when your program exits
-	Gnuplot gp("gnuplot -persist");
+// FIXME - do without blitz
+//void demo_waves_binary_file() {
+//	Gnuplot gp("gnuplot -persist");
+//
+//	// example from Blitz manual:
+//	int N = 64, cycles = 3;
+//	double midpoint = (N-1)/2.;
+//	double omega = 2.0 * M_PI * cycles / double(N);
+//	double tau = - 10.0 / N;
+//	blitz::Array<double, 2> F(N, N);
+//	blitz::firstIndex i;
+//	blitz::secondIndex j;
+//	F = cos(omega * sqrt(pow2(i-midpoint) + pow2(j-midpoint)))
+//		* exp(tau * sqrt(pow2(i-midpoint) + pow2(j-midpoint)));
+//
+//	gp << "splot" << gp.binary_file(F) << "dx=10 dy=10 origin=(5,5,0) with pm3d notitle" << std::endl;
+//}
 
-	blitz::Array<double, 2> arr(100, 100);
-	{
-		blitz::firstIndex i;
-		blitz::secondIndex j;
-		arr = (i-50) * (j-50);
-	}
-	gp << "set pm3d map; set palette" << std::endl;
-	gp << "splot '-'" << std::endl;
-	gp.send(arr);
-}
-
-void demo_blitz_waves_binary() {
-	Gnuplot gp("gnuplot -persist");
-
-	// example from Blitz manual:
-	int N = 64, cycles = 3;
-	double midpoint = (N-1)/2.;
-	double omega = 2.0 * M_PI * cycles / double(N);
-	double tau = - 10.0 / N;
-	blitz::Array<double, 2> F(N, N);
-	blitz::firstIndex i;
-	blitz::secondIndex j;
-	F = cos(omega * sqrt(pow2(i-midpoint) + pow2(j-midpoint)))
-		* exp(tau * sqrt(pow2(i-midpoint) + pow2(j-midpoint)));
-
-	gp << "splot '-' binary" << gp.binfmt(F) << "dx=10 dy=10 origin=(5,5,0) with pm3d notitle" << std::endl;
-	gp.sendBinary(F);
-}
-
-void demo_blitz_sierpinski_binary() {
-	Gnuplot gp("gnuplot -persist");
-
-	int N = 256;
-	blitz::Array<blitz::TinyVector<uint8_t, 4>, 2> F(N, N);
-	for(int i=0; i<N; i++)
-	for(int j=0; j<N; j++) {
-		F(i, j)[0] = i;
-		F(i, j)[1] = j;
-		F(i, j)[2] = 0;
-		F(i, j)[3] = (i&j) ? 0 : 255;
-	}
-
-	gp << "plot '-' binary" << gp.binfmt(F) << "with rgbalpha notitle" << std::endl;
-	gp.sendBinary(F);
-}
-
-void demo_blitz_waves_binary_file() {
-	Gnuplot gp("gnuplot -persist");
-
-	// example from Blitz manual:
-	int N = 64, cycles = 3;
-	double midpoint = (N-1)/2.;
-	double omega = 2.0 * M_PI * cycles / double(N);
-	double tau = - 10.0 / N;
-	blitz::Array<double, 2> F(N, N);
-	blitz::firstIndex i;
-	blitz::secondIndex j;
-	F = cos(omega * sqrt(pow2(i-midpoint) + pow2(j-midpoint)))
-		* exp(tau * sqrt(pow2(i-midpoint) + pow2(j-midpoint)));
-
-	gp << "splot" << gp.binary_file(F) << "dx=10 dy=10 origin=(5,5,0) with pm3d notitle" << std::endl;
-}
-
-void demo_blitz_sierpinski_binary_file() {
-	Gnuplot gp("gnuplot -persist");
-
-	int N = 256;
-	blitz::Array<blitz::TinyVector<uint8_t, 4>, 2> F(N, N);
-	for(int i=0; i<N; i++)
-	for(int j=0; j<N; j++) {
-		F(i, j)[0] = i;
-		F(i, j)[1] = j;
-		F(i, j)[2] = 0;
-		F(i, j)[3] = (i&j) ? 0 : 255;
-	}
-
-	gp << "plot" << gp.binary_file(F) << "with rgbalpha notitle" << std::endl;
-}
-#endif // GNUPLOT_ENABLE_BLITZ
-
-int main(int argc, char **argv) {
-	std::map<std::string, void (*)(void)> demos;
-	demos["basic"] = demo_basic;
-#ifdef GNUPLOT_ENABLE_PTY
-	demos["interactive"] = demo_interactive;
-#endif
-	demos["png"] = demo_png;
-	demos["vectors"] = demo_vectors;
-#ifdef GNUPLOT_ENABLE_BLITZ
-	demos["blitz"] = demo_blitz;
-	demos["blitz_waves_binary"] = demo_blitz_waves_binary;
-	demos["blitz_sierpinski_binary"] = demo_blitz_sierpinski_binary;
-	demos["blitz_waves_binary_file"] = demo_blitz_waves_binary_file;
-	demos["blitz_sierpinski_binary_file"] = demo_blitz_sierpinski_binary_file;
-#endif // GNUPLOT_ENABLE_BLITZ
-
-	if(argc < 2) {
-		printf("Usage: %s <demo_name>\n", argv[0]);
-		printf("Choose one of the following demos:\n");
-		typedef std::pair<std::string, void (*)(void)> demo_pair;
-		BOOST_FOREACH(const demo_pair &pair, demos) {
-			printf("    %s\n", pair.first.c_str());
-		}
-		return 0;
-	}
-
-	std::string arg(argv[1]);
-	if(!demos.count(arg)) {
-		printf("No such demo '%s'\n", arg.c_str());
-		return 1;
-	}
-
-	demos[arg]();
+void register_demos() {
+	register_demo("basic",                  demo_basic);
+	register_demo("interactive",            demo_interactive);
+	register_demo("png",                    demo_png);
+	register_demo("vectors",                demo_vectors);
+	//register_demo("waves_binary_file",      demo_waves_binary_file);
 }
