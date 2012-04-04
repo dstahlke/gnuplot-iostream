@@ -44,10 +44,16 @@ THE SOFTWARE.
 // library includes: double quotes make cpplint not complain
 #include "boost/iostreams/device/file_descriptor.hpp"
 #include "boost/iostreams/stream.hpp"
-#include "boost/filesystem.hpp"
+#include "boost/version.hpp"
 #ifdef GNUPLOT_ENABLE_BLITZ
 #include "blitz/array.h"
 #endif
+
+// This is the version of boost which has v3 of the filesystem libraries by default.
+#if BOOST_VERSION >= 104600
+#define GNUPLOT_USE_TMPFILE
+#include "boost/filesystem.hpp"
+#endif // BOOST_VERSION
 
 // Patch for Windows by Damien Loison
 #ifdef WIN32
@@ -127,10 +133,9 @@ class GnuplotPty { };
 
 ///////////////////////////////////////////////////////////
 
-template <class STREAM_T>
 class GnuplotWriter {
 public:
-	explicit GnuplotWriter(STREAM_T *_stream) : stream(_stream) { }
+	explicit GnuplotWriter(std::ostream *_stream) : stream(_stream) { }
 
 	// used for one STL container
 	template <class T>
@@ -293,19 +298,27 @@ public:
 #endif // GNUPLOT_ENABLE_BLITZ
 
 private:
-	STREAM_T *stream;
+	std::ostream *stream;
 };
 
 ///////////////////////////////////////////////////////////
 
+#ifdef GNUPLOT_USE_TMPFILE
 class GnuplotTmpfile {
 public:
 	GnuplotTmpfile() :
-		file(boost::filesystem::unique_path("tmp-gp-%%%%-%%%%-%%%%-%%%%"))
+		file(boost::filesystem::unique_path(
+			boost::filesystem::temp_directory_path() /
+			"tmp-gnuplot-%%%%-%%%%-%%%%-%%%%"))
 	{ }
 
 	~GnuplotTmpfile() {
-		remove(file);
+		// it is never good to throw exceptions from a destructor
+		try {
+			remove(file);
+		} catch(const std::exception &e) {
+			std::cerr << "Failed to remove temporary file " << file << std::endl;
+		}
 	}
 
 private: // noncopyable
@@ -315,6 +328,7 @@ private: // noncopyable
 public:
 	boost::filesystem::path file;
 };
+#endif // GNUPLOT_USE_TMPFILE
 
 ///////////////////////////////////////////////////////////
 
@@ -366,17 +380,47 @@ public:
 		return writer.binfmt(arg);
 	}
 
-	template <class T1>
-	std::string tmpfile(T1 arg1) {
+private:
+	std::string make_tmpfile() {
+#ifdef GNUPLOT_USE_TMPFILE
 		boost::shared_ptr<GnuplotTmpfile> tmp_file(new GnuplotTmpfile());
+		// The file will be removed once the pointer is removed from the
+		// tmp_files container.
 		tmp_files.push_back(tmp_file);
-		std::fstream tmp_stream(tmp_file->file.c_str(), std::fstream::out | std::fstream::binary);
-		GnuplotWriter<std::fstream> tmp_writer(&tmp_stream);
+		return tmp_file->file.string();
+#else
+		throw(std::logic_error("no filename given and temporary files not enabled"));
+#endif // GNUPLOT_USE_TMPFILE
+	}
+
+public:
+	// NOTE: empty filename makes temporary file
+	template <class T1>
+	std::string file(T1 arg1, std::string filename="") {
+		if(filename.empty()) filename = make_tmpfile();
+		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
+		GnuplotWriter tmp_writer(&tmp_stream);
+		tmp_writer.send(arg1);
+		tmp_stream.close();
+
+		std::ostringstream cmdline;
+		// FIXME - hopefully filename doesn't contain quotes or such...
+		cmdline << " '" << filename << "' ";
+		return cmdline.str();
+	}
+
+	// NOTE: empty filename makes temporary file
+	template <class T1>
+	std::string binary_file(T1 arg1, std::string filename="") {
+		if(filename.empty()) filename = make_tmpfile();
+		std::fstream tmp_stream(filename.c_str(), std::fstream::out | std::fstream::binary);
+		GnuplotWriter tmp_writer(&tmp_stream);
 		tmp_writer.sendBinary(arg1);
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
-		cmdline << " '" << tmp_file->file.string() << "' binary" << binfmt(arg1);
+		// FIXME - hopefully filename doesn't contain quotes or such...
+		cmdline << " '" << filename << "' binary" << binfmt(arg1);
 		return cmdline.str();
 	}
 
@@ -398,8 +442,13 @@ private:
 	// this is included even in the absense of GNUPLOT_ENABLE_PTY, to
 	// protect binary compatibility
 	GnuplotPty *gp_pty;
-	GnuplotWriter<Gnuplot> writer;
+	GnuplotWriter writer;
+#ifdef GNUPLOT_USE_TMPFILE
 	std::vector<boost::shared_ptr<GnuplotTmpfile> > tmp_files;
+#else
+	// just a placeholder
+	std::vector<int> tmp_files;
+#endif // GNUPLOT_USE_TMPFILE
 
 public:
 	bool debug_messages;
