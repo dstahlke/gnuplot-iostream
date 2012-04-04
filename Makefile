@@ -1,7 +1,7 @@
 CXXFLAGS+=-Wall -Wextra -Weffc++ -I/usr/lib64/blitz/include -Os -g
 LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 
-PROGS=example-make-png example-popup example-interactive
+PROGS=example-make-png example-popup example-interactive examples
 BLITZ_PROGS=example-blitz example-blitz-binary example-blitz-tmpfile
 
 all: $(PROGS)
