@@ -174,6 +174,74 @@ void demo_blitz() {
 	gp << "splot '-'" << std::endl;
 	gp.send(arr);
 }
+
+void demo_blitz_waves_binary() {
+	Gnuplot gp("gnuplot -persist");
+
+	// example from Blitz manual:
+	int N = 64, cycles = 3;
+	double midpoint = (N-1)/2.;
+	double omega = 2.0 * M_PI * cycles / double(N);
+	double tau = - 10.0 / N;
+	blitz::Array<double, 2> F(N, N);
+	blitz::firstIndex i;
+	blitz::secondIndex j;
+	F = cos(omega * sqrt(pow2(i-midpoint) + pow2(j-midpoint)))
+		* exp(tau * sqrt(pow2(i-midpoint) + pow2(j-midpoint)));
+
+	gp << "splot '-' binary" << gp.binfmt(F) << "dx=10 dy=10 origin=(5,5,0) with pm3d notitle" << std::endl;
+	gp.sendBinary(F);
+}
+
+void demo_blitz_sierpinski_binary() {
+	Gnuplot gp("gnuplot -persist");
+
+	int N = 256;
+	blitz::Array<blitz::TinyVector<uint8_t, 4>, 2> F(N, N);
+	for(int i=0; i<N; i++)
+	for(int j=0; j<N; j++) {
+		F(i, j)[0] = i;
+		F(i, j)[1] = j;
+		F(i, j)[2] = 0;
+		F(i, j)[3] = (i&j) ? 0 : 255;
+	}
+
+	gp << "plot '-' binary" << gp.binfmt(F) << "with rgbalpha notitle" << std::endl;
+	gp.sendBinary(F);
+}
+
+void demo_blitz_waves_binary_file() {
+	Gnuplot gp("gnuplot -persist");
+
+	// example from Blitz manual:
+	int N = 64, cycles = 3;
+	double midpoint = (N-1)/2.;
+	double omega = 2.0 * M_PI * cycles / double(N);
+	double tau = - 10.0 / N;
+	blitz::Array<double, 2> F(N, N);
+	blitz::firstIndex i;
+	blitz::secondIndex j;
+	F = cos(omega * sqrt(pow2(i-midpoint) + pow2(j-midpoint)))
+		* exp(tau * sqrt(pow2(i-midpoint) + pow2(j-midpoint)));
+
+	gp << "splot" << gp.binary_file(F) << "dx=10 dy=10 origin=(5,5,0) with pm3d notitle" << std::endl;
+}
+
+void demo_blitz_sierpinski_binary_file() {
+	Gnuplot gp("gnuplot -persist");
+
+	int N = 256;
+	blitz::Array<blitz::TinyVector<uint8_t, 4>, 2> F(N, N);
+	for(int i=0; i<N; i++)
+	for(int j=0; j<N; j++) {
+		F(i, j)[0] = i;
+		F(i, j)[1] = j;
+		F(i, j)[2] = 0;
+		F(i, j)[3] = (i&j) ? 0 : 255;
+	}
+
+	gp << "plot" << gp.binary_file(F) << "with rgbalpha notitle" << std::endl;
+}
 #endif // GNUPLOT_ENABLE_BLITZ
 
 int main(int argc, char **argv) {
@@ -186,6 +254,10 @@ int main(int argc, char **argv) {
 	demos["vectors"] = demo_vectors;
 #ifdef GNUPLOT_ENABLE_BLITZ
 	demos["blitz"] = demo_blitz;
+	demos["blitz_waves_binary"] = demo_blitz_waves_binary;
+	demos["blitz_sierpinski_binary"] = demo_blitz_sierpinski_binary;
+	demos["blitz_waves_binary_file"] = demo_blitz_waves_binary_file;
+	demos["blitz_sierpinski_binary_file"] = demo_blitz_sierpinski_binary_file;
 #endif // GNUPLOT_ENABLE_BLITZ
 
 	if(argc < 2) {
