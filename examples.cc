@@ -20,6 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#include <fstream>
 #include <vector>
 #include <math.h>
 
@@ -114,27 +115,70 @@ void demo_vectors() {
 	gp.send(vecs);
 }
 
-// FIXME - do without blitz
-//void demo_waves_binary_file() {
-//	Gnuplot gp("gnuplot -persist");
-//
-//	// example from Blitz manual:
-//	int N = 64, cycles = 3;
-//	double midpoint = (N-1)/2.;
-//	double omega = 2.0 * M_PI * cycles / double(N);
-//	double tau = - 10.0 / N;
-//	blitz::Array<double, 2> F(N, N);
-//	blitz::firstIndex i;
-//	blitz::secondIndex j;
-//	F = cos(omega * sqrt(pow2(i-midpoint) + pow2(j-midpoint)))
-//		* exp(tau * sqrt(pow2(i-midpoint) + pow2(j-midpoint)));
-//
-//	gp << "splot" << gp.binary_file(F) << "dx=10 dy=10 origin=(5,5,0) with pm3d notitle" << std::endl;
-//}
+std::vector<std::vector<double> > get_trefoil() {
+	std::vector<std::vector<double> > vecs(3);
+	for(double alpha=0; alpha<1; alpha+=1.0/120.0) {
+		double theta = alpha*2.0*3.14159;
+		vecs[0].push_back((2+cos(3*theta))*cos(2*theta));
+		vecs[1].push_back((2+cos(3*theta))*sin(2*theta));
+		vecs[2].push_back(sin(3*theta));
+	}
+	return vecs;
+}
+
+void demo_inline_text() {
+	std::cout << "Creating inline_text.gnu" << std::endl;
+	// This file handle will be closed automatically when gp goes out of scope.
+	Gnuplot gp(fopen("inline_text.gnu", "w"));
+
+	std::vector<std::vector<double> > vecs = get_trefoil();
+
+	gp << "splot '-' with lines notitle\n";
+	gp.send(vecs);
+}
+
+// FIXME - y values don't make it
+void demo_inline_binary() {
+	std::cout << "Creating inline_binary.gnu" << std::endl;
+	// This file handle will be closed automatically when gp goes out of scope.
+	Gnuplot gp(fopen("inline_binary.gnu", "wb"));
+
+	std::vector<std::vector<double> > vecs = get_trefoil();
+
+	gp << "splot '-' binary" << gp.binfmt(vecs) << "with lines notitle\n";
+	gp.sendBinary(vecs);
+}
+
+void demo_external_text() {
+	std::cout << "Creating external_text.gnu" << std::endl;
+	// This file handle will be closed automatically when gp goes out of scope.
+	Gnuplot gp(fopen("external_text.gnu", "w"));
+
+	std::vector<std::vector<double> > vecs = get_trefoil();
+
+	std::cout << "Creating external_text.dat" << std::endl;
+	gp << "splot" << gp.file(vecs, "external_text.dat") << "with lines notitle\n";
+}
+
+// FIXME - y values don't make it
+void demo_external_binary() {
+	std::cout << "Creating external_binary.gnu" << std::endl;
+	// This file handle will be closed automatically when gp goes out of scope.
+	Gnuplot gp(fopen("external_binary.gnu", "w"));
+
+	std::vector<std::vector<double> > vecs = get_trefoil();
+
+	std::cout << "Creating external_binary.dat" << std::endl;
+	gp << "splot" << gp.binaryFile(vecs, "external_binary.dat") << "with lines notitle\n";
+}
 
 void register_demos() {
 	register_demo("basic",                  demo_basic);
 	register_demo("png",                    demo_png);
 	register_demo("vectors",                demo_vectors);
+	register_demo("script_inline_text",     demo_inline_text);
+	register_demo("script_inline_binary",   demo_inline_binary);
+	register_demo("script_external_text",     demo_external_text);
+	register_demo("script_external_binary",     demo_external_binary);
 	//register_demo("waves_binary_file",      demo_waves_binary_file);
 }

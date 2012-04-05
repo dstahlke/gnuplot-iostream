@@ -94,7 +94,7 @@ void demo_blitz_waves_binary_file() {
 	F = cos(omega * sqrt(pow2(i-midpoint) + pow2(j-midpoint)))
 		* exp(tau * sqrt(pow2(i-midpoint) + pow2(j-midpoint)));
 
-	gp << "splot" << gp.binary_file(F) << "dx=10 dy=10 origin=(5,5,0) with pm3d notitle" << std::endl;
+	gp << "splot" << gp.binaryFile(F) << "dx=10 dy=10 origin=(5,5,0) with pm3d notitle" << std::endl;
 }
 
 void demo_blitz_sierpinski_binary_file() {
@@ -110,7 +110,7 @@ void demo_blitz_sierpinski_binary_file() {
 		F(i, j)[3] = (i&j) ? 0 : 255;
 	}
 
-	gp << "plot" << gp.binary_file(F) << "with rgbalpha notitle" << std::endl;
+	gp << "plot" << gp.binaryFile(F) << "with rgbalpha notitle" << std::endl;
 }
 
 void register_demos() {
