@@ -13,7 +13,8 @@ everything: examples examples-blitz examples-interactive
 clean:
 	rm -f *.o
 	rm -f examples examples-blitz examples-interactive
-	rm -f my_graph_*.png
+	# files created by demo scripts
+	rm -f my_graph_*.png external_binary.dat external_binary.gnu external_text.dat external_text.gnu inline_binary.gnu inline_text.gnu
 
 lint:
 	cpplint.py --filter=-whitespace,-readability/streams,-build/header_guard gnuplot-iostream.h

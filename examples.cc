@@ -33,9 +33,9 @@ void demo_basic() {
 	// -persist option makes the window not disappear when your program exits
 	Gnuplot gp("gnuplot -persist");
 	// For debugging or manual editing of commands:
-	//Gnuplot gp("cat > plot.gp");
+	//Gnuplot gp(fopen("plot.gnu"));
 	// or
-	//Gnuplot gp("tee plot.gp | gnuplot -persist");
+	//Gnuplot gp("tee plot.gnu | gnuplot -persist");
 
 	// NOTE: we can use map here because the X values are intended to be
 	// sorted.  If this was not the case, vector<pair<double,double>> could be
@@ -56,6 +56,35 @@ void demo_basic() {
 	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
 	gp << "plot '-' with lines title 'cubic', '-' with points title 'circle'\n";
 	gp.send(xy_pts_A).send(xy_pts_B);
+}
+
+void demo_tmpfile() {
+	// -persist option makes the window not disappear when your program exits
+	Gnuplot gp("gnuplot -persist");
+
+	// NOTE: we can use map here because the X values are intended to be
+	// sorted.  If this was not the case, vector<pair<double,double>> could be
+	// used instead.
+
+	std::map<double, double> xy_pts_A;
+	for(double x=-2; x<2; x+=0.01) {
+		double y = x*x*x;
+		xy_pts_A[x] = y;
+	}
+
+	std::map<double, double> xy_pts_B;
+	for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
+		double theta = alpha*2.0*3.14159;
+		xy_pts_B[cos(theta)] = sin(theta);
+	}
+
+	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
+	// Data will be sent via a temporary file.  These are erased when you call
+	// gp.clearTmpfiles() or when gp goes out of scope.  If you pass a filename
+	// (i.e. "gp.file(pts, 'mydata.dat')"), then the named file will be created
+	// and won't be deleted.
+	gp << "plot" << gp.file(xy_pts_A) << "with lines title 'cubic',"
+		<< gp.file(xy_pts_B) << "with points title 'circle'\n";
 }
 
 void demo_png() {
@@ -174,11 +203,11 @@ void demo_external_binary() {
 
 void register_demos() {
 	register_demo("basic",                  demo_basic);
+	register_demo("tmpfile",                demo_tmpfile);
 	register_demo("png",                    demo_png);
 	register_demo("vectors",                demo_vectors);
 	register_demo("script_inline_text",     demo_inline_text);
 	register_demo("script_inline_binary",   demo_inline_binary);
-	register_demo("script_external_text",     demo_external_text);
-	register_demo("script_external_binary",     demo_external_binary);
-	//register_demo("waves_binary_file",      demo_waves_binary_file);
+	register_demo("script_external_text",   demo_external_text);
+	register_demo("script_external_binary", demo_external_binary);
 }
