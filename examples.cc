@@ -24,17 +24,16 @@ THE SOFTWARE.
 #include <vector>
 #include <math.h>
 
+// http://stackoverflow.com/a/1658429
 #ifdef _WIN32
 	#include <windows.h>
-	inline void mysleep(unsigned pMilliseconds)
-	{
-		::Sleep(pMilliseconds);
+	inline void mysleep(unsigned millis) {
+		::Sleep(millis);
 	}
 #else
 	#include <unistd.h>
-	inline void mysleep(unsigned pMilliseconds)
-	{
-		::usleep(pMilliseconds * 1000);
+	inline void mysleep(unsigned millis) {
+		::usleep(millis * 1000);
 	}
 #endif
 
@@ -222,7 +221,7 @@ void demo_animation() {
 
 	gp << "set yrange [-1:1]\n";
 
-	const int N = 200;
+	const int N = 1000;
 	std::vector<float> pts(N);
 
 	float theta = 0;
