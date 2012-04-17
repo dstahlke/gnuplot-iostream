@@ -204,7 +204,7 @@ public:
 
 	template <class T>
 	void sendBinary(const std::vector<T> &arr) {
-		stream->write(reinterpret_cast<const char *>(arr[0]), arr.size() * sizeof(T));
+		stream->write(reinterpret_cast<const char *>(&arr[0]), arr.size() * sizeof(T));
 	}
 
 	template <class T>
