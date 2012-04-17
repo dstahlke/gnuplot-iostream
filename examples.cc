@@ -24,6 +24,20 @@ THE SOFTWARE.
 #include <vector>
 #include <math.h>
 
+#ifdef _WIN32
+	#include <windows.h>
+	inline void mysleep(unsigned pMilliseconds)
+	{
+		::Sleep(pMilliseconds);
+	}
+#else
+	#include <unistd.h>
+	inline void mysleep(unsigned pMilliseconds)
+	{
+		::usleep(pMilliseconds * 1000);
+	}
+#endif
+
 #include "gnuplot-iostream.h"
 
 // Yes, I'm including a *.cc file.  It contains main().
@@ -201,6 +215,32 @@ void demo_external_binary() {
 	gp << "splot" << gp.binaryFile(vecs, "external_binary.dat") << "with lines notitle\n";
 }
 
+void demo_animation() {
+	Gnuplot gp;
+
+	std::cout << "Press Ctrl-C to quit (closing gnuplot window doesn't quit)." << std::endl;
+
+	gp << "set yrange [-1:1]\n";
+
+	const int N = 200;
+	std::vector<float> pts(N);
+
+	float theta = 0;
+	while(1) {
+		for(int i=0; i<N; i++) {
+			float alpha = (float(i)/N-0.5) * 10;
+			pts[i] = sin(alpha*8.0 + theta) * exp(-alpha*alpha/2.0);
+		}
+
+		gp << "plot '-' binary" << gp.binfmt(pts) << "with lines notitle\n";
+		gp.sendBinary(pts);
+		gp.flush();
+
+		theta += 0.2;
+		mysleep(100);
+	}
+}
+
 void register_demos() {
 	register_demo("basic",                  demo_basic);
 	register_demo("tmpfile",                demo_tmpfile);
@@ -210,4 +250,5 @@ void register_demos() {
 	register_demo("script_inline_binary",   demo_inline_binary);
 	register_demo("script_external_text",   demo_external_text);
 	register_demo("script_external_binary", demo_external_binary);
+	register_demo("animation",              demo_animation);
 }
