@@ -71,7 +71,7 @@ THE SOFTWARE.
 
 #ifdef GNUPLOT_USE_TMPFILE
 // RAII temporary file.  File is removed when this object goes out of scope.
-class GnuplotTmpfile : boost::noncopyable {
+class GnuplotTmpfile {
 public:
 	GnuplotTmpfile() :
 		file(boost::filesystem::unique_path(
@@ -79,6 +79,12 @@ public:
 			"tmp-gnuplot-%%%%-%%%%-%%%%-%%%%"))
 	{ }
 
+private:
+	// noncopyable
+	GnuplotTmpfile(const GnuplotTmpfile &);
+	const GnuplotTmpfile& operator=(const GnuplotTmpfile &);
+
+public:
 	~GnuplotTmpfile() {
 		// it is never good to throw exceptions from a destructor
 		try {
@@ -96,11 +102,17 @@ public:
 ///////////////////////////////////////////////////////////
 
 // Used for reading stuff sent from gnuplot via gnuplot's "print" function.
-class GnuplotFeedback : boost::noncopyable {
+class GnuplotFeedback {
 public:
+	GnuplotFeedback() { }
 	virtual ~GnuplotFeedback() { }
 	virtual std::string filename() const { assert(0); } // FIXME - why can't I have a pure virtual method?
 	virtual FILE *handle() const { assert(0); } // FIXME - why can't I have a pure virtual method?
+
+private:
+	// noncopyable
+	GnuplotFeedback(const GnuplotFeedback &);
+	const GnuplotFeedback& operator=(const GnuplotFeedback &);
 };
 
 #ifdef GNUPLOT_ENABLE_PTY
@@ -146,13 +158,18 @@ public:
 		}
 	}
 
+private:
+	// noncopyable
+	GnuplotFeedbackPty(const GnuplotFeedbackPty &);
+	const GnuplotFeedbackPty& operator=(const GnuplotFeedbackPty &);
+
+public:
 	~GnuplotFeedbackPty() {
 		if(pty_fh) fclose(pty_fh);
 		if(master_fd > 0) ::close(master_fd);
 		if(slave_fd  > 0) ::close(slave_fd);
 	}
 
-public:
 	std::string filename() const {
 		return pty_fn;
 	}
@@ -185,6 +202,12 @@ private:
 //		fclose(fh);
 //	}
 //
+//private:
+//	// noncopyable
+//	GnuplotFeedbackTmpfile(const GnuplotFeedbackTmpfile &);
+//	const GnuplotFeedbackTmpfile& operator=(const GnuplotFeedbackTmpfile &);
+//
+//public:
 //	std::string filename() const {
 //		return tmp_file.file.string();
 //	}
@@ -394,7 +417,7 @@ private:
 
 ///////////////////////////////////////////////////////////
 
-class Gnuplot : boost::noncopyable, public boost::iostreams::stream<
+class Gnuplot : public boost::iostreams::stream<
 	boost::iostreams::file_descriptor_sink>
 {
 public:
@@ -428,6 +451,12 @@ public:
 		*this << std::scientific << std::setprecision(18);  // refer <iomanip>
 	}
 
+private:
+	// noncopyable
+	Gnuplot(const Gnuplot &);
+	const Gnuplot& operator=(const Gnuplot &);
+
+public:
 	~Gnuplot() {
 		if(debug_messages) {
 			std::cerr << "ending gnuplot session" << std::endl;
