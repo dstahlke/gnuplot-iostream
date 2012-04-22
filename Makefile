@@ -1,4 +1,4 @@
-CXXFLAGS+=-Wall -Wextra -Weffc++ -I/usr/lib64/blitz/include -Os -g
+CXXFLAGS+=-Wall -Wextra -I/usr/lib64/blitz/include -Os -g
 LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 
 all: examples

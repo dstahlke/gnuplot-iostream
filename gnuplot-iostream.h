@@ -45,6 +45,7 @@ THE SOFTWARE.
 #include "boost/iostreams/device/file_descriptor.hpp"
 #include "boost/iostreams/stream.hpp"
 #include "boost/version.hpp"
+#include "boost/utility.hpp"
 #ifdef GNUPLOT_ENABLE_BLITZ
 #include "blitz/array.h"
 #endif
@@ -66,11 +67,47 @@ THE SOFTWARE.
 #define FILENO fileno
 #endif
 
-#ifdef GNUPLOT_ENABLE_PTY
-// this is a private class
-class GnuplotPty {
+///////////////////////////////////////////////////////////
+
+#ifdef GNUPLOT_USE_TMPFILE
+// RAII temporary file.  File is removed when this object goes out of scope.
+class GnuplotTmpfile : boost::noncopyable {
 public:
-	explicit GnuplotPty(bool debug_messages) :
+	GnuplotTmpfile() :
+		file(boost::filesystem::unique_path(
+			boost::filesystem::temp_directory_path() /
+			"tmp-gnuplot-%%%%-%%%%-%%%%-%%%%"))
+	{ }
+
+	~GnuplotTmpfile() {
+		// it is never good to throw exceptions from a destructor
+		try {
+			remove(file);
+		} catch(const std::exception &e) {
+			std::cerr << "Failed to remove temporary file " << file << std::endl;
+		}
+	}
+
+public:
+	boost::filesystem::path file;
+};
+#endif // GNUPLOT_USE_TMPFILE
+
+///////////////////////////////////////////////////////////
+
+// Used for reading stuff sent from gnuplot via gnuplot's "print" function.
+class GnuplotFeedback : boost::noncopyable {
+public:
+	virtual ~GnuplotFeedback() { }
+	virtual std::string filename() const { assert(0); } // FIXME - why can't I have a pure virtual method?
+	virtual FILE *handle() const { assert(0); } // FIXME - why can't I have a pure virtual method?
+};
+
+#ifdef GNUPLOT_ENABLE_PTY
+#define GNUPLOT_ENABLE_FEEDBACK
+class GnuplotFeedbackPty : public GnuplotFeedback {
+public:
+	explicit GnuplotFeedbackPty(bool debug_messages) :
 		pty_fn(),
 		pty_fh(NULL),
 		master_fd(-1),
@@ -88,7 +125,7 @@ public:
 		}
 		pty_fn = std::string(pty_fn_buf);
 		if(debug_messages) {
-			std::cerr << "fn=" << pty_fn << std::endl;
+			std::cerr << "feedback_fn=" << pty_fn << std::endl;
 		}
 
 		// disable echo
@@ -109,27 +146,62 @@ public:
 		}
 	}
 
-	~GnuplotPty() {
+	~GnuplotFeedbackPty() {
 		if(pty_fh) fclose(pty_fh);
 		if(master_fd > 0) ::close(master_fd);
 		if(slave_fd  > 0) ::close(slave_fd);
 	}
 
-private: // noncopyable
-	GnuplotPty(const GnuplotPty &);
-	const GnuplotPty& operator=(const GnuplotPty &);
-
 public:
+	std::string filename() const {
+		return pty_fn;
+	}
+
+	FILE *handle() const {
+		return pty_fh;
+	}
+
+private:
 	std::string pty_fn;
 	FILE *pty_fh;
 	int master_fd, slave_fd;
 };
-#else // GNUPLOT_ENABLE_PTY
-class GnuplotPty { };
-#endif // GNUPLOT_ENABLE_PTY
+//#elif defined GNUPLOT_USE_TMPFILE
+//// Currently this doesn't work since fscanf doesn't block (need something like "tail -f")
+//#define GNUPLOT_ENABLE_FEEDBACK
+//class GnuplotFeedbackTmpfile : public GnuplotFeedback {
+//public:
+//	explicit GnuplotFeedbackTmpfile(bool debug_messages) :
+//		tmp_file(),
+//		fh(NULL)
+//	{
+//		if(debug_messages) {
+//			std::cerr << "feedback_fn=" << filename() << std::endl;
+//		}
+//		fh = fopen(filename().c_str(), "a");
+//	}
+//
+//	~GnuplotFeedbackTmpfile() {
+//		fclose(fh);
+//	}
+//
+//	std::string filename() const {
+//		return tmp_file.file.string();
+//	}
+//
+//	FILE *handle() const {
+//		return fh;
+//	}
+//
+//private:
+//	GnuplotTmpfile tmp_file;
+//	FILE *fh;
+//};
+#endif // GNUPLOT_ENABLE_PTY, GNUPLOT_USE_TMPFILE
 
 ///////////////////////////////////////////////////////////
 
+// This is for sending array data to gnuplot directly or via a file.
 class GnuplotWriter {
 public:
 	explicit GnuplotWriter(std::ostream *_stream, bool _send_e=true) :
@@ -322,36 +394,7 @@ private:
 
 ///////////////////////////////////////////////////////////
 
-#ifdef GNUPLOT_USE_TMPFILE
-class GnuplotTmpfile {
-public:
-	GnuplotTmpfile() :
-		file(boost::filesystem::unique_path(
-			boost::filesystem::temp_directory_path() /
-			"tmp-gnuplot-%%%%-%%%%-%%%%-%%%%"))
-	{ }
-
-	~GnuplotTmpfile() {
-		// it is never good to throw exceptions from a destructor
-		try {
-			remove(file);
-		} catch(const std::exception &e) {
-			std::cerr << "Failed to remove temporary file " << file << std::endl;
-		}
-	}
-
-private: // noncopyable
-	GnuplotTmpfile(const GnuplotTmpfile &);
-	const GnuplotTmpfile& operator=(const GnuplotTmpfile &);
-
-public:
-	boost::filesystem::path file;
-};
-#endif // GNUPLOT_USE_TMPFILE
-
-///////////////////////////////////////////////////////////
-
-class Gnuplot : public boost::iostreams::stream<
+class Gnuplot : boost::noncopyable, public boost::iostreams::stream<
 	boost::iostreams::file_descriptor_sink>
 {
 public:
@@ -362,7 +405,7 @@ public:
 		),
 		pout(pout), // keeps '-Weff++' quiet
 		is_pipe(true),
-		gp_pty(NULL),
+		feedback(NULL),
 		writer(this),
 		tmp_files(),
 		debug_messages(false)
@@ -377,7 +420,7 @@ public:
 		),
 		pout(pout), // keeps '-Weff++' quiet
 		is_pipe(false),
-		gp_pty(NULL),
+		feedback(NULL),
 		writer(this),
 		tmp_files(),
 		debug_messages(false)
@@ -408,39 +451,10 @@ public:
 			}
 		}
 
-		if(gp_pty) delete(gp_pty);
+		if(feedback) delete(feedback);
 	}
-
-private: // noncopyable
-	Gnuplot(const Gnuplot &);
-	const Gnuplot& operator=(const Gnuplot &);
 
 public:
-#ifdef GNUPLOT_ENABLE_PTY
-	// Input variables are set to the mouse position and button.  If the gnuplot
-	// window is closed, button -1 is returned.  The msg parameter is the prompt
-	// that is printed to the console.
-	void getMouse(
-		double &mx, double &my, int &mb,
-		std::string msg="Click Mouse!"
-	) {
-		allocPty();
-
-		*this << "set mouse; set print \"" << gp_pty->pty_fn << "\"" << std::endl;
-		*this << "pause mouse \"" << msg << "\\n\"" << std::endl;
-		*this << "if (exists(\"MOUSE_X\")) print MOUSE_X, MOUSE_Y, MOUSE_BUTTON; else print 0, 0, -1;" << std::endl;
-		if(debug_messages) {
-			std::cerr << "begin scanf" << std::endl;
-		}
-		if(3 != fscanf(gp_pty->pty_fh, "%50lf %50lf %50d", &mx, &my, &mb)) {
-			throw std::runtime_error("could not parse reply");
-		}
-		if(debug_messages) {
-			std::cerr << "end scanf" << std::endl;
-		}
-	}
-#endif // GNUPLOT_ENABLE_PTY
-
 	template <class T1>
 	Gnuplot &send(T1 arg1) {
 		writer.send(arg1);
@@ -519,20 +533,47 @@ public:
 		tmp_files.clear();
 	}
 
-#ifdef GNUPLOT_ENABLE_PTY
-	void allocPty() {
-		if(!gp_pty) {
-			gp_pty = new GnuplotPty(debug_messages);
+#ifdef GNUPLOT_ENABLE_FEEDBACK
+	// Input variables are set to the mouse position and button.  If the gnuplot
+	// window is closed, button -1 is returned.  The msg parameter is the prompt
+	// that is printed to the console.
+	void getMouse(
+		double &mx, double &my, int &mb,
+		std::string msg="Click Mouse!"
+	) {
+		allocFeedback();
+
+		*this << "set mouse" << std::endl;
+		*this << "pause mouse \"" << msg << "\\n\"" << std::endl;
+		*this << "if (exists(\"MOUSE_X\")) print MOUSE_X, MOUSE_Y, MOUSE_BUTTON; else print 0, 0, -1;" << std::endl;
+		if(debug_messages) {
+			std::cerr << "begin scanf" << std::endl;
+		}
+		if(3 != fscanf(feedback->handle(), "%50lf %50lf %50d", &mx, &my, &mb)) {
+			throw std::runtime_error("could not parse reply");
+		}
+		if(debug_messages) {
+			std::cerr << "end scanf" << std::endl;
 		}
 	}
-#endif // GNUPLOT_ENABLE_PTY
+
+	void allocFeedback() {
+		if(!feedback) {
+#ifdef GNUPLOT_ENABLE_PTY
+			feedback = new GnuplotFeedbackPty(debug_messages);
+//#elif defined GNUPLOT_USE_TMPFILE
+//// Currently this doesn't work since fscanf doesn't block (need something like "tail -f")
+//			feedback = new GnuplotFeedbackTmpfile(debug_messages);
+#endif
+			*this << "set print \"" << feedback->filename() << "\"" << std::endl;
+		}
+	}
+#endif // GNUPLOT_ENABLE_FEEDBACK
 
 private:
 	FILE *pout;
 	bool is_pipe;
-	// this is included even in the absense of GNUPLOT_ENABLE_PTY, to
-	// protect binary compatibility
-	GnuplotPty *gp_pty;
+	GnuplotFeedback *feedback;
 	GnuplotWriter writer;
 #ifdef GNUPLOT_USE_TMPFILE
 	std::vector<boost::shared_ptr<GnuplotTmpfile> > tmp_files;
