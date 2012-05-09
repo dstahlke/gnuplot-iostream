@@ -106,8 +106,8 @@ class GnuplotFeedback {
 public:
 	GnuplotFeedback() { }
 	virtual ~GnuplotFeedback() { }
-	virtual std::string filename() const { assert(0); } // FIXME - why can't I have a pure virtual method?
-	virtual FILE *handle() const { assert(0); } // FIXME - why can't I have a pure virtual method?
+	virtual std::string filename() const = 0;
+	virtual FILE *handle() const = 0;
 
 private:
 	// noncopyable
