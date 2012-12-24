@@ -15,7 +15,7 @@ pass) and getMouse() gets the position of a mouse click. Everything else is
 accomplished by sending commands manually to gnuplot via the iostream
 interface. This is in my opinion the easiest way to do it if you are already
 comfortable with using gnuplot. If you would like a more abstract interface
-check out the gnuplot-cpp library (http://code.google.com/p/gnuplot-cpp). 
+check out the gnuplot-cpp library (http://code.google.com/p/gnuplot-cpp).
 
 
 Getting the source code
@@ -35,6 +35,15 @@ Or, if you would prefer to use cmake, just type 'cmake .; make'.
 
 Of course, look at 'examples*.cc' to see how to use this library!
 
+
+Note for Windows users
+======================
+
+You may need to supply the full path to the gnuplot executable, and in doing so you must take
+care to properly quote spaces and escape slashes.  For example, you should construct the
+Gnuplot object like so:
+
+	Gnuplot gp("\"C:\\my path\\gnuplot.exe\"");
 
 Contributors
 ============
