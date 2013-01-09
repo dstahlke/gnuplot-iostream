@@ -292,8 +292,8 @@ public:
 
 	// this handles STL containers as well as blitz::Array<T, 1> and
 	// blitz::Array<blitz::TinyVector<T, N>, 1>
-	template <class Iter>
-	void send(Iter arr) {
+	template <class T>
+	void send(T arr) {
 		sendIter(arr.begin(), arr.end());
 	}
 
@@ -484,9 +484,21 @@ public:
 	}
 
 public:
+	// These next few methods just pass through to the underlying GnuplotWriter object, which
+	// in turn writes to the iostream.
+
 	template <class T1>
 	Gnuplot &send(T1 arg1) {
 		writer.send(arg1);
+		return *this;
+	}
+
+	// Handle fixed length C style arrays.
+	// Ideally, this specialization would be done in GnuplotWriter and called from the previous
+	// generic send(T1) function.  However, that way doesn't seem to compile.
+	template <typename T, std::size_t N>
+	Gnuplot &send(T (&arr)[N]) {
+		writer.sendIter(arr, arr+N);
 		return *this;
 	}
 

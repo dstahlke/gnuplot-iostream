@@ -71,6 +71,16 @@ void demo_basic() {
 	gp.send(xy_pts_A).send(xy_pts_B);
 }
 
+void demo_array() {
+	// -persist option makes the window not disappear when your program exits
+	Gnuplot gp("gnuplot -persist");
+
+	double arr[] = { 1, 3, 2 };
+
+	gp << "plot '-' with lines\n";
+	gp.send(arr);
+}
+
 void demo_tmpfile() {
 	// -persist option makes the window not disappear when your program exits
 	Gnuplot gp("gnuplot -persist");
@@ -242,6 +252,7 @@ void demo_animation() {
 
 void register_demos() {
 	register_demo("basic",                  demo_basic);
+	register_demo("array",                  demo_array);
 	register_demo("tmpfile",                demo_tmpfile);
 	register_demo("png",                    demo_png);
 	register_demo("vectors",                demo_vectors);
