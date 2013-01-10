@@ -235,18 +235,14 @@ public:
 private:
 	template <class T>
 	void sendEntry(T v) {
-		*stream << v << " ";
+		*stream << v;
 	}
 
 	template <class T, class U>
 	void sendEntry(std::pair<T, U> v) {
-		sendEntry(v.first, v.second);
-	}
-
-	template <class T, class U>
-	void sendEntry(T t, U u) {
-		sendEntry(t);
-		sendEntry(u);
+		sendEntry(v.first);
+		*stream << " ";
+		sendEntry(v.second);
 	}
 
 	std::string formatCode(   float *) { return "%float"; }
@@ -278,7 +274,9 @@ public:
 	template <class T, class U>
 	void sendIterPair(T x, T x_last, U y, U y_last) {
 		while(x != x_last && y != y_last) {
-			sendEntry(*x, *y);
+			sendEntry(*x);
+			*stream << " ";
+			sendEntry(*y);
 			*stream << "\n";
 			++x;
 			++y;

@@ -81,6 +81,33 @@ void demo_array() {
 	gp.send(arr);
 }
 
+struct Triple {
+	Triple(
+		double _x,
+		double _y,
+		double _z
+	) : x(_x), y(_y), z(_z) { }
+
+	double x, y, z;
+};
+
+void demo_tuple() {
+	// -persist option makes the window not disappear when your program exits
+	Gnuplot gp("gnuplot -persist");
+
+	std::vector<Triple> pts;
+	for(double alpha=0; alpha<1; alpha+=1.0/120.0) {
+		double theta = alpha*2.0*3.14159;
+		double x = (2+cos(3*theta))*cos(2*theta);
+		double y = (2+cos(3*theta))*sin(2*theta);
+		double z = sin(3*theta);
+		pts.push_back(Triple(x, y, z));
+	}
+
+	gp << "splot '-' with lines notitle\n";
+	gp.send(pts);
+}
+
 void demo_tmpfile() {
 	// -persist option makes the window not disappear when your program exits
 	Gnuplot gp("gnuplot -persist");
@@ -253,6 +280,7 @@ void demo_animation() {
 void register_demos() {
 	register_demo("basic",                  demo_basic);
 	register_demo("array",                  demo_array);
+	register_demo("tuple",                  demo_tuple);
 	register_demo("tmpfile",                demo_tmpfile);
 	register_demo("png",                    demo_png);
 	register_demo("vectors",                demo_vectors);

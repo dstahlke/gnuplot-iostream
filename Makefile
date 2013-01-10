@@ -1,6 +1,8 @@
 CXXFLAGS+=-Wall -Wextra -Weffc++ -I/usr/lib64/blitz/include -Os -g
 LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 
+EVERYTHING=examples examples-blitz examples-interactive
+
 all: examples
 	@echo "Now type 'make blitz' if you have blitz installed, and 'make interactive' if you system has PTY support."
 
@@ -8,7 +10,7 @@ blitz: examples-blitz
 
 interactive: examples-interactive
 
-everything: examples examples-blitz examples-interactive
+everything: $(EVERYTHING)
 
 clean:
 	rm -f *.o
@@ -22,4 +24,4 @@ lint:
 cppcheck:
 	cppcheck *.cc *.h --template gcc --enable=all -q
 
-*.o: gnuplot-iostream.h
+$(EVERYTHING) *.o: gnuplot-iostream.h
