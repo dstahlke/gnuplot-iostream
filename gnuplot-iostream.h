@@ -255,6 +255,12 @@ private:
 	}
 
 public:
+	template <class T>
+	GnuplotWriter & operator<<(const T &v) {
+		*stream << v;
+		return *this;
+	}
+
 	// used for one STL container
 	template <class T>
 	void sendIter(T p, T last) {
@@ -391,10 +397,15 @@ private:
 	}
 #endif // GNUPLOT_ENABLE_BLITZ
 
-	std::ostream *stream; // FIXME - make private
 private:
+	std::ostream *stream;
 	bool send_e;
 };
+
+//class GnuplotBinaryWriter {
+//private:
+//	std::ostream *stream;
+//};
 
 ///////////////////////////////////////////////////////////
 
@@ -609,12 +620,6 @@ public:
 };
 
 ///////////////////////////////////////////////////////////
-
-template <class T>
-GnuplotWriter & operator<<(GnuplotWriter &writer, const T &v) {
-	*(writer.stream) << v;
-	return writer;
-}
 
 template <class T, class U>
 GnuplotWriter & operator<<(GnuplotWriter &writer, const std::pair<T, U> &v) {
