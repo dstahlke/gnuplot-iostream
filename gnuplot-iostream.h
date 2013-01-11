@@ -224,6 +224,47 @@ private:
 
 ///////////////////////////////////////////////////////////
 
+template <class T>
+class GnuplotEntry {
+public:
+	static std::string formatCode();
+	static void send(std::ostream &stream, const T &v) {
+		stream << v;
+	}
+};
+
+template<> std::string GnuplotEntry<   float>::formatCode() { return "%float"; }
+template<> std::string GnuplotEntry<  double>::formatCode() { return "%double"; }
+template<> std::string GnuplotEntry<  int8_t>::formatCode() { return "%int8"; }
+template<> std::string GnuplotEntry< uint8_t>::formatCode() { return "%uint8"; }
+template<> std::string GnuplotEntry< int16_t>::formatCode() { return "%int16"; }
+template<> std::string GnuplotEntry<uint16_t>::formatCode() { return "%uint16"; }
+template<> std::string GnuplotEntry< int32_t>::formatCode() { return "%int32"; }
+template<> std::string GnuplotEntry<uint32_t>::formatCode() { return "%uint32"; }
+template<> std::string GnuplotEntry< int64_t>::formatCode() { return "%int64"; }
+template<> std::string GnuplotEntry<uint64_t>::formatCode() { return "%uint64"; }
+
+template <class T, class U>
+class GnuplotEntry<std::pair<T, U> > {
+public:
+	static std::string formatCode() {
+		return GnuplotEntry<T>::formatCode() + GnuplotEntry<U>::formatCode();
+	}
+
+	static void send(std::ostream &stream, const std::pair<T, U> &v) {
+		stream << v.first << " " << v.second;
+	}
+};
+
+//template <class T>
+//class GnuplotArrayWriter {
+//public:
+//	GnuplotArrayWriter(std::ostream *_stream) : stream(_stream) { }
+//
+//public:
+//	std::ostream *stream;
+//};
+
 // This is for sending array data to gnuplot directly or via a file.
 class GnuplotWriter {
 public:
@@ -233,48 +274,35 @@ public:
 	{ }
 
 private:
-	// for convenience
-	void col_sep()   { *stream <<  " "; }
-	void row_end()   { *stream << "\n"; }
-	void block_end() { *stream << "\n"; }
-	void data_end() {
-		if(send_e) {
-			*stream << "e" << std::endl; // gnuplot's "end of array" token
-		}
+	template <class T>
+	void sendEntry(const T &v) {
+		GnuplotEntry<T>::send(*stream, v);
 	}
 
 public:
-	template <class T>
-	GnuplotWriter & operator<<(const T &v) {
-		*stream << v;
-		return *this;
-	}
-
 	// used for one STL container
 	template <class T>
 	void sendIter(T p, T last) {
 		while(p != last) {
-			*this << *p;
-			row_end();
+			sendEntry(*p);
+			*stream << "\n";
 			++p;
 		}
-		data_end();
 	}
 
 	// used for two STL containers
 	template <class T, class U>
 	void sendIterPair(T x, T x_last, U y, U y_last) {
 		while(x != x_last && y != y_last) {
-			*this << *x;
-			col_sep();
-			*this << *y;
-			row_end();
+			sendEntry(*x);
+			*stream <<  " ";
+			sendEntry(*y);
+			*stream << "\n";
 			++x;
 			++y;
 		}
 		// assert inputs same size
 		assert(x==x_last && y==y_last);
-		data_end();
 	}
 
 	// this handles STL containers as well as blitz::Array<T, 1> and
@@ -295,11 +323,10 @@ public:
 
 		for(size_t i=0; i<vectors[0].size(); i++) {
 			for(size_t j=0; j<vectors.size(); j++) {
-				*this << vectors[j][i];
+				GnuplotEntry<T>::send(*stream, vectors[j][i]);
 			}
-			row_end();
+			*stream << "\n";
 		}
-		data_end();
 	}
 
 #ifdef GNUPLOT_ENABLE_BLITZ
@@ -308,12 +335,11 @@ public:
 	void send(const blitz::Array<T, 2> &a) {
 		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
 			for(int j=a.lbound(1); j<=a.ubound(1); j++) {
-				*this << a(i, j);
-				row_end();
+				GnuplotEntry<T>::send(*stream, a(i, j));
+				*stream << "\n";
 			}
-			block_end();
+			*stream << "\n"; // double blank between blocks
 		}
-		data_end();
 	}
 #endif // GNUPLOT_ENABLE_BLITZ
 
@@ -328,23 +354,11 @@ public:
 		stream(_stream)
 	{ }
 
-private:
-	std::string formatCode(   float *) { return "%float"; }
-	std::string formatCode(  double *) { return "%double"; }
-	std::string formatCode(  int8_t *) { return "%int8"; }
-	std::string formatCode( uint8_t *) { return "%uint8"; }
-	std::string formatCode( int16_t *) { return "%int16"; }
-	std::string formatCode(uint16_t *) { return "%uint16"; }
-	std::string formatCode( int32_t *) { return "%int32"; }
-	std::string formatCode(uint32_t *) { return "%uint32"; }
-	std::string formatCode( int64_t *) { return "%int64"; }
-	std::string formatCode(uint64_t *) { return "%uint64"; }
-
 public:
 	template <class T>
 	std::string binfmt(const std::vector<T> &arr) {
 		std::ostringstream tmp;
-		tmp << " format='" << formatCode((T*)NULL) << "'";
+		tmp << " format='" << GnuplotEntry<T>::formatCode() << "'";
 		tmp << " array=(" << arr.size() << ")";
 		tmp << " ";
 		return tmp.str();
@@ -361,7 +375,7 @@ public:
 		std::ostringstream tmp;
 		tmp << " format='";
 		for(size_t i=0; i<arr.size(); i++) {
-			tmp << formatCode((T*)NULL);
+			tmp << GnuplotEntry<T>::formatCode();
 		}
 		tmp << "' array=(" << arr[0].size() << ")";
 		tmp << " ";
@@ -394,20 +408,10 @@ public:
 	template <class T>
 	std::string binfmt(const blitz::Array<T, 2> &arr) {
 		std::ostringstream tmp;
-		tmp << " format='" << formatCode((T*)NULL) << "'";
+		tmp << " format='" << GnuplotEntry<T>::formatCode() << "'";
 		tmp << " array=(" << arr.extent(0) << "," << arr.extent(1) << ")";
 		if(arr.isMajorRank(0)) tmp << "scan=yx"; // i.e. C-style ordering
 		tmp << " ";
-		return tmp.str();
-	}
-
-private:
-	template <class T, int N>
-	std::string formatCode(blitz::TinyVector<T, N> *) {
-		std::ostringstream tmp;
-		for(int i=0; i<N; i++) {
-			tmp << formatCode((T*)NULL);
-		}
 		return tmp.str();
 	}
 #endif // GNUPLOT_ENABLE_BLITZ
@@ -493,6 +497,7 @@ public:
 	template <class T1>
 	Gnuplot &send(T1 arg1) {
 		writer.send(arg1);
+		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
 
@@ -501,19 +506,20 @@ public:
 	// generic send(T1) function.  However, that way doesn't seem to compile.
 	template <typename T, std::size_t N>
 	Gnuplot &send(T (&arr)[N]) {
-		writer.sendIter(arr, arr+N);
-		return *this;
+		return send(arr, arr+N);
 	}
 
 	template <class T1, class T2>
 	Gnuplot &send(T1 arg1, T2 arg2) {
 		writer.sendIter(arg1, arg2);
+		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
 
 	template <class T1, class T2, class T3, class T4>
 	Gnuplot &send(T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
 		writer.sendIterPair(arg1, arg2, arg3, arg4);
+		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
 
@@ -633,21 +639,25 @@ public:
 
 ///////////////////////////////////////////////////////////
 
-template <class T, class U>
-GnuplotWriter & operator<<(GnuplotWriter &writer, const std::pair<T, U> &v) {
-	writer << v.first << " " << v.second;
-	return writer;
-}
-
 #ifdef GNUPLOT_ENABLE_BLITZ
 template <class T, int N>
-GnuplotWriter & operator<<(GnuplotWriter &writer, const blitz::TinyVector<T, N> &v) {
-	for(int i=0; i<N; i++) {
-		if(i) writer << " ";
-		writer << v[i];
+class GnuplotEntry<blitz::TinyVector<T, N> > {
+public:
+	static std::string formatCode() {
+		std::ostringstream tmp;
+		for(int i=0; i<N; i++) {
+			tmp << GnuplotEntry<T>::formatCode();
+		}
+		return tmp.str();
 	}
-	return writer;
-}
+
+	static void send(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
+		for(int i=0; i<N; i++) {
+			if(i) stream << " ";
+			stream << v[i];
+		}
+	}
+};
 #endif // GNUPLOT_ENABLE_BLITZ
 
 #endif // GNUPLOT_IOSTREAM_H

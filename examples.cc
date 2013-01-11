@@ -91,10 +91,13 @@ struct Triple {
 	double x, y, z;
 };
 
-GnuplotWriter & operator<<(GnuplotWriter &writer, const Triple &v) {
-	writer << v.x << " " << v.y << " " << v.z;
-	return writer;
-}
+template <>
+class GnuplotEntry<Triple> {
+public:
+	static void send(std::ostream &stream, const Triple &v) {
+		stream << v.x << " " << v.y << " " << v.z;
+	}
+};
 
 void demo_tuple() {
 	// -persist option makes the window not disappear when your program exits
