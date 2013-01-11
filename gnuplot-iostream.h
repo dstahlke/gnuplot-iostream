@@ -256,14 +256,30 @@ public:
 	}
 };
 
-//template <class T>
-//class GnuplotArrayWriter {
-//public:
-//	GnuplotArrayWriter(std::ostream *_stream) : stream(_stream) { }
-//
-//public:
-//	std::ostream *stream;
-//};
+template <class T>
+class GnuplotArrayWriter {
+public:
+	template <class U>
+	void sendEntry(std::ostream &stream, const U &v) {
+		GnuplotEntry<U>::send(*stream, v);
+	}
+
+	// This generic implementation handles STL containers as well as blitz::Array<*, 1>.
+	template <class T>
+	void send(std::ostream &stream, T arr) {
+		sendIter(stream, arr.begin(), arr.end());
+	}
+
+private:
+	template <class U>
+	void sendIter(std::ostream &stream, U p, U last) {
+		while(p != last) {
+			sendEntry(stream, *p);
+			stream << "\n";
+			++p;
+		}
+	}
+};
 
 // This is for sending array data to gnuplot directly or via a file.
 class GnuplotWriter {
@@ -273,45 +289,7 @@ public:
 		send_e(_send_e)
 	{ }
 
-private:
-	template <class T>
-	void sendEntry(const T &v) {
-		GnuplotEntry<T>::send(*stream, v);
-	}
-
 public:
-	// used for one STL container
-	template <class T>
-	void sendIter(T p, T last) {
-		while(p != last) {
-			sendEntry(*p);
-			*stream << "\n";
-			++p;
-		}
-	}
-
-	// used for two STL containers
-	template <class T, class U>
-	void sendIterPair(T x, T x_last, U y, U y_last) {
-		while(x != x_last && y != y_last) {
-			sendEntry(*x);
-			*stream <<  " ";
-			sendEntry(*y);
-			*stream << "\n";
-			++x;
-			++y;
-		}
-		// assert inputs same size
-		assert(x==x_last && y==y_last);
-	}
-
-	// this handles STL containers as well as blitz::Array<T, 1> and
-	// blitz::Array<blitz::TinyVector<T, N>, 1>
-	template <class T>
-	void send(T arr) {
-		sendIter(arr.begin(), arr.end());
-	}
-
 	// send vector of vectors containing data points
 	template <class T>
 	void send(const std::vector<std::vector <T> > &vectors) {
@@ -509,16 +487,30 @@ public:
 		return send(arr, arr+N);
 	}
 
-	template <class T1, class T2>
-	Gnuplot &send(T1 arg1, T2 arg2) {
-		writer.sendIter(arg1, arg2);
+	// Iterator.  I wish I had named this sendIter, but I didn't.
+	template <class T, class T>
+	Gnuplot &send(T p, T last) {
+		while(p != last) {
+			sendEntry(*p);
+			*stream << "\n";
+			++p;
+		}
 		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
 
 	template <class T1, class T2, class T3, class T4>
-	Gnuplot &send(T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
-		writer.sendIterPair(arg1, arg2, arg3, arg4);
+	Gnuplot &send(T x, T x_last, U y, U y_last) {
+		while(x != x_last && y != y_last) {
+			sendEntry(*x);
+			*stream <<  " ";
+			sendEntry(*y);
+			*stream << "\n";
+			++x;
+			++y;
+		}
+		// assert inputs same size
+		assert(x==x_last && y==y_last);
 		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
