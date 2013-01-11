@@ -91,6 +91,11 @@ struct Triple {
 	double x, y, z;
 };
 
+GnuplotWriter & operator<<(GnuplotWriter &writer, const Triple &v) {
+	writer << v.x << " " << v.y << " " << v.z;
+	return writer;
+}
+
 void demo_tuple() {
 	// -persist option makes the window not disappear when your program exits
 	Gnuplot gp("gnuplot -persist");
