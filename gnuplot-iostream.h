@@ -256,23 +256,45 @@ public:
 	}
 };
 
+#ifdef GNUPLOT_ENABLE_BLITZ
+template <class T, int N>
+class GnuplotEntry<blitz::TinyVector<T, N> > {
+public:
+	static std::string formatCode() {
+		std::ostringstream tmp;
+		for(int i=0; i<N; i++) {
+			tmp << GnuplotEntry<T>::formatCode();
+		}
+		return tmp.str();
+	}
+
+	static void send(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
+		for(int i=0; i<N; i++) {
+			if(i) stream << " ";
+			stream << v[i];
+		}
+	}
+};
+#endif // GNUPLOT_ENABLE_BLITZ
+
+///////////////////////////////////////////////////////////
+
 template <class T>
 class GnuplotArrayWriter {
 public:
 	template <class U>
-	void sendEntry(std::ostream &stream, const U &v) {
-		GnuplotEntry<U>::send(*stream, v);
+	static void sendEntry(std::ostream &stream, const U &v) {
+		GnuplotEntry<U>::send(stream, v);
 	}
 
 	// This generic implementation handles STL containers as well as blitz::Array<*, 1>.
-	template <class T>
-	void send(std::ostream &stream, T arr) {
+	static void send(std::ostream &stream, const T &arr) {
 		sendIter(stream, arr.begin(), arr.end());
 	}
 
 private:
 	template <class U>
-	void sendIter(std::ostream &stream, U p, U last) {
+	static void sendIter(std::ostream &stream, U p, U last) {
 		while(p != last) {
 			sendEntry(stream, *p);
 			stream << "\n";
@@ -281,18 +303,28 @@ private:
 	}
 };
 
-// This is for sending array data to gnuplot directly or via a file.
-class GnuplotWriter {
+// vector containing data points
+template <class T>
+class GnuplotArrayWriter<std::vector<T> > {
 public:
-	explicit GnuplotWriter(std::ostream *_stream, bool _send_e=true) :
-		stream(_stream),
-		send_e(_send_e)
-	{ }
+	static std::string binfmt(const std::vector<T> &arr) {
+		std::ostringstream tmp;
+		tmp << " format='" << GnuplotEntry<T>::formatCode() << "'";
+		tmp << " array=(" << arr.size() << ")";
+		tmp << " ";
+		return tmp.str();
+	}
 
+	static void sendBinary(std::ostream &stream, const std::vector<T> &arr) {
+		stream.write(reinterpret_cast<const char *>(&arr[0]), arr.size() * sizeof(T));
+	}
+};
+
+// vector of vectors containing data points
+template <class T>
+class GnuplotArrayWriter<std::vector<std::vector <T> > > {
 public:
-	// send vector of vectors containing data points
-	template <class T>
-	void send(const std::vector<std::vector <T> > &vectors) {
+	static void send(std::ostream &stream, const std::vector<std::vector <T> > &vectors) {
 		// all vectors need to have the same size
 		assert(vectors.size() > 0);
 		for(size_t i=1; i<vectors.size(); i++) {
@@ -301,54 +333,13 @@ public:
 
 		for(size_t i=0; i<vectors[0].size(); i++) {
 			for(size_t j=0; j<vectors.size(); j++) {
-				GnuplotEntry<T>::send(*stream, vectors[j][i]);
+				GnuplotEntry<T>::send(stream, vectors[j][i]);
 			}
-			*stream << "\n";
+			stream << "\n";
 		}
 	}
 
-#ifdef GNUPLOT_ENABLE_BLITZ
-	// Note: T could be either a scalar or a blitz::TinyVector.
-	template <class T>
-	void send(const blitz::Array<T, 2> &a) {
-		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
-			for(int j=a.lbound(1); j<=a.ubound(1); j++) {
-				GnuplotEntry<T>::send(*stream, a(i, j));
-				*stream << "\n";
-			}
-			*stream << "\n"; // double blank between blocks
-		}
-	}
-#endif // GNUPLOT_ENABLE_BLITZ
-
-private:
-	std::ostream *stream;
-	bool send_e;
-};
-
-class GnuplotBinaryWriter {
-public:
-	explicit GnuplotBinaryWriter(std::ostream *_stream) :
-		stream(_stream)
-	{ }
-
-public:
-	template <class T>
-	std::string binfmt(const std::vector<T> &arr) {
-		std::ostringstream tmp;
-		tmp << " format='" << GnuplotEntry<T>::formatCode() << "'";
-		tmp << " array=(" << arr.size() << ")";
-		tmp << " ";
-		return tmp.str();
-	}
-
-	template <class T>
-	void sendBinary(const std::vector<T> &arr) {
-		stream->write(reinterpret_cast<const char *>(&arr[0]), arr.size() * sizeof(T));
-	}
-
-	template <class T>
-	std::string binfmt(const std::vector<std::vector<T> > &arr) {
+	static std::string binfmt(const std::vector<std::vector<T> > &arr) {
 		assert(arr.size() > 0);
 		std::ostringstream tmp;
 		tmp << " format='";
@@ -360,9 +351,7 @@ public:
 		return tmp.str();
 	}
 
-	// send vector of vectors containing data points
-	template <class T>
-	void sendBinary(const std::vector<std::vector <T> > &vectors) {
+	static void sendBinary(std::ostream &stream, const std::vector<std::vector <T> > &vectors) {
 		// all vectors need to have the same size
 		assert(vectors.size() > 0);
 		for(size_t i=1; i<vectors.size(); i++) {
@@ -372,19 +361,41 @@ public:
 		for(size_t i=0; i<vectors[0].size(); i++) {
 			for(size_t j=0; j<vectors.size(); j++) {
 				const T &val = vectors[j][i];
-				stream->write(reinterpret_cast<const char *>(&val), sizeof(T));
+				stream.write(reinterpret_cast<const char *>(&val), sizeof(T));
 			}
 		}
 	}
+};
 
 #ifdef GNUPLOT_ENABLE_BLITZ
-	template <class T, int d>
-	void sendBinary(const blitz::Array<T, d> &arr) {
-		stream->write(reinterpret_cast<const char *>(arr.data()), arr.size() * sizeof(T));
+// Note: T could be either a scalar or a blitz::TinyVector.
+template <class T>
+class GnuplotArrayWriter<blitz::Array<T, 1> > {
+public:
+	static void sendBinary(std::ostream &stream, const blitz::Array<T, 1> &arr) {
+		stream.write(reinterpret_cast<const char *>(arr.data()), arr.size() * sizeof(T));
+	}
+};
+
+// Note: T could be either a scalar or a blitz::TinyVector.
+template <class T>
+class GnuplotArrayWriter<blitz::Array<T, 2> > {
+public:
+	static void send(std::ostream &stream, const blitz::Array<T, 2> &a) {
+		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
+			for(int j=a.lbound(1); j<=a.ubound(1); j++) {
+				GnuplotEntry<T>::send(stream, a(i, j));
+				stream << "\n";
+			}
+			stream << "\n"; // double blank between blocks
+		}
 	}
 
-	template <class T>
-	std::string binfmt(const blitz::Array<T, 2> &arr) {
+	static void sendBinary(std::ostream &stream, const blitz::Array<T, d> &arr) {
+		stream.write(reinterpret_cast<const char *>(arr.data()), arr.size() * sizeof(T));
+	}
+
+	static std::string binfmt(const blitz::Array<T, 2> &arr) {
 		std::ostringstream tmp;
 		tmp << " format='" << GnuplotEntry<T>::formatCode() << "'";
 		tmp << " array=(" << arr.extent(0) << "," << arr.extent(1) << ")";
@@ -392,11 +403,8 @@ public:
 		tmp << " ";
 		return tmp.str();
 	}
-#endif // GNUPLOT_ENABLE_BLITZ
-
-private:
-	std::ostream *stream;
 };
+#endif // GNUPLOT_ENABLE_BLITZ
 
 ///////////////////////////////////////////////////////////
 
@@ -412,8 +420,6 @@ public:
 		pout(pout), // keeps '-Weff++' quiet
 		is_pipe(true),
 		feedback(NULL),
-		writer(this),
-		binary_writer(this),
 		tmp_files(),
 		debug_messages(false)
 	{
@@ -428,8 +434,6 @@ public:
 		pout(pout), // keeps '-Weff++' quiet
 		is_pipe(false),
 		feedback(NULL),
-		writer(this),
-		binary_writer(this),
 		tmp_files(),
 		debug_messages(false)
 	{
@@ -468,44 +472,47 @@ public:
 		if(feedback) delete(feedback);
 	}
 
-public:
-	// These next few methods just pass through to the underlying GnuplotWriter object, which
-	// in turn writes to the iostream.
+private:
+	// FIXME - not ideal to have this here
+	template <class U>
+	void sendEntry(const U &v) {
+		GnuplotEntry<U>::send(*this, v);
+	}
 
-	template <class T1>
-	Gnuplot &send(T1 arg1) {
-		writer.send(arg1);
+public:
+	template <class T>
+	Gnuplot &send(const T &arg) {
+		GnuplotArrayWriter<T>::send(*this, arg);
 		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
 
 	// Handle fixed length C style arrays.
-	// Ideally, this specialization would be done in GnuplotWriter and called from the previous
-	// generic send(T1) function.  However, that way doesn't seem to compile.
+	// FIXME - don't specialize here
 	template <typename T, std::size_t N>
 	Gnuplot &send(T (&arr)[N]) {
 		return send(arr, arr+N);
 	}
 
 	// Iterator.  I wish I had named this sendIter, but I didn't.
-	template <class T, class T>
+	template <class T>
 	Gnuplot &send(T p, T last) {
 		while(p != last) {
 			sendEntry(*p);
-			*stream << "\n";
+			*this << "\n";
 			++p;
 		}
 		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
 
-	template <class T1, class T2, class T3, class T4>
+	template <class T, class U>
 	Gnuplot &send(T x, T x_last, U y, U y_last) {
 		while(x != x_last && y != y_last) {
 			sendEntry(*x);
-			*stream <<  " ";
+			*this <<  " ";
 			sendEntry(*y);
-			*stream << "\n";
+			*this << "\n";
 			++x;
 			++y;
 		}
@@ -515,15 +522,15 @@ public:
 		return *this;
 	}
 
-	template <class T1>
-	Gnuplot &sendBinary(T1 arg1) {
-		binary_writer.sendBinary(arg1);
+	template <class T>
+	Gnuplot &sendBinary(const T &arg) {
+		GnuplotArrayWriter<T>::sendBinary(*this, arg);
 		return *this;
 	}
 
 	template <class T>
-	std::string binfmt(T arg) {
-		return binary_writer.binfmt(arg);
+	std::string binfmt(const T &arg) {
+		return GnuplotArrayWriter<T>::binfmt(arg);
 	}
 
 private:
@@ -541,12 +548,11 @@ private:
 
 public:
 	// NOTE: empty filename makes temporary file
-	template <class T1>
-	std::string file(T1 arg1, std::string filename="") {
+	template <class T>
+	std::string file(const T &arg, std::string filename="") {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
-		GnuplotWriter tmp_writer(&tmp_stream, false);
-		tmp_writer.send(arg1);
+		GnuplotArrayWriter<T>::send(*this, arg);
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
@@ -556,17 +562,16 @@ public:
 	}
 
 	// NOTE: empty filename makes temporary file
-	template <class T1>
-	std::string binaryFile(T1 arg1, std::string filename="") {
+	template <class T>
+	std::string binaryFile(T arg, std::string filename="") {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out | std::fstream::binary);
-		GnuplotBinaryWriter tmp_writer(&tmp_stream);
-		tmp_writer.sendBinary(arg1);
+		GnuplotArrayWriter<T>::sendBinary(tmp_stream, arg);
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
 		// FIXME - hopefully filename doesn't contain quotes or such...
-		cmdline << " '" << filename << "' binary" << binfmt(arg1);
+		cmdline << " '" << filename << "' binary" << binfmt(arg);
 		return cmdline.str();
 	}
 
@@ -616,8 +621,6 @@ private:
 	FILE *pout;
 	bool is_pipe;
 	GnuplotFeedback *feedback;
-	GnuplotWriter writer;
-	GnuplotBinaryWriter binary_writer;
 #ifdef GNUPLOT_USE_TMPFILE
 	std::vector<boost::shared_ptr<GnuplotTmpfile> > tmp_files;
 #else
@@ -630,26 +633,5 @@ public:
 };
 
 ///////////////////////////////////////////////////////////
-
-#ifdef GNUPLOT_ENABLE_BLITZ
-template <class T, int N>
-class GnuplotEntry<blitz::TinyVector<T, N> > {
-public:
-	static std::string formatCode() {
-		std::ostringstream tmp;
-		for(int i=0; i<N; i++) {
-			tmp << GnuplotEntry<T>::formatCode();
-		}
-		return tmp.str();
-	}
-
-	static void send(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
-		for(int i=0; i<N; i++) {
-			if(i) stream << " ";
-			stream << v[i];
-		}
-	}
-};
-#endif // GNUPLOT_ENABLE_BLITZ
 
 #endif // GNUPLOT_IOSTREAM_H
