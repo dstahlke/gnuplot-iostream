@@ -279,20 +279,15 @@ public:
 
 ///////////////////////////////////////////////////////////
 
-template <class T>
-class GnuplotArrayWriter {
+class GnuplotArrayWriterBase {
 public:
+	virtual ~GnuplotArrayWriterBase() { }
+
 	template <class U>
 	static void sendEntry(std::ostream &stream, const U &v) {
 		GnuplotEntry<U>::send(stream, v);
 	}
 
-	// This generic implementation handles STL containers as well as blitz::Array<*, 1>.
-	static void send(std::ostream &stream, const T &arr) {
-		sendIter(stream, arr.begin(), arr.end());
-	}
-
-private:
 	template <class U>
 	static void sendIter(std::ostream &stream, U p, U last) {
 		while(p != last) {
@@ -303,11 +298,31 @@ private:
 	}
 };
 
+template <class T>
+class GnuplotArrayWriter : public GnuplotArrayWriterBase {
+public:
+	static void send(std::ostream &stream, const T &arr) {
+		sendIter(stream, arr.begin(), arr.end());
+	}
+};
+
+template <typename T, std::size_t N>
+class GnuplotArrayWriter<T[N]> : public GnuplotArrayWriterBase {
+public:
+	static void send(std::ostream &stream, const T (&arr)[N]) {
+		sendIter(stream, arr, arr+N);
+	}
+};
+
 // vector containing data points
 template <class T>
-class GnuplotArrayWriter<std::vector<T> > {
+class GnuplotArrayWriter<std::vector<T> > : public GnuplotArrayWriterBase {
 public:
-	static std::string binfmt(const std::vector<T> &arr) {
+	static void send(std::ostream &stream, const std::vector<T> &arr) {
+		sendIter(stream, arr.begin(), arr.end());
+	}
+
+	std::string binfmt(const std::vector<T> &arr) {
 		std::ostringstream tmp;
 		tmp << " format='" << GnuplotEntry<T>::formatCode() << "'";
 		tmp << " array=(" << arr.size() << ")";
@@ -315,16 +330,16 @@ public:
 		return tmp.str();
 	}
 
-	static void sendBinary(std::ostream &stream, const std::vector<T> &arr) {
+	void sendBinary(std::ostream &stream, const std::vector<T> &arr) {
 		stream.write(reinterpret_cast<const char *>(&arr[0]), arr.size() * sizeof(T));
 	}
 };
 
 // vector of vectors containing data points
 template <class T>
-class GnuplotArrayWriter<std::vector<std::vector <T> > > {
+class GnuplotArrayWriter<std::vector<std::vector <T> > > : public GnuplotArrayWriterBase {
 public:
-	static void send(std::ostream &stream, const std::vector<std::vector <T> > &vectors) {
+	void send(std::ostream &stream, const std::vector<std::vector <T> > &vectors) {
 		// all vectors need to have the same size
 		assert(vectors.size() > 0);
 		for(size_t i=1; i<vectors.size(); i++) {
@@ -339,7 +354,7 @@ public:
 		}
 	}
 
-	static std::string binfmt(const std::vector<std::vector<T> > &arr) {
+	std::string binfmt(const std::vector<std::vector<T> > &arr) {
 		assert(arr.size() > 0);
 		std::ostringstream tmp;
 		tmp << " format='";
@@ -351,7 +366,7 @@ public:
 		return tmp.str();
 	}
 
-	static void sendBinary(std::ostream &stream, const std::vector<std::vector <T> > &vectors) {
+	void sendBinary(std::ostream &stream, const std::vector<std::vector <T> > &vectors) {
 		// all vectors need to have the same size
 		assert(vectors.size() > 0);
 		for(size_t i=1; i<vectors.size(); i++) {
@@ -370,18 +385,30 @@ public:
 #ifdef GNUPLOT_ENABLE_BLITZ
 // Note: T could be either a scalar or a blitz::TinyVector.
 template <class T>
-class GnuplotArrayWriter<blitz::Array<T, 1> > {
+class GnuplotArrayWriter<blitz::Array<T, 1> > : public GnuplotArrayWriterBase {
 public:
-	static void sendBinary(std::ostream &stream, const blitz::Array<T, 1> &arr) {
+	static void send(std::ostream &stream, const blitz::Array<T, 1> &arr) {
+		sendIter(stream, arr.begin(), arr.end());
+	}
+
+	void sendBinary(std::ostream &stream, const blitz::Array<T, 1> &arr) {
 		stream.write(reinterpret_cast<const char *>(arr.data()), arr.size() * sizeof(T));
+	}
+
+	std::string binfmt(const blitz::Array<T, 1> &arr) {
+		std::ostringstream tmp;
+		tmp << " format='" << GnuplotEntry<T>::formatCode() << "'";
+		tmp << " array=(" << arr.extent(0) << ")";
+		tmp << " ";
+		return tmp.str();
 	}
 };
 
 // Note: T could be either a scalar or a blitz::TinyVector.
 template <class T>
-class GnuplotArrayWriter<blitz::Array<T, 2> > {
+class GnuplotArrayWriter<blitz::Array<T, 2> > : public GnuplotArrayWriterBase {
 public:
-	static void send(std::ostream &stream, const blitz::Array<T, 2> &a) {
+	void send(std::ostream &stream, const blitz::Array<T, 2> &a) {
 		for(int i=a.lbound(0); i<=a.ubound(0); i++) {
 			for(int j=a.lbound(1); j<=a.ubound(1); j++) {
 				GnuplotEntry<T>::send(stream, a(i, j));
@@ -391,15 +418,15 @@ public:
 		}
 	}
 
-	static void sendBinary(std::ostream &stream, const blitz::Array<T, d> &arr) {
+	void sendBinary(std::ostream &stream, const blitz::Array<T, 2> &arr) {
 		stream.write(reinterpret_cast<const char *>(arr.data()), arr.size() * sizeof(T));
 	}
 
-	static std::string binfmt(const blitz::Array<T, 2> &arr) {
+	std::string binfmt(const blitz::Array<T, 2> &arr) {
 		std::ostringstream tmp;
 		tmp << " format='" << GnuplotEntry<T>::formatCode() << "'";
 		tmp << " array=(" << arr.extent(0) << "," << arr.extent(1) << ")";
-		if(arr.isMajorRank(0)) tmp << "scan=yx"; // i.e. C-style ordering
+		if(arr.isMajorRank(0)) tmp << " scan=yx"; // i.e. C-style ordering
 		tmp << " ";
 		return tmp.str();
 	}
@@ -482,19 +509,13 @@ private:
 public:
 	template <class T>
 	Gnuplot &send(const T &arg) {
-		GnuplotArrayWriter<T>::send(*this, arg);
+		GnuplotArrayWriter<T>().send(*this, arg);
 		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
 
-	// Handle fixed length C style arrays.
-	// FIXME - don't specialize here
-	template <typename T, std::size_t N>
-	Gnuplot &send(T (&arr)[N]) {
-		return send(arr, arr+N);
-	}
-
 	// Iterator.  I wish I had named this sendIter, but I didn't.
+	// Now I can't use the two argument send function for anything else.
 	template <class T>
 	Gnuplot &send(T p, T last) {
 		while(p != last) {
@@ -524,13 +545,13 @@ public:
 
 	template <class T>
 	Gnuplot &sendBinary(const T &arg) {
-		GnuplotArrayWriter<T>::sendBinary(*this, arg);
+		GnuplotArrayWriter<T>().sendBinary(*this, arg);
 		return *this;
 	}
 
 	template <class T>
 	std::string binfmt(const T &arg) {
-		return GnuplotArrayWriter<T>::binfmt(arg);
+		return GnuplotArrayWriter<T>().binfmt(arg);
 	}
 
 private:
@@ -552,7 +573,7 @@ public:
 	std::string file(const T &arg, std::string filename="") {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
-		GnuplotArrayWriter<T>::send(*this, arg);
+		GnuplotArrayWriter<T>().send(*this, arg);
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
@@ -566,7 +587,7 @@ public:
 	std::string binaryFile(T arg, std::string filename="") {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out | std::fstream::binary);
-		GnuplotArrayWriter<T>::sendBinary(tmp_stream, arg);
+		GnuplotArrayWriter<T>().sendBinary(tmp_stream, arg);
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
