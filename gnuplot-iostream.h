@@ -227,6 +227,8 @@ private:
 template <class T>
 class GnuplotEntry {
 public:
+	static const bool is_tuple = false;
+
 	static std::string formatCode();
 
 	static void send(std::ostream &stream, const T &v) {
@@ -248,6 +250,8 @@ template<> std::string GnuplotEntry<uint64_t>::formatCode() { return "%uint64"; 
 template <class T, class U>
 class GnuplotEntry<std::pair<T, U> > {
 public:
+	static const bool is_tuple = true;
+
 	static std::string formatCode() {
 		return GnuplotEntry<T>::formatCode() + GnuplotEntry<U>::formatCode();
 	}
@@ -261,6 +265,8 @@ public:
 template <class T, int N>
 class GnuplotEntry<blitz::TinyVector<T, N> > {
 public:
+	static const bool is_tuple = true;
+
 	static std::string formatCode() {
 		std::ostringstream tmp;
 		for(int i=0; i<N; i++) {
@@ -279,6 +285,25 @@ public:
 #endif // GNUPLOT_ENABLE_BLITZ
 
 ///////////////////////////////////////////////////////////
+
+// FIXME - experimental stuff
+template <class T>
+typename boost::enable_if_c<GnuplotEntry<T>::is_tuple, void>::type
+foo(const T &) {
+	std::cout << "tuple" << std::endl;
+}
+
+template <class T>
+typename boost::enable_if_c<GnuplotEntry<typename T::value_type::value_type>::is_tuple, void>::type
+foo(const T &) {
+	std::cout << "vec vec tuple" << std::endl;
+}
+
+template <class T>
+typename boost::enable_if_c<!GnuplotEntry<typename T::value_type::value_type>::is_tuple, void>::type
+foo(const T &) {
+	std::cout << "vec vec scalar" << std::endl;
+}
 
 class GnuplotArrayWriterBase {
 public:
@@ -303,7 +328,8 @@ public:
 	std::ostream *stream;
 };
 
-template <class T>
+// generic container supporting iterators
+template <class T, class Enable = void>
 class GnuplotArrayWriter : public GnuplotArrayWriterBase {
 public:
 	void send(const T &arr) {
@@ -311,6 +337,7 @@ public:
 	}
 };
 
+// C style array
 template <typename T, std::size_t N>
 class GnuplotArrayWriter<T[N]> : public GnuplotArrayWriterBase {
 public:
