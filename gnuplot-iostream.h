@@ -286,25 +286,6 @@ public:
 
 ///////////////////////////////////////////////////////////
 
-// FIXME - experimental stuff
-template <class T>
-typename boost::enable_if_c<GnuplotEntry<T>::is_tuple, void>::type
-foo(const T &) {
-	std::cout << "tuple" << std::endl;
-}
-
-template <class T>
-typename boost::enable_if_c<GnuplotEntry<typename T::value_type::value_type>::is_tuple, void>::type
-foo(const T &) {
-	std::cout << "vec vec tuple" << std::endl;
-}
-
-template <class T>
-typename boost::enable_if_c<!GnuplotEntry<typename T::value_type::value_type>::is_tuple, void>::type
-foo(const T &) {
-	std::cout << "vec vec scalar" << std::endl;
-}
-
 class GnuplotArrayWriterBase {
 public:
 	GnuplotArrayWriterBase() : stream(NULL) { }
