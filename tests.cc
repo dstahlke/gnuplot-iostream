@@ -68,11 +68,10 @@ public:
     enum { value = sizeof(test<T>(NULL, NULL)) == sizeof(char) };
 };
 
-//template <class T>
-//magic_iter<typename T::iterator>
-//make_magic_iter(T &container) {
-//	return boost::iterator_range<typename T::iterator>(container.begin(), container.end());
-//}
+template <class T, size_t N>
+class is_container<T[N]> {
+	enum { value = true };
+};
 
 template <class T>
 typename boost::enable_if<is_container<T> >::type
@@ -85,6 +84,54 @@ typename boost::enable_if_c<!is_container<T>::value>::type
 a(const T &) {
 	std::cout << "a:flat" << std::endl;
 }
+
+template <class T>
+std::pair<typename T::const_iterator, typename T::const_iterator>
+get_iter_pair(const T &arg) {
+	return std::make_pair(arg.begin(), arg.end());
+}
+
+template <class T, size_t N>
+std::pair<T *, T *>
+get_iter_pair(T (&arr)[N]) {
+	return std::make_pair(arr, arr+N);
+}
+
+template <class T, size_t N>
+std::pair<const T *, const T *>
+get_iter_pair(const T (&arr)[N]) {
+	return std::make_pair(arr, arr+N);
+}
+
+template <class T>
+class IterTypeGetter {
+public:
+	typedef typename T::const_iterator iter_type;
+};
+
+template <class T, size_t N>
+class IterTypeGetter<T[N]> {
+public:
+	typedef T* iter_type;
+};
+
+template <class T, size_t N>
+class IterTypeGetter<const T[N]> {
+public:
+	typedef const T* iter_type;
+};
+
+template <class T>
+class ValTypeGetter {
+public:
+	typedef typename T::value_type val_type;
+};
+
+template <class T>
+class ValTypeGetter<T*> {
+public:
+	typedef T val_type;
+};
 
 template <class T, class Enable=void>
 class RangeVecBase : public std::vector<std::pair<T, T> > {
@@ -127,13 +174,23 @@ get_range_vec(const T &arg) {
 	return ret;
 }
 
+template <class T, size_t N>
+RangeVec<typename IterTypeGetter<T>::iter_type>
+get_range_vec(T (&arr)[N]) {
+	RangeVec<typename IterTypeGetter<T>::iter_type> ret;
+	for(size_t i=0; i<N; i++) {
+		ret.push_back(get_iter_pair(arr[i]));
+	}
+	return ret;
+}
+
 template <class T>
 void send_CL_rvec(RangeVec<T> arg) {
 	if(arg.empty()) return;
 	while(!arg.is_done()) {
 		for(size_t i=0; i<arg.size(); i++) {
 			if(i) std::cout << " ";
-			GnuplotEntry<typename T::value_type>::send(std::cout, *arg[i].first);
+			GnuplotEntry<typename ValTypeGetter<T>::val_type>::send(std::cout, *arg[i].first);
 		}
 		arg.inc();
 		std::cout << "\n";
@@ -191,6 +248,11 @@ int main() {
 		}
 	}
 
+	std::vector<double> cols[2] = { cvs[0], cvs[1] };
+	int aa[2][3] = {{1,2,3},{4,5,6}};
+	//std::vector<int[3]> av(1);
+	//for(int i=0; i<3; i++) av[0][i] = i;
+
 	//gp.send(scalar_array);
 	//gp.send(tuple_array);
 
@@ -203,6 +265,8 @@ int main() {
 
 	a(s);
 	a(vs);
+	a(cols);
+	a(aa);
 
 	std::cout << "hb=" << is_container<double>::value << std::endl;
 	std::cout << "hb=" << is_container<std::pair<double, double> >::value << std::endl;
@@ -212,4 +276,7 @@ int main() {
 	std::cout << "e" << std::endl;
 	send_CBL(cvvs);
 	std::cout << "e" << std::endl;
+	send_CL(cols);
+	std::cout << "e" << std::endl;
+	send_CL(aa);
 }
