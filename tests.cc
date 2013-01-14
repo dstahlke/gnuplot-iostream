@@ -218,6 +218,13 @@ void send_CBL(const T &arg) {
 	send_CBL_rvec(get_range_vec(arg));
 }
 
+template <class T>
+void send_BL(const T &arg) {
+	T cols[1];
+	cols[0] = arg;
+	send_CBL(get_range_vec(cols));
+}
+
 int main() {
 	//Gnuplot gp("cat");
 
@@ -279,4 +286,9 @@ int main() {
 	send_CL(cols);
 	std::cout << "e" << std::endl;
 	send_CL(aa);
+	std::cout << "e" << std::endl;
+	send_BL(cvs);
+	std::cout << "e" << std::endl;
+	//send_BL(aa);
+	std::cout << "e" << std::endl;
 }
