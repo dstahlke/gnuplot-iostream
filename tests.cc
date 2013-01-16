@@ -70,6 +70,7 @@ public:
 
 template <class T, size_t N>
 class is_container<T[N]> {
+public:
 	enum { value = true };
 };
 
@@ -156,8 +157,7 @@ public:
 	RangeVec<typename T::value_type::const_iterator> deref() {
 		RangeVec<typename T::value_type::const_iterator> ret;
 		for(size_t i=0; i<this->size(); i++) {
-			ret.push_back(std::make_pair(
-					this->at(i).first->begin(), this->at(i).first->end()));
+			ret.push_back(get_iter_pair(*(this->at(i).first)));
 		}
 		return ret;
 	}
@@ -169,7 +169,7 @@ get_range_vec(const T &arg) {
 	RangeVec<typename T::value_type::const_iterator> ret;
 	// FIXME - why doesn't cbegin/cend compile?
 	for(typename T::const_iterator outer_it=arg.begin(); outer_it != arg.end(); ++outer_it) {
-		ret.push_back(std::make_pair(outer_it->begin(), outer_it->end()));
+		ret.push_back(get_iter_pair(*outer_it));
 	}
 	return ret;
 }

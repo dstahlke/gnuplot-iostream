@@ -1,4 +1,6 @@
-CXXFLAGS+=-Wall -Wextra -Weffc++ -I/usr/lib64/blitz/include -Os -g
+CXXFLAGS+=-Wall -Wextra -I/usr/lib64/blitz/include -Os -g
+# FIXME - bring this back
+#CXXFLAGS+=-Weffc++
 LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 
 EVERYTHING=examples examples-blitz examples-interactive
