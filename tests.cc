@@ -222,7 +222,7 @@ template <class T>
 void send_BL(const T &arg) {
 	T cols[1];
 	cols[0] = arg;
-	send_CBL(get_range_vec(cols));
+	send_CBL(cols);
 }
 
 int main() {
@@ -289,6 +289,6 @@ int main() {
 	std::cout << "e" << std::endl;
 	send_BL(cvs);
 	std::cout << "e" << std::endl;
-	//send_BL(aa);
+	send_BL(aa);
 	std::cout << "e" << std::endl;
 }
