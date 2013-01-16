@@ -164,9 +164,9 @@ public:
 };
 
 template <class T>
-RangeVec<typename T::value_type::const_iterator>
+RangeVec<typename IterTypeGetter<typename T::value_type>::iter_type >
 get_range_vec(const T &arg) {
-	RangeVec<typename T::value_type::const_iterator> ret;
+	RangeVec<typename IterTypeGetter<typename T::value_type>::iter_type > ret;
 	// FIXME - why doesn't cbegin/cend compile?
 	for(typename T::const_iterator outer_it=arg.begin(); outer_it != arg.end(); ++outer_it) {
 		ret.push_back(get_iter_pair(*outer_it));
@@ -220,8 +220,13 @@ void send_CBL(const T &arg) {
 
 template <class T>
 void send_BL(const T &arg) {
-	T cols[1];
-	cols[0] = arg;
+	//T cols[1];
+	//cols[0] = arg;
+	//std::vector<T> cols;
+	//cols.push_back(arg);
+	RangeVec<T *> cols;
+	cols.first  = &arg;
+	cols.second = &arg + 1;
 	send_CBL(cols);
 }
 
