@@ -115,12 +115,6 @@ get_range_vec(const T &arg) {
 	return ret;
 }
 
-template <class T, size_t N>
-RangeVec<typename ContainerizeArrayRet<T[N]>::rettype::value_type::const_iterator>
-get_range_vec(const T (&arg)[N]) {
-	return get_range_vec(containerize_array(arg));
-}
-
 template <class T>
 void send_CL_rvec(RangeVec<T> arg) {
 	if(arg.empty()) return;
@@ -161,6 +155,16 @@ void send_BL(const T &arg) {
 	RangeVec<typename T::const_iterator> cols;
 	cols.push_back(std::make_pair(arg.begin(), arg.end()));
 	send_CBL_rvec(cols);
+}
+
+template <class T, size_t N>
+void send_CL(const T (&arg)[N]) {
+	send_CL(containerize_array(arg));
+}
+
+template <class T, size_t N>
+void send_CBL(const T (&arg)[N]) {
+	send_CBL(containerize_array(arg));
 }
 
 template <class T, size_t N>

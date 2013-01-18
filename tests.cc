@@ -154,8 +154,8 @@ class RangeVec : public RangeVecBase<T> { };
 template <class T>
 class RangeVec<T, typename boost::enable_if<is_container<typename T::value_type> >::type> : public RangeVecBase<T> {
 public:
-	RangeVec<typename T::value_type::const_iterator> deref() {
-		RangeVec<typename T::value_type::const_iterator> ret;
+	RangeVec<typename ValTypeGetter<T>::val_type::const_iterator> deref() {
+		RangeVec<typename ValTypeGetter<T>::val_type::const_iterator> ret;
 		for(size_t i=0; i<this->size(); i++) {
 			ret.push_back(get_iter_pair(*(this->at(i).first)));
 		}
@@ -163,17 +163,17 @@ public:
 	}
 };
 
-template <class T, size_t N>
-class RangeVec<T[N]> : public RangeVecBase<T[N]> {
-public:
-	RangeVec<typename IterTypeGetter<T[N]>::iter_type> deref() {
-		RangeVec<typename IterTypeGetter<T[N]>::iter_type> ret;
-		for(size_t i=0; i<this->size(); i++) {
-			ret.push_back(get_iter_pair(*(this->at(i).first)));
-		}
-		return ret;
-	}
-};
+//template <class T, size_t N>
+//class RangeVec<T[N]> : public RangeVecBase<T[N]> {
+//public:
+//	RangeVec<typename IterTypeGetter<T[N]>::iter_type> deref() {
+//		RangeVec<typename IterTypeGetter<T[N]>::iter_type> ret;
+//		for(size_t i=0; i<this->size(); i++) {
+//			ret.push_back(get_iter_pair(*(this->at(i).first)));
+//		}
+//		return ret;
+//	}
+//};
 
 template <class T>
 RangeVec<typename IterTypeGetter<typename T::value_type>::iter_type >
@@ -291,9 +291,6 @@ int main() {
 	a(cols);
 	a(aa);
 
-	std::vector<int[2][3]> vaa;
-	vaa.push_back(aa);
-
 	std::cout << "hb=" << is_container<double>::value << std::endl;
 	std::cout << "hb=" << is_container<std::pair<double, double> >::value << std::endl;
 	std::cout << "hb=" << is_container<std::vector<double> >::value << std::endl;
@@ -308,6 +305,6 @@ int main() {
 	std::cout << "e" << std::endl;
 	send_BL(cvs);
 	std::cout << "e" << std::endl;
-	//send_BL(aa);
+	send_BL(aa);
 	std::cout << "e" << std::endl;
 }
