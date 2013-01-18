@@ -1,4 +1,4 @@
-CXXFLAGS+=-Wall -Wextra -I/usr/lib64/blitz/include -Os -g
+CXXFLAGS+=-Wall -Wextra -I/usr/lib64/blitz/include -O0 -g
 # FIXME - bring this back
 #CXXFLAGS+=-Weffc++
 LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
