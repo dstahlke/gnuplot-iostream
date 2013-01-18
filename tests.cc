@@ -163,6 +163,18 @@ public:
 	}
 };
 
+template <class T, size_t N>
+class RangeVec<T[N]> : public RangeVecBase<T[N]> {
+public:
+	RangeVec<typename IterTypeGetter<T[N]>::iter_type> deref() {
+		RangeVec<typename IterTypeGetter<T[N]>::iter_type> ret;
+		for(size_t i=0; i<this->size(); i++) {
+			ret.push_back(get_iter_pair(*(this->at(i).first)));
+		}
+		return ret;
+	}
+};
+
 template <class T>
 RangeVec<typename IterTypeGetter<typename T::value_type>::iter_type >
 get_range_vec(const T &arg) {
@@ -206,7 +218,8 @@ template <class T>
 void send_CBL_rvec(RangeVec<T> arg) {
 	if(arg.empty()) return;
 	while(!arg.is_done()) {
-		RangeVec<typename T::value_type::const_iterator> inner = arg.deref();
+		//RangeVec<typename T::value_type::const_iterator> inner = arg.deref();
+		RangeVec<typename IterTypeGetter<typename ValTypeGetter<T>::val_type>::iter_type> inner = arg.deref();
 		send_CL_rvec(inner);
 		arg.inc();
 		std::cout << "\n";
@@ -219,15 +232,13 @@ void send_CBL(const T &arg) {
 }
 
 template <class T>
-void send_BL(const T &arg) {
-	//T cols[1];
-	//cols[0] = arg;
+void send_BL(T &arg) { // FIXME - const
 	//std::vector<T> cols;
 	//cols.push_back(arg);
-	RangeVec<T *> cols;
-	cols.first  = &arg;
-	cols.second = &arg + 1;
-	send_CBL(cols);
+	//send_CBL(cols);
+	RangeVec<typename IterTypeGetter<T>::iter_type> cols;
+	cols.push_back(get_iter_pair(arg));
+	send_CBL_rvec(cols);
 }
 
 int main() {
@@ -280,6 +291,9 @@ int main() {
 	a(cols);
 	a(aa);
 
+	std::vector<int[2][3]> vaa;
+	vaa.push_back(aa);
+
 	std::cout << "hb=" << is_container<double>::value << std::endl;
 	std::cout << "hb=" << is_container<std::pair<double, double> >::value << std::endl;
 	std::cout << "hb=" << is_container<std::vector<double> >::value << std::endl;
@@ -294,6 +308,6 @@ int main() {
 	std::cout << "e" << std::endl;
 	send_BL(cvs);
 	std::cout << "e" << std::endl;
-	send_BL(aa);
+	//send_BL(aa);
 	std::cout << "e" << std::endl;
 }
