@@ -39,6 +39,7 @@ std::string get_typename() {
 /// Template magic
 ////////////////////////////////////////////////////////////
 
+// FIXME - maybe use BOOST_MPL_HAS_XXX_TRAIT_DEF
 template <typename T>
 class is_like_stl_container {
     typedef char one;
@@ -87,6 +88,7 @@ struct is_armadillo_mat {
 
 // Error messages involving this stem from treating something that was not a container as if it
 // was.  This is only here to allow compiliation without errors in normal cases.
+// FIXME - make use of static assertions
 class WasNotContainer { };
 
 template <typename T, typename Enable=void>
@@ -122,7 +124,7 @@ public:
 	typedef typename ArrayTraits<TV>::range_type subiter_type;
 	static const bool is_container = ArrayTraits<TV>::is_container;
 
-	bool is_end() { return it == end; }
+	bool is_end() const { return it == end; }
 
 	void inc() { ++it; }
 
@@ -163,46 +165,49 @@ public:
 	}
 };
 
+template <typename RT, typename RU>
+class PairOfRange {
+	template <typename T, typename U>
+	friend void deref_and_print(const PairOfRange<T, U> &arg);
+
+public:
+	PairOfRange() { }
+	PairOfRange(const RT &_l, const RU &_r) : l(_l), r(_r) { }
+
+	static const bool is_container = RT::is_container && RU::is_container;
+
+	typedef std::pair<typename RT::value_type, typename RU::value_type> value_type;
+	typedef PairOfRange<typename RT::subiter_type, typename RU::subiter_type> subiter_type;
+
+	bool is_end() const {
+		bool el = l.is_end();
+		bool er = r.is_end();
+		if(el != er) {
+			throw std::length_error("columns were different lengths");
+		}
+		return el;
+	}
+
+	void inc() {
+		l.inc();
+		r.inc();
+	}
+
+	value_type deref() const {
+		return std::make_pair(l.deref(), r.deref());
+	}
+
+	subiter_type deref_subiter() const {
+		return subiter_type(l.deref_subiter(), r.deref_subiter());
+	}
+
+private:
+	RT l;
+	RU r;
+};
+
 template <typename T, typename U>
 class ArrayTraits<std::pair<T, U> > {
-	template <typename RT, typename RU>
-	class PairOfRange {
-	public:
-		PairOfRange() { }
-		PairOfRange(const RT &_l, const RU &_r) : l(_l), r(_r) { }
-
-		static const bool is_container = RT::is_container && RU::is_container;
-
-		typedef std::pair<typename RT::value_type, typename RU::value_type> value_type;
-		typedef PairOfRange<typename RT::subiter_type, typename RU::subiter_type> subiter_type;
-
-		bool is_end() {
-			bool el = l.is_end();
-			bool er = r.is_end();
-			if(el != er) {
-				throw std::length_error("columns were different lengths");
-			}
-			return el;
-		}
-
-		void inc() {
-			l.inc();
-			r.inc();
-		}
-
-		value_type deref() const {
-			return std::make_pair(l.deref(), r.deref());
-		}
-
-		subiter_type deref_subiter() const {
-			return subiter_type(l.deref_subiter(), r.deref_subiter());
-		}
-
-	private:
-		RT l;
-		RU r;
-	};
-
 public:
 	typedef PairOfRange<typename ArrayTraits<T>::range_type, typename ArrayTraits<U>::range_type> range_type;
 	typedef std::pair<typename ArrayTraits<T>::value_type, typename ArrayTraits<U>::value_type> value_type;
@@ -224,6 +229,9 @@ public:
 
 template <typename RT>
 class VecOfRange {
+	template <typename T>
+	friend void deref_and_print(const VecOfRange<T> &arg);
+
 public:
 	VecOfRange() { }
 	VecOfRange(const std::vector<RT> &_rvec) : rvec(_rvec) { }
@@ -233,7 +241,7 @@ public:
 	typedef std::vector<typename RT::value_type> value_type;
 	typedef VecOfRange<typename RT::subiter_type> subiter_type;
 
-	bool is_end() {
+	bool is_end() const {
 		if(rvec.empty()) return true;
 		bool ret = rvec[0].is_end();
 		for(size_t i=1; i<rvec.size(); i++) {
@@ -270,15 +278,18 @@ private:
 	std::vector<RT> rvec;
 };
 
-// FIXME - arg could be any iterable type (e.g. 3d blitz array)
 template <typename T>
-VecOfRange<typename ArrayTraits<T>::range_type>
-get_columns_range(const std::vector<T> &arg) {
-	std::vector<typename ArrayTraits<T>::range_type> rvec(arg.size());
-	for(size_t i=0; i<arg.size(); i++) {
-		rvec[i] = ArrayTraits<T>::get_range(arg[i]);
+VecOfRange<typename ArrayTraits<T>::range_type::subiter_type>
+get_columns_range(const T &arg) {
+	typedef typename ArrayTraits<T>::range_type::subiter_type U;
+	std::vector<U> rvec;
+	typename ArrayTraits<T>::range_type outer = ArrayTraits<T>::get_range(arg);
+	while(!outer.is_end()) {
+		rvec.push_back(outer.deref_subiter());
+		outer.inc();
 	}
-	return VecOfRange<typename ArrayTraits<T>::range_type>(rvec);
+	VecOfRange<U> ret(rvec);
+	return ret;
 }
 
 ////////////////////////////////////////////////////////////
@@ -299,7 +310,7 @@ class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
 		typedef IteratorRange<typename arma::Mat<T>::const_row_iterator, T> subiter_type;
 		static const bool is_container = true;
 
-		bool is_end() { return it == p->n_rows; }
+		bool is_end() const { return it == p->n_rows; }
 
 		void inc() { ++it; }
 
@@ -344,7 +355,7 @@ public:
 #ifdef BZ_BLITZ_H
 #ifndef GNUPLOT_H_BLITZ
 #define GNUPLOT_H_BLITZ
-// FIXME
+// FIXME - raise static error if possible
 class WasPartialSlice { };
 
 template <typename T, int ArrayDim, int SliceDim>
@@ -361,7 +372,7 @@ public:
 	static const bool is_container = true;
 
 	// FIXME - handle one-based arrays
-	bool is_end() {
+	bool is_end() const {
 		return idx[ArrayDim-SliceDim] == p->shape()[ArrayDim-SliceDim];
 	}
 
@@ -396,7 +407,7 @@ public:
 	static const bool is_container = false;
 
 	// FIXME - handle one-based arrays
-	bool is_end() {
+	bool is_end() const {
 		return idx[ArrayDim-1] == p->shape()[ArrayDim-1];
 	}
 
@@ -436,33 +447,48 @@ public:
 ////////////////////////////////////////////////////////////
 
 template <typename T>
-void print_entry(const T &arg) {
-	std::cout << "[" << get_typename<T>() << ":" << arg << "]";
-}
-
-// FIXME - recursively do a deref_subiter
-template <typename T>
-void print_entry(const std::vector<T> &arg) {
+typename boost::enable_if_c<T::is_container>::type
+deref_and_print(const T &arg) {
 	std::cout << "{";
-	for(size_t i=0; i<arg.size(); i++) {
-		if(i) std::cout << " ";
-		print_entry(arg[i]);
+	typename T::subiter_type subrange = arg.deref_subiter();
+	bool first = true;
+	while(!subrange.is_end()) {
+		if(!first) std::cout << " ";
+		first = false;
+		deref_and_print(subrange);
+		subrange.inc();
 	}
 	std::cout << "}";
 }
 
+template <typename T>
+typename boost::disable_if_c<T::is_container>::type
+deref_and_print(const T &arg) {
+	const typename T::value_type &v = arg.deref();
+	std::cout << v;
+}
+
 template <typename T, typename U>
-void print_entry(const std::pair<T, U> &arg) {
-	print_entry(arg.first);
+void deref_and_print(const PairOfRange<T, U> &arg) {
+	deref_and_print(arg.l);
 	std::cout << " ";
-	print_entry(arg.second);
+	deref_and_print(arg.r);
+}
+
+template <typename T>
+void deref_and_print(const VecOfRange<T> &arg) {
+	for(size_t i=0; i<arg.rvec.size(); i++) {
+		if(i) std::cout << " ";
+		deref_and_print(arg.rvec[i]);
+	}
 }
 
 template <typename T>
 typename boost::disable_if_c<T::is_container>::type
 print_block(T &arg) {
 	while(!arg.is_end()) {
-		print_entry(arg.deref());
+		//print_entry(arg.deref());
+		deref_and_print(arg);
 		std::cout << std::endl;
 		arg.inc();
 	}
@@ -497,13 +523,13 @@ void plot(std::string header, const T &arg) {
 }
 
 template <typename T>
-void plot_cols(std::string header, const std::vector<T> &arg) {
+void plot_cols(std::string header, const T &arg) {
 	std::cout << "--- " << header << " -------------------------------------" << std::endl;
 	//std::cout << "ncols=" << ArrayTraits<T>::ncols << std::endl;
 	//std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
 	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
-	VecOfRange<typename ArrayTraits<T>::range_type> range = get_columns_range(arg);
-	print_block(range);
+	VecOfRange<typename ArrayTraits<T>::range_type::subiter_type> cols = get_columns_range(arg);
+	print_block(cols);
 	std::cout << "e" << std::endl;
 }
 
@@ -552,7 +578,6 @@ int main() {
 	// FIXME - doesn't work because array gets cast to pointer
 	//plot(std::make_pair(ai, bi));
 	plot("vvd,vvi,vvvi", std::make_pair(vvd, std::make_pair(vvi, vvvi)));
-	plot_cols("vvvi cols", vvvi);
 #if DO_ARMA
 	plot("armacol", armacol);
 	plot("armamat", armamat);
@@ -571,5 +596,9 @@ int main() {
 	plot("blitz1d,vd", std::make_pair(blitz1d, vd));
 	plot("blitz2d", blitz2d);
 	plot("blitz2d,vvi", std::make_pair(blitz2d, vvi));
+	plot("blitz2d,vd", std::make_pair(blitz2d, vd));
 #endif
+
+	plot_cols("vvvi cols", vvvi);
+	plot_cols("blitz2d cols", blitz2d);
 }
