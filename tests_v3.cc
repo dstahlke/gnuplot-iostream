@@ -22,16 +22,19 @@ public:
 };
 
 // Error messages involving this stem from treating something that was not a container as if it
-// was.
-class WasNotContainer { };
+// was.  This is only here to allow compiliation without errors in normal cases.
+class WasNotContainer {
+public:
+	static const size_t depth = 0;
+};
 
 template <typename T, typename Enable=void>
 class ArrayTraits {
 public:
 	typedef WasNotContainer range_type;
-	enum { is_container = false };
+	static const bool is_container = false;
 
-	static range_type get_range(const T &) { }
+	static range_type get_range(const T &) { return range_type(); }
 };
 
 template <typename T>
@@ -44,7 +47,9 @@ class ArrayTraits<T, typename boost::enable_if<is_like_stl_container<T> >::type>
 
 		typedef TV value_type;
 		typedef typename ArrayTraits<TV>::range_type subiter_type;
-		enum { is_container = ArrayTraits<TV>::is_container };
+		static const bool is_container = ArrayTraits<TV>::is_container;
+		static const size_t depth = subiter_type::depth + 1;
+		static const size_t ncols = 1;
 
 		bool is_end() { return it == end; }
 
@@ -64,7 +69,7 @@ class ArrayTraits<T, typename boost::enable_if<is_like_stl_container<T> >::type>
 
 public:
 	typedef STLIteratorRange<typename T::const_iterator, typename T::value_type> range_type;
-	enum { is_container = true };
+	static const bool is_container = true;
 
 	static range_type get_range(const T &arg) {
 		return range_type(arg.begin(), arg.end());
@@ -80,7 +85,9 @@ class ArrayTraits<T[N]> {
 
 		typedef T value_type;
 		typedef typename ArrayTraits<T>::range_type subiter_type;
-		enum { is_container = ArrayTraits<T>::is_container };
+		static const bool is_container = ArrayTraits<T>::is_container;
+		static const size_t depth = subiter_type::depth + 1;
+		static const size_t ncols = 1;
 
 		bool is_end() { return it == N; }
 
@@ -100,7 +107,7 @@ class ArrayTraits<T[N]> {
 	};
 public:
 	typedef CArrayRange range_type;
-	enum { is_container = true };
+	static const bool is_container = true;
 
 	static range_type get_range(const T (&arg)[N]) {
 		return range_type(arg);
@@ -113,7 +120,9 @@ public:
 	PairOfRange() { }
 	PairOfRange(const T &_l, const U &_r) : l(_l), r(_r) { }
 
-	enum { is_container = T::is_container && U::is_container };
+	static const bool is_container = T::is_container && U::is_container;
+	static const size_t depth = (T::depth < U::depth) ? T::depth : U::depth;
+	static const size_t ncols = T::ncols + U::ncols;
 
 	typedef std::pair<typename T::value_type, typename U::value_type> value_type;
 	typedef PairOfRange<typename T::subiter_type, typename U::subiter_type> subiter_type;
@@ -149,7 +158,6 @@ template <typename T>
 class ColumnsRangeGetter {
 public:
 	typedef typename ArrayTraits<T>::range_type range_type;
-	enum { num_cols = 1 };
 
 	static range_type get_range(const T &arg) {
 		return ArrayTraits<T>::get_range(arg);
@@ -160,7 +168,6 @@ template <typename T, typename U>
 class ColumnsRangeGetter<std::pair<T, U> > {
 public:
 	typedef PairOfRange<typename ColumnsRangeGetter<T>::range_type, typename ColumnsRangeGetter<U>::range_type> range_type;
-	enum { num_cols = ColumnsRangeGetter<T>::num_cols + ColumnsRangeGetter<U>::num_cols };
 
 	static range_type get_range(const std::pair<T, U> &arg) {
 		return range_type(
@@ -193,7 +200,7 @@ void print_entry(const std::pair<T, U> &arg) {
 
 template <typename T>
 typename boost::disable_if_c<T::is_container>::type
-print_block(T arg) {
+print_block(T &arg) {
 	while(!arg.is_end()) {
 		print_entry(arg.deref());
 		std::cout << std::endl;
@@ -203,7 +210,7 @@ print_block(T arg) {
 
 template <typename T>
 typename boost::enable_if_c<T::is_container>::type
-print_block(T arg) {
+print_block(T &arg) {
 	while(!arg.is_end()) {
 		std::cout << "<block>" << std::endl;
 		typename T::subiter_type sub = arg.deref_subiter();
@@ -215,7 +222,9 @@ print_block(T arg) {
 
 template <typename T>
 void plot(const T &arg) {
-	std::cout << "ncols=" << ColumnsRangeGetter<T>::num_cols << std::endl;
+	// FIXME - move ncols,depth out of range_type
+	std::cout << "ncols=" << ColumnsRangeGetter<T>::range_type::ncols << std::endl;
+	std::cout << "depth=" << ColumnsRangeGetter<T>::range_type::depth << std::endl;
 	std::cout << "range_type=" << get_typename<typename ColumnsRangeGetter<T>::range_type>() << std::endl;
 	typename ColumnsRangeGetter<T>::range_type range = ColumnsRangeGetter<T>::get_range(arg);
 	print_block(range);
