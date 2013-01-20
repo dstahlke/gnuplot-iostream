@@ -4,6 +4,8 @@
 
 #include <boost/utility.hpp>
 #include <boost/array.hpp>
+#include <boost/mpl/and.hpp>
+#include <boost/mpl/logical.hpp>
 
 ////////////////////////////////////////////////////////////
 /// Debugging functions, to be removed
@@ -36,6 +38,39 @@ class is_like_stl_container {
 
 public:
     enum { value = sizeof(test<T>(NULL, NULL)) == sizeof(char) };
+	typedef boost::mpl::bool_<value> type;
+};
+
+template<typename T> struct has_attrib_n_rows {
+    struct Fallback { int n_rows; };
+    struct Derived : T, Fallback { };
+
+    template<typename C, C> struct ChT;
+
+    template<typename C> static char (&f(ChT<int Fallback::*, &C::n_rows>*))[1];
+    template<typename C> static char (&f(...))[2];
+
+    static bool const value = sizeof(f<Derived>(0)) == 2;
+	typedef boost::mpl::bool_<value> type;
+};
+
+template<typename T> struct has_attrib_n_cols {
+    struct Fallback { int n_cols; };
+    struct Derived : T, Fallback { };
+
+    template<typename C, C> struct ChT;
+
+    template<typename C> static char (&f(ChT<int Fallback::*, &C::n_cols>*))[1];
+    template<typename C> static char (&f(...))[2];
+
+    static bool const value = sizeof(f<Derived>(0)) == 2;
+	typedef boost::mpl::bool_<value> type;
+};
+
+template <typename T>
+struct is_armadillo_mat {
+	static const bool value = has_attrib_n_rows<T>::value && has_attrib_n_cols<T>::value;
+	typedef boost::mpl::bool_<value> type;
 };
 
 // Error messages involving this stem from treating something that was not a container as if it
@@ -65,36 +100,41 @@ public:
 	static const size_t ncols = 1;
 };
 
-template <typename T>
-class ArrayTraits<T, typename boost::enable_if<is_like_stl_container<T> >::type> : public ArrayTraitsDefaults<typename T::value_type> {
-	template <typename TI, typename TV, typename Enable=void>
-	class STLIteratorRange {
-	public:
-		STLIteratorRange() { }
-		STLIteratorRange(const TI &_it, const TI &_end) : it(_it), end(_end) { }
-
-		typedef TV value_type;
-		typedef typename ArrayTraits<TV>::range_type subiter_type;
-		static const bool is_container = ArrayTraits<TV>::is_container;
-
-		bool is_end() { return it == end; }
-
-		void inc() { ++it; }
-
-		value_type deref() const {
-			return *it;
-		}
-
-		subiter_type deref_subiter() const {
-			return ArrayTraits<TV>::get_range(*it);
-		}
-
-	private:
-		TI it, end;
-	};
-
+template <typename TI, typename TV>
+class IteratorRange {
 public:
-	typedef STLIteratorRange<typename T::const_iterator, typename T::value_type> range_type;
+	IteratorRange() { }
+	IteratorRange(const TI &_it, const TI &_end) : it(_it), end(_end) { }
+
+	typedef TV value_type;
+	typedef typename ArrayTraits<TV>::range_type subiter_type;
+	static const bool is_container = ArrayTraits<TV>::is_container;
+
+	bool is_end() { return it == end; }
+
+	void inc() { ++it; }
+
+	value_type deref() const {
+		return *it;
+	}
+
+	subiter_type deref_subiter() const {
+		return ArrayTraits<TV>::get_range(*it);
+	}
+
+private:
+	TI it, end;
+};
+
+template <typename T>
+class ArrayTraits<T, typename boost::enable_if<
+	boost::mpl::and_<
+		is_like_stl_container<T>,
+		boost::mpl::not_<is_armadillo_mat<T> >
+	>
+>::type> : public ArrayTraitsDefaults<typename T::value_type> {
+public:
+	typedef IteratorRange<typename T::const_iterator, typename T::value_type> range_type;
 
 	static range_type get_range(const T &arg) {
 		return range_type(arg.begin(), arg.end());
@@ -103,36 +143,11 @@ public:
 
 template <typename T, size_t N>
 class ArrayTraits<T[N]> : public ArrayTraitsDefaults<T> {
-	class CArrayRange {
-	public:
-		CArrayRange() : p(NULL), it(0) { }
-		CArrayRange(const T *_p) : p(_p), it(0) { }
-
-		typedef T value_type;
-		typedef typename ArrayTraits<T>::range_type subiter_type;
-		static const bool is_container = ArrayTraits<T>::is_container;
-
-		bool is_end() { return it == N; }
-
-		void inc() { ++it; }
-
-		value_type deref() const {
-			return p[it];
-		}
-
-		subiter_type deref_subiter() const {
-			return ArrayTraits<T>::get_range(p[it]);
-		}
-
-	private:
-		const T *p;
-		size_t it;
-	};
 public:
-	typedef CArrayRange range_type;
+	typedef IteratorRange<const T*, T> range_type;
 
 	static range_type get_range(const T (&arg)[N]) {
-		return range_type(arg);
+		return range_type(arg, arg+N);
 	}
 };
 
@@ -258,8 +273,56 @@ get_columns_range(const std::vector<T> &arg) {
 /// Armadillo support
 ////////////////////////////////////////////////////////////
 
-// FIXME - detect if armadillo already included, and don't include otherwise
+// FIXME - detect if armadillo already included, and don't include otherwise.
+// Or better yet, use template magic to avoid needing armadillo include.
 #include <armadillo>
+
+#if 1
+template <typename T>
+class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
+	class ArmaMatRange {
+	public:
+		ArmaMatRange() : p(NULL), it(0) { }
+		ArmaMatRange(const arma::Mat<T> *_p) : p(_p), it(0) { }
+
+		typedef T value_type;
+		typedef IteratorRange<typename arma::Mat<T>::const_row_iterator, T> subiter_type;
+		static const bool is_container = true;
+
+		bool is_end() { return it == p->n_rows; }
+
+		void inc() { ++it; }
+
+		value_type deref() const {
+			throw std::logic_error("can't call deref on an armadillo slice");
+		}
+
+		subiter_type deref_subiter() const {
+			return subiter_type(p->begin_row(it), p->end_row(it));
+		}
+
+	private:
+		const arma::Mat<T> *p;
+		size_t it;
+	};
+public:
+	typedef ArmaMatRange range_type;
+
+	static range_type get_range(const arma::Mat<T> &arg) {
+		return range_type(&arg);
+	}
+};
+
+template <typename T>
+class ArrayTraits<arma::Col<T> > : public ArrayTraitsDefaults<T> {
+public:
+	typedef IteratorRange<typename arma::Col<T>::const_iterator, T> range_type;
+
+	static range_type get_range(const arma::Col<T> &arg) {
+		return range_type(arg.begin(), arg.end());
+	}
+};
+#endif
 
 ////////////////////////////////////////////////////////////
 /// Begin plotting functions
@@ -315,8 +378,8 @@ print_block(T &arg) {
 }
 
 template <typename T>
-void plot(const T &arg) {
-	std::cout << "----------------------------------------" << std::endl;
+void plot(std::string header, const T &arg) {
+	std::cout << "--- " << header << " -------------------------------------" << std::endl;
 	std::cout << "ncols=" << ArrayTraits<T>::ncols << std::endl;
 	std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
 	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
@@ -326,8 +389,8 @@ void plot(const T &arg) {
 }
 
 template <typename T>
-void plot_cols(const std::vector<T> &arg) {
-	std::cout << "----------------------------------------" << std::endl;
+void plot_cols(std::string header, const std::vector<T> &arg) {
+	std::cout << "--- " << header << " -------------------------------------" << std::endl;
 	//std::cout << "ncols=" << ArrayTraits<T>::ncols << std::endl;
 	//std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
 	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
@@ -345,12 +408,15 @@ int main() {
 	std::vector<std::vector<std::vector<int> > > vvvi(NX);
 	int ai[NX];
 	boost::array<int, NX> bi;
+	arma::vec armacol(NX);
+	arma::mat armamat(NX, NY);
 
 	for(int x=0; x<NX; x++) {
 		vd.push_back(x+7.5);
 		vi.push_back(x+7);
 		ai[x] = x+7;
 		bi[x] = x+70;
+		armacol(x) = x+0.123;
 		for(int y=0; y<NY; y++) {
 			vvd[x].push_back(100+x*10+y);
 			vvi[x].push_back(200+x*10+y);
@@ -358,14 +424,17 @@ int main() {
 			tup.push_back(300+x*10+y);
 			tup.push_back(400+x*10+y);
 			vvvi[x].push_back(tup);
+			armamat(x, y) = x*10+y+0.123;
 		}
 	}
 
-	plot(std::make_pair(vd, std::make_pair(vi, bi)));
-	plot(std::make_pair(vvd, vvi));
-	plot(ai);
+	plot("vd,vi,bi", std::make_pair(vd, std::make_pair(vi, bi)));
+	plot("vvd,vvi", std::make_pair(vvd, vvi));
+	plot("ai", ai);
 	// FIXME - doesn't work because array gets cast to pointer
 	//plot(std::make_pair(ai, bi));
-	plot(std::make_pair(vvd, std::make_pair(vvi, vvvi)));
-	plot_cols(vvvi);
+	plot("vvd,vvi,vvvi", std::make_pair(vvd, std::make_pair(vvi, vvvi)));
+	plot_cols("vvvi cols", vvvi);
+	plot("armacol", armacol);
+	plot("armamat", armamat);
 }
