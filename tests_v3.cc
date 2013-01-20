@@ -1,3 +1,14 @@
+// FIXME
+#define DO_ARMA 1
+#define DO_BLITZ 1
+
+#if DO_ARMA
+#include <armadillo>
+#endif
+#if DO_BLITZ
+#include <blitz/array.h>
+#endif
+
 #include <fstream>
 #include <vector>
 #include <stdexcept>
@@ -41,6 +52,7 @@ public:
 	typedef boost::mpl::bool_<value> type;
 };
 
+// http://stackoverflow.com/a/1007175/1048959
 template<typename T> struct has_attrib_n_rows {
     struct Fallback { int n_rows; };
     struct Derived : T, Fallback { };
@@ -273,11 +285,9 @@ get_columns_range(const std::vector<T> &arg) {
 /// Armadillo support
 ////////////////////////////////////////////////////////////
 
-// FIXME - detect if armadillo already included, and don't include otherwise.
-// Or better yet, use template magic to avoid needing armadillo include.
-#include <armadillo>
-
-#if 1
+#ifdef ARMA_INCLUDES
+#ifndef GNUPLOT_H_ARMA
+#define GNUPLOT_H_ARMA
 template <typename T>
 class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
 	class ArmaMatRange {
@@ -309,6 +319,7 @@ public:
 	typedef ArmaMatRange range_type;
 
 	static range_type get_range(const arma::Mat<T> &arg) {
+		std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;
 		return range_type(&arg);
 	}
 };
@@ -319,10 +330,106 @@ public:
 	typedef IteratorRange<typename arma::Col<T>::const_iterator, T> range_type;
 
 	static range_type get_range(const arma::Col<T> &arg) {
+		std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;
 		return range_type(arg.begin(), arg.end());
 	}
 };
-#endif
+#endif // GNUPLOT_H_ARMA
+#endif // ARMA_INCLUDES
+
+////////////////////////////////////////////////////////////
+/// Blitz support
+////////////////////////////////////////////////////////////
+
+#ifdef BZ_BLITZ_H
+#ifndef GNUPLOT_H_BLITZ
+#define GNUPLOT_H_BLITZ
+// FIXME
+class WasPartialSlice { };
+
+template <typename T, int ArrayDim, int SliceDim>
+class BlitzIterator {
+public:
+	BlitzIterator() : p(NULL) { }
+	BlitzIterator(
+		const blitz::Array<T, ArrayDim> *_p,
+		const blitz::TinyVector<int, ArrayDim> _idx
+	) : p(_p), idx(_idx) { }
+
+	typedef WasPartialSlice value_type;
+	typedef BlitzIterator<T, ArrayDim, SliceDim-1> subiter_type;
+	static const bool is_container = true;
+
+	// FIXME - handle one-based arrays
+	bool is_end() {
+		return idx[ArrayDim-SliceDim] == p->shape()[ArrayDim-SliceDim];
+	}
+
+	void inc() {
+		++idx[ArrayDim-SliceDim];
+	}
+
+	value_type deref() const {
+		throw std::logic_error("cannot deref a blitz slice");
+	}
+
+	subiter_type deref_subiter() const {
+		return BlitzIterator<T, ArrayDim, SliceDim-1>(p, idx);
+	}
+
+private:
+	const blitz::Array<T, ArrayDim> *p;
+	blitz::TinyVector<int, ArrayDim> idx;
+};
+
+template <typename T, int ArrayDim>
+class BlitzIterator<T, ArrayDim, 1> {
+public:
+	BlitzIterator() : p(NULL) { }
+	BlitzIterator(
+		const blitz::Array<T, ArrayDim> *_p,
+		const blitz::TinyVector<int, ArrayDim> _idx
+	) : p(_p), idx(_idx) { }
+
+	typedef T value_type;
+	typedef WasNotContainer subiter_type;
+	static const bool is_container = false;
+
+	// FIXME - handle one-based arrays
+	bool is_end() {
+		return idx[ArrayDim-1] == p->shape()[ArrayDim-1];
+	}
+
+	void inc() {
+		++idx[ArrayDim-1];
+	}
+
+	value_type deref() const {
+		return (*p)(idx);
+	}
+
+	subiter_type deref_subiter() const {
+		throw std::invalid_argument("argument was not a container");
+	}
+
+private:
+	const blitz::Array<T, ArrayDim> *p;
+	blitz::TinyVector<int, ArrayDim> idx;
+};
+
+template <typename T, int ArrayDim>
+class ArrayTraits<blitz::Array<T, ArrayDim> > : public ArrayTraitsDefaults<T> {
+public:
+	typedef BlitzIterator<T, ArrayDim, ArrayDim> range_type;
+
+	static range_type get_range(const blitz::Array<T, ArrayDim> &arg) {
+		blitz::TinyVector<int, ArrayDim> start_idx;
+		start_idx = 0;
+		return range_type(&arg, start_idx);
+	}
+};
+#endif // GNUPLOT_H_BLITZ
+#endif // BZ_BLITZ_H
 
 ////////////////////////////////////////////////////////////
 /// Begin plotting functions
@@ -333,6 +440,7 @@ void print_entry(const T &arg) {
 	std::cout << "[" << get_typename<T>() << ":" << arg << "]";
 }
 
+// FIXME - recursively do a deref_subiter
 template <typename T>
 void print_entry(const std::vector<T> &arg) {
 	std::cout << "{";
@@ -399,6 +507,10 @@ void plot_cols(std::string header, const std::vector<T> &arg) {
 	std::cout << "e" << std::endl;
 }
 
+////////////////////////////////////////////////////////////
+/// Example program
+////////////////////////////////////////////////////////////
+
 int main() {
 	const int NX=3, NY=4;
 	std::vector<double> vd;
@@ -408,15 +520,19 @@ int main() {
 	std::vector<std::vector<std::vector<int> > > vvvi(NX);
 	int ai[NX];
 	boost::array<int, NX> bi;
+#if DO_ARMA
 	arma::vec armacol(NX);
 	arma::mat armamat(NX, NY);
+#endif
 
 	for(int x=0; x<NX; x++) {
 		vd.push_back(x+7.5);
 		vi.push_back(x+7);
 		ai[x] = x+7;
 		bi[x] = x+70;
+#if DO_ARMA
 		armacol(x) = x+0.123;
+#endif
 		for(int y=0; y<NY; y++) {
 			vvd[x].push_back(100+x*10+y);
 			vvi[x].push_back(200+x*10+y);
@@ -424,7 +540,9 @@ int main() {
 			tup.push_back(300+x*10+y);
 			tup.push_back(400+x*10+y);
 			vvvi[x].push_back(tup);
+#if DO_ARMA
 			armamat(x, y) = x*10+y+0.123;
+#endif
 		}
 	}
 
@@ -435,6 +553,23 @@ int main() {
 	//plot(std::make_pair(ai, bi));
 	plot("vvd,vvi,vvvi", std::make_pair(vvd, std::make_pair(vvi, vvvi)));
 	plot_cols("vvvi cols", vvvi);
+#if DO_ARMA
 	plot("armacol", armacol);
 	plot("armamat", armamat);
+#endif
+
+#if DO_BLITZ
+	blitz::Array<double, 1> blitz1d(NX);
+	blitz::Array<double, 2> blitz2d(NX, NY);
+	{
+		blitz::firstIndex i;
+		blitz::secondIndex j;
+		blitz1d = i + 0.777;
+		blitz2d = i*10 + j;
+	}
+	plot("blitz1d", blitz1d);
+	plot("blitz1d,vd", std::make_pair(blitz1d, vd));
+	plot("blitz2d", blitz2d);
+	plot("blitz2d,vvi", std::make_pair(blitz2d, vvi));
+#endif
 }
