@@ -299,6 +299,8 @@ get_columns_range(const T &arg) {
 #ifdef ARMA_INCLUDES
 #ifndef GNUPLOT_H_ARMA
 #define GNUPLOT_H_ARMA
+// FIXME - handle Row, Cube, Field
+
 template <typename T>
 class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
 	class ArmaMatRange {
