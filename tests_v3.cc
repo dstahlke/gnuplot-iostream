@@ -2,12 +2,29 @@
 #include <vector>
 #include <stdexcept>
 
+#include <boost/utility.hpp>
+#include <boost/array.hpp>
+
+////////////////////////////////////////////////////////////
+/// Debugging functions, to be removed
+////////////////////////////////////////////////////////////
+
 // for debugging
 #include <typeinfo>
 #include <cxxabi.h>
 
-#include <boost/utility.hpp>
-#include <boost/array.hpp>
+template <typename T>
+std::string get_typename() {
+	int status;
+	char *name;
+	name = abi::__cxa_demangle(typeid(T).name(), 0, 0, &status);
+	assert(!status);
+	return std::string(name);
+}
+
+////////////////////////////////////////////////////////////
+/// Template magic
+////////////////////////////////////////////////////////////
 
 template <typename T>
 class is_like_stl_container {
@@ -163,6 +180,8 @@ public:
 	typedef PairOfRange<typename ArrayTraits<T>::range_type, typename ArrayTraits<U>::range_type> range_type;
 	typedef std::pair<typename ArrayTraits<T>::value_type, typename ArrayTraits<U>::value_type> value_type;
 	static const bool is_container = ArrayTraits<T>::is_container && ArrayTraits<U>::is_container;
+	// It is allowed for l_depth != r_depth, for example one column could be 'double' and the
+	// other column could be 'vector<double>'.
 	static const size_t l_depth = ArrayTraits<T>::depth;
 	static const size_t r_depth = ArrayTraits<U>::depth;
 	static const size_t depth = (l_depth < r_depth) ? l_depth : r_depth;
@@ -224,6 +243,7 @@ private:
 	std::vector<RT> rvec;
 };
 
+// FIXME - arg could be any iterable type (e.g. 3d blitz array)
 template <typename T>
 VecOfRange<typename ArrayTraits<T>::range_type>
 get_columns_range(const std::vector<T> &arg) {
@@ -234,14 +254,16 @@ get_columns_range(const std::vector<T> &arg) {
 	return VecOfRange<typename ArrayTraits<T>::range_type>(rvec);
 }
 
-template <typename T>
-std::string get_typename() {
-	int status;
-	char *name;
-	name = abi::__cxa_demangle(typeid(T).name(), 0, 0, &status);
-	assert(!status);
-	return std::string(name);
-}
+////////////////////////////////////////////////////////////
+/// Armadillo support
+////////////////////////////////////////////////////////////
+
+// FIXME - detect if armadillo already included, and don't include otherwise
+#include <armadillo>
+
+////////////////////////////////////////////////////////////
+/// Begin plotting functions
+////////////////////////////////////////////////////////////
 
 template <typename T>
 void print_entry(const T &arg) {
