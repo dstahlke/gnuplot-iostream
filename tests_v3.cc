@@ -191,6 +191,16 @@ void print_entry(const T &arg) {
 	std::cout << "[" << get_typename<T>() << ":" << arg << "]";
 }
 
+template <typename T>
+void print_entry(const std::vector<T> &arg) {
+	std::cout << "{";
+	for(size_t i=0; i<arg.size(); i++) {
+		if(i) std::cout << " ";
+		print_entry(arg[i]);
+	}
+	std::cout << "}";
+}
+
 template <typename T, typename U>
 void print_entry(const std::pair<T, U> &arg) {
 	print_entry(arg.first);
@@ -258,6 +268,7 @@ int main() {
 	plot(std::make_pair(vd, std::make_pair(vi, bi)));
 	plot(std::make_pair(vvd, vvi));
 	plot(ai);
+	// FIXME - doesn't work because array gets cast to pointer
 	//plot(std::make_pair(ai, bi));
-	//plot(std::make_pair(vvd, std::make_pair(vvi, vvvi)));
+	plot(std::make_pair(vvd, std::make_pair(vvi, vvvi)));
 }
