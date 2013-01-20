@@ -23,22 +23,33 @@ public:
 
 // Error messages involving this stem from treating something that was not a container as if it
 // was.  This is only here to allow compiliation without errors in normal cases.
-class WasNotContainer {
-public:
-	static const size_t depth = 0;
-};
+class WasNotContainer { };
 
 template <typename T, typename Enable=void>
 class ArrayTraits {
 public:
+	typedef WasNotContainer value_type;
 	typedef WasNotContainer range_type;
 	static const bool is_container = false;
+	static const size_t depth = 0;
+	static const size_t ncols = 1;
 
-	static range_type get_range(const T &) { return range_type(); }
+	static range_type get_range(const T &) {
+		throw std::invalid_argument("argument was not a container");
+	}
+};
+
+template <typename V>
+class ArrayTraitsDefaults {
+public:
+	typedef V value_type;
+	static const bool is_container = true;
+	static const size_t depth = ArrayTraits<V>::depth + 1;
+	static const size_t ncols = 1;
 };
 
 template <typename T>
-class ArrayTraits<T, typename boost::enable_if<is_like_stl_container<T> >::type> {
+class ArrayTraits<T, typename boost::enable_if<is_like_stl_container<T> >::type> : public ArrayTraitsDefaults<typename T::value_type> {
 	template <typename TI, typename TV, typename Enable=void>
 	class STLIteratorRange {
 	public:
@@ -48,8 +59,6 @@ class ArrayTraits<T, typename boost::enable_if<is_like_stl_container<T> >::type>
 		typedef TV value_type;
 		typedef typename ArrayTraits<TV>::range_type subiter_type;
 		static const bool is_container = ArrayTraits<TV>::is_container;
-		static const size_t depth = subiter_type::depth + 1;
-		static const size_t ncols = 1;
 
 		bool is_end() { return it == end; }
 
@@ -69,7 +78,6 @@ class ArrayTraits<T, typename boost::enable_if<is_like_stl_container<T> >::type>
 
 public:
 	typedef STLIteratorRange<typename T::const_iterator, typename T::value_type> range_type;
-	static const bool is_container = true;
 
 	static range_type get_range(const T &arg) {
 		return range_type(arg.begin(), arg.end());
@@ -77,7 +85,7 @@ public:
 };
 
 template <typename T, size_t N>
-class ArrayTraits<T[N]> {
+class ArrayTraits<T[N]> : public ArrayTraitsDefaults<T> {
 	class CArrayRange {
 	public:
 		CArrayRange() : p(NULL), it(0) { }
@@ -86,8 +94,6 @@ class ArrayTraits<T[N]> {
 		typedef T value_type;
 		typedef typename ArrayTraits<T>::range_type subiter_type;
 		static const bool is_container = ArrayTraits<T>::is_container;
-		static const size_t depth = subiter_type::depth + 1;
-		static const size_t ncols = 1;
 
 		bool is_end() { return it == N; }
 
@@ -107,7 +113,6 @@ class ArrayTraits<T[N]> {
 	};
 public:
 	typedef CArrayRange range_type;
-	static const bool is_container = true;
 
 	static range_type get_range(const T (&arg)[N]) {
 		return range_type(arg);
@@ -115,67 +120,119 @@ public:
 };
 
 template <typename T, typename U>
-class PairOfRange {
-public:
-	PairOfRange() { }
-	PairOfRange(const T &_l, const U &_r) : l(_l), r(_r) { }
+class ArrayTraits<std::pair<T, U> > {
+	template <typename RT, typename RU>
+	class PairOfRange {
+	public:
+		PairOfRange() { }
+		PairOfRange(const RT &_l, const RU &_r) : l(_l), r(_r) { }
 
-	static const bool is_container = T::is_container && U::is_container;
-	static const size_t depth = (T::depth < U::depth) ? T::depth : U::depth;
-	static const size_t ncols = T::ncols + U::ncols;
+		static const bool is_container = RT::is_container && RU::is_container;
 
-	typedef std::pair<typename T::value_type, typename U::value_type> value_type;
-	typedef PairOfRange<typename T::subiter_type, typename U::subiter_type> subiter_type;
+		typedef std::pair<typename RT::value_type, typename RU::value_type> value_type;
+		typedef PairOfRange<typename RT::subiter_type, typename RU::subiter_type> subiter_type;
 
-	bool is_end() {
-		bool el = l.is_end();
-		bool er = r.is_end();
-		if(el != er) {
-			throw std::length_error("columns were different lengths");
+		bool is_end() {
+			bool el = l.is_end();
+			bool er = r.is_end();
+			if(el != er) {
+				throw std::length_error("columns were different lengths");
+			}
+			return el;
 		}
-		return el;
-	}
 
-	void inc() {
-		l.inc();
-		r.inc();
-	}
+		void inc() {
+			l.inc();
+			r.inc();
+		}
 
-	value_type deref() const {
-		return std::make_pair(l.deref(), r.deref());
-	}
+		value_type deref() const {
+			return std::make_pair(l.deref(), r.deref());
+		}
 
-	subiter_type deref_subiter() const {
-		return subiter_type(l.deref_subiter(), r.deref_subiter());
-	}
+		subiter_type deref_subiter() const {
+			return subiter_type(l.deref_subiter(), r.deref_subiter());
+		}
 
-private:
-	T l;
-	U r;
-};
+	private:
+		RT l;
+		RU r;
+	};
 
-template <typename T>
-class ColumnsRangeGetter {
 public:
-	typedef typename ArrayTraits<T>::range_type range_type;
-
-	static range_type get_range(const T &arg) {
-		return ArrayTraits<T>::get_range(arg);
-	}
-};
-
-template <typename T, typename U>
-class ColumnsRangeGetter<std::pair<T, U> > {
-public:
-	typedef PairOfRange<typename ColumnsRangeGetter<T>::range_type, typename ColumnsRangeGetter<U>::range_type> range_type;
+	typedef PairOfRange<typename ArrayTraits<T>::range_type, typename ArrayTraits<U>::range_type> range_type;
+	typedef std::pair<typename ArrayTraits<T>::value_type, typename ArrayTraits<U>::value_type> value_type;
+	static const bool is_container = ArrayTraits<T>::is_container && ArrayTraits<U>::is_container;
+	static const size_t l_depth = ArrayTraits<T>::depth;
+	static const size_t r_depth = ArrayTraits<U>::depth;
+	static const size_t depth = (l_depth < r_depth) ? l_depth : r_depth;
+	static const size_t ncols = ArrayTraits<T>::ncols + ArrayTraits<U>::ncols;
 
 	static range_type get_range(const std::pair<T, U> &arg) {
 		return range_type(
-			ColumnsRangeGetter<T>::get_range(arg.first),
-			ColumnsRangeGetter<U>::get_range(arg.second)
+			ArrayTraits<T>::get_range(arg.first),
+			ArrayTraits<U>::get_range(arg.second)
 		);
 	}
 };
+
+template <typename RT>
+class VecOfRange {
+public:
+	VecOfRange() { }
+	VecOfRange(const std::vector<RT> &_rvec) : rvec(_rvec) { }
+
+	static const bool is_container = RT::is_container;
+
+	typedef std::vector<typename RT::value_type> value_type;
+	typedef VecOfRange<typename RT::subiter_type> subiter_type;
+
+	bool is_end() {
+		if(rvec.empty()) return true;
+		bool ret = rvec[0].is_end();
+		for(size_t i=1; i<rvec.size(); i++) {
+			if(ret != rvec[i].is_end()) {
+				throw std::length_error("columns were different lengths");
+			}
+		}
+		return ret;
+	}
+
+	void inc() {
+		for(size_t i=0; i<rvec.size(); i++) {
+			rvec[i].inc();
+		}
+	}
+
+	value_type deref() const {
+		value_type ret(rvec.size());
+		for(size_t i=0; i<rvec.size(); i++) {
+			ret[i] = rvec[i].deref();
+		}
+		return ret;
+	}
+
+	subiter_type deref_subiter() const {
+		std::vector<typename RT::subiter_type> subvec(rvec.size());
+		for(size_t i=0; i<rvec.size(); i++) {
+			subvec[i] = rvec[i].deref_subiter();
+		}
+		return subiter_type(subvec);
+	}
+
+private:
+	std::vector<RT> rvec;
+};
+
+template <typename T>
+VecOfRange<typename ArrayTraits<T>::range_type>
+get_columns_range(const std::vector<T> &arg) {
+	std::vector<typename ArrayTraits<T>::range_type> rvec(arg.size());
+	for(size_t i=0; i<arg.size(); i++) {
+		rvec[i] = ArrayTraits<T>::get_range(arg[i]);
+	}
+	return VecOfRange<typename ArrayTraits<T>::range_type>(rvec);
+}
 
 template <typename T>
 std::string get_typename() {
@@ -221,23 +278,40 @@ print_block(T &arg) {
 template <typename T>
 typename boost::enable_if_c<T::is_container>::type
 print_block(T &arg) {
+	bool first = true;
 	while(!arg.is_end()) {
+		if(first) {
+			first = false;
+		} else {
+			std::cout << std::endl;
+		}
 		std::cout << "<block>" << std::endl;
 		typename T::subiter_type sub = arg.deref_subiter();
 		print_block(sub);
-		std::cout << std::endl;
 		arg.inc();
 	}
 }
 
 template <typename T>
 void plot(const T &arg) {
-	// FIXME - move ncols,depth out of range_type
-	std::cout << "ncols=" << ColumnsRangeGetter<T>::range_type::ncols << std::endl;
-	std::cout << "depth=" << ColumnsRangeGetter<T>::range_type::depth << std::endl;
-	std::cout << "range_type=" << get_typename<typename ColumnsRangeGetter<T>::range_type>() << std::endl;
-	typename ColumnsRangeGetter<T>::range_type range = ColumnsRangeGetter<T>::get_range(arg);
+	std::cout << "----------------------------------------" << std::endl;
+	std::cout << "ncols=" << ArrayTraits<T>::ncols << std::endl;
+	std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
+	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
+	typename ArrayTraits<T>::range_type range = ArrayTraits<T>::get_range(arg);
 	print_block(range);
+	std::cout << "e" << std::endl;
+}
+
+template <typename T>
+void plot_cols(const std::vector<T> &arg) {
+	std::cout << "----------------------------------------" << std::endl;
+	//std::cout << "ncols=" << ArrayTraits<T>::ncols << std::endl;
+	//std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
+	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
+	VecOfRange<typename ArrayTraits<T>::range_type> range = get_columns_range(arg);
+	print_block(range);
+	std::cout << "e" << std::endl;
 }
 
 int main() {
@@ -271,4 +345,5 @@ int main() {
 	// FIXME - doesn't work because array gets cast to pointer
 	//plot(std::make_pair(ai, bi));
 	plot(std::make_pair(vvd, std::make_pair(vvi, vvvi)));
+	plot_cols(vvvi);
 }
