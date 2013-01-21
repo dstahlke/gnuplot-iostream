@@ -26,6 +26,9 @@ THE SOFTWARE.
 	FIXME/TODO:
 		What version of boost is currently required?
 		Use namespace.
+		Verify that nested containers have consistent lengths between slices (at least along
+		the column dimension, sometimes it might be okay for blocks to be different lengths).
+		Move binary stuff to new infrastructure.
 */
 
 #ifndef GNUPLOT_IOSTREAM_H
@@ -52,20 +55,21 @@ THE SOFTWARE.
 #include <vector>
 
 // library includes: double quotes make cpplint not complain
-#include "boost/iostreams/device/file_descriptor.hpp"
-#include "boost/iostreams/stream.hpp"
-#include "boost/version.hpp"
-#include "boost/utility.hpp"
+#include <boost/iostreams/device/file_descriptor.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/version.hpp>
+#include <boost/utility.hpp>
+#include <boost/mpl/bool.hpp>
 // FIXME - this should be the only place this macro is used.  Elsewhere, just detect the blitz
 // header guard.
 #ifdef GNUPLOT_ENABLE_BLITZ
-#include "blitz/array.h"
+#include <blitz/array.h>
 #endif
 
 // This is the version of boost which has v3 of the filesystem libraries by default.
 #if BOOST_VERSION >= 104600
 #define GNUPLOT_USE_TMPFILE
-#include "boost/filesystem.hpp"
+#include <boost/filesystem.hpp>
 #endif // BOOST_VERSION
 
 // Patch for Windows by Damien Loison
@@ -438,8 +442,8 @@ public:
 
 template <typename RT, typename RU>
 class PairOfRange {
-	template <typename T, typename U>
-	friend void deref_and_print(std::ostream &, const PairOfRange<T, U> &);
+	template <typename T, typename U, typename DoBinary>
+	friend void deref_and_print(std::ostream &, const PairOfRange<T, U> &, DoBinary);
 
 public:
 	PairOfRange() { }
@@ -501,8 +505,8 @@ public:
 
 template <typename RT>
 class VecOfRange {
-	template <typename T>
-	friend void deref_and_print(std::ostream &, const VecOfRange<T> &);
+	template <typename T, typename DoBinary>
+	friend void deref_and_print(std::ostream &, const VecOfRange<T> &, DoBinary);
 
 public:
 	VecOfRange() { }
@@ -721,58 +725,70 @@ public:
 /// {{{2 Array printing functions
 
 template <typename T>
+void send_scalar(std::ostream &stream, const T &arg, boost::mpl::bool_<true>) {
+	// FIXME
+	stream << "bin(";
+	GnuplotEntry<T>::send(stream, arg);
+	stream << ")";
+	//stream->write(reinterpret_cast<const char *>(&val), sizeof(T));
+}
+
+template <typename T>
+void send_scalar(std::ostream &stream, const T &arg, boost::mpl::bool_<false>) {
+	GnuplotEntry<T>::send(stream, arg);
+}
+
+template <typename T, typename DoBinary>
+typename boost::disable_if_c<T::is_container>::type
+deref_and_print(std::ostream &stream, const T &arg, DoBinary) {
+	const typename T::value_type &v = arg.deref();
+	send_scalar(stream, v, DoBinary());
+}
+
+template <typename T, typename DoBinary>
 typename boost::enable_if_c<T::is_container>::type
-deref_and_print(std::ostream &stream, const T &arg) {
+deref_and_print(std::ostream &stream, const T &arg, DoBinary) {
 	stream << "{";
 	typename T::subiter_type subrange = arg.deref_subiter();
 	bool first = true;
 	while(!subrange.is_end()) {
 		if(!first) stream << " ";
 		first = false;
-		deref_and_print(stream, subrange);
+		deref_and_print(stream, subrange, DoBinary());
 		subrange.inc();
 	}
 	stream << "}";
 }
 
-template <typename T>
-typename boost::disable_if_c<T::is_container>::type
-deref_and_print(std::ostream &stream, const T &arg) {
-	const typename T::value_type &v = arg.deref();
-	//stream << v;
-	GnuplotEntry<typename T::value_type>::send(stream, v);
-}
-
-template <typename T, typename U>
-void deref_and_print(std::ostream &stream, const PairOfRange<T, U> &arg) {
-	deref_and_print(stream, arg.l);
+template <typename T, typename U, typename DoBinary>
+void deref_and_print(std::ostream &stream, const PairOfRange<T, U> &arg, DoBinary) {
+	deref_and_print(stream, arg.l, DoBinary());
 	stream << " ";
-	deref_and_print(stream, arg.r);
+	deref_and_print(stream, arg.r, DoBinary());
 }
 
-template <typename T>
-void deref_and_print(std::ostream &stream, const VecOfRange<T> &arg) {
+template <typename T, typename DoBinary>
+void deref_and_print(std::ostream &stream, const VecOfRange<T> &arg, DoBinary) {
 	for(size_t i=0; i<arg.rvec.size(); i++) {
 		if(i) stream << " ";
-		deref_and_print(stream, arg.rvec[i]);
+		deref_and_print(stream, arg.rvec[i], DoBinary());
 	}
 }
 
-template <typename T>
+template <typename T, typename DoBinary>
 typename boost::disable_if_c<T::is_container>::type
-print_block(std::ostream &stream, T &arg) {
+print_block(std::ostream &stream, T &arg, DoBinary) {
 	while(!arg.is_end()) {
 		//print_entry(arg.deref());
-		deref_and_print(stream, arg);
+		deref_and_print(stream, arg, DoBinary());
 		stream << std::endl;
 		arg.inc();
 	}
 }
 
-// FIXME - limit the depth of descent
-template <typename T>
+template <typename T, typename DoBinary>
 typename boost::enable_if_c<T::is_container>::type
-print_block(std::ostream &stream, T &arg) {
+print_block(std::ostream &stream, T &arg, DoBinary) {
 	bool first = true;
 	while(!arg.is_end()) {
 		if(first) {
@@ -782,23 +798,23 @@ print_block(std::ostream &stream, T &arg) {
 		}
 		stream << "<block>" << std::endl;
 		typename T::subiter_type sub = arg.deref_subiter();
-		print_block(stream, sub);
+		print_block(stream, sub, DoBinary());
 		arg.inc();
 	}
 }
 
-template <typename T>
-void send_array(std::ostream &stream, const T &arg) {
+// FIXME - limit the depth of descent maximum of 2D
+// FIXME - do the right thing depending on val_is_tuple
+template <typename T, typename DoBinary>
+void send_array(std::ostream &stream, const T &arg, DoBinary) {
 	typename ArrayTraits<T>::range_type range = ArrayTraits<T>::get_range(arg);
-	print_block(stream, range);
-	stream << "e" << std::endl;
+	print_block(stream, range, DoBinary());
 }
 
-template <typename T>
-void send_array_cols(std::ostream &stream, const T &arg) {
+template <typename T, typename DoBinary>
+void send_array_cols(std::ostream &stream, const T &arg, DoBinary) {
 	VecOfRange<typename ArrayTraits<T>::range_type::subiter_type> cols = get_columns_range(arg);
-	print_block(stream, cols);
-	stream << "e" << std::endl;
+	print_block(stream, cols, DoBinary());
 }
 
 /// }}}2
@@ -1052,7 +1068,7 @@ private:
 public:
 	template <class T>
 	Gnuplot &send(const T &arg) {
-		make_array_writer<T>(this).send(arg);
+		send_array(*this, arg, boost::mpl::bool_<false>());
 		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
@@ -1093,8 +1109,10 @@ public:
 	}
 
 	template <class T>
-	std::string binfmt(const T &arg) {
-		return make_array_writer<T>(this).binfmt(arg);
+	std::string binfmt(const T &) {
+		// FIXME
+		return "TODO";
+		//return make_array_writer<T>(this).binfmt(arg);
 	}
 
 private:
@@ -1116,7 +1134,7 @@ public:
 	std::string file(const T &arg, std::string filename="") {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
-		make_array_writer<T>(&tmp_stream).send(arg);
+		send_array(tmp_stream, arg, boost::mpl::bool_<false>());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
@@ -1127,10 +1145,10 @@ public:
 
 	// NOTE: empty filename makes temporary file
 	template <class T>
-	std::string binaryFile(T arg, std::string filename="") {
+	std::string binaryFile(const T &arg, std::string filename="") {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out | std::fstream::binary);
-		make_array_writer<T>(&tmp_stream).sendBinary(arg);
+		send_array(tmp_stream, arg, boost::mpl::bool_<true>());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
