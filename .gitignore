@@ -2,6 +2,7 @@
 examples
 examples-blitz
 examples-interactive
+tests_v3
 *.o
 
 # cmake stuff
@@ -10,5 +11,6 @@ CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 
-# output of example scripts
+# output of example scripts and unit tests
 my_graph_*.png
+unittest-output/
