@@ -1,6 +1,7 @@
 // FIXME
 #define DO_ARMA 1
 #define DO_BLITZ 1
+#define GNUPLOT_ENABLE_BLITZ 1
 
 #if DO_ARMA
 #include <armadillo>
@@ -17,6 +18,8 @@
 #include <boost/array.hpp>
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/logical.hpp>
+
+#include "gnuplot-iostream.h"
 
 ////////////////////////////////////////////////////////////
 /// Debugging functions, to be removed
@@ -49,7 +52,7 @@ class is_like_stl_container {
     template <typename C> static two test(...);
 
 public:
-    enum { value = sizeof(test<T>(NULL, NULL)) == sizeof(char) };
+    static const bool value = sizeof(test<T>(NULL, NULL)) == sizeof(char);
 	typedef boost::mpl::bool_<value> type;
 };
 
@@ -91,11 +94,13 @@ struct is_armadillo_mat {
 // FIXME - make use of static assertions
 class WasNotContainer { };
 
+// The unspecialized version of this class gives traits for things that are *not* arrays.
 template <typename T, typename Enable=void>
 class ArrayTraits {
 public:
 	typedef WasNotContainer value_type;
 	typedef WasNotContainer range_type;
+	static const bool val_is_tuple = false;
 	static const bool is_container = false;
 	static const size_t depth = 0;
 	static const size_t ncols = 1;
@@ -109,6 +114,7 @@ template <typename V>
 class ArrayTraitsDefaults {
 public:
 	typedef V value_type;
+	static const bool val_is_tuple = GnuplotEntry<V>::is_tuple;
 	static const bool is_container = true;
 	static const size_t depth = ArrayTraits<V>::depth + 1;
 	static const size_t ncols = 1;
@@ -211,6 +217,7 @@ class ArrayTraits<std::pair<T, U> > {
 public:
 	typedef PairOfRange<typename ArrayTraits<T>::range_type, typename ArrayTraits<U>::range_type> range_type;
 	typedef std::pair<typename ArrayTraits<T>::value_type, typename ArrayTraits<U>::value_type> value_type;
+	static const bool val_is_tuple = true;
 	static const bool is_container = ArrayTraits<T>::is_container && ArrayTraits<U>::is_container;
 	// It is allowed for l_depth != r_depth, for example one column could be 'double' and the
 	// other column could be 'vector<double>'.
@@ -467,7 +474,8 @@ template <typename T>
 typename boost::disable_if_c<T::is_container>::type
 deref_and_print(const T &arg) {
 	const typename T::value_type &v = arg.deref();
-	std::cout << v;
+	//std::cout << v;
+	GnuplotEntry<typename T::value_type>::send(std::cout, v);
 }
 
 template <typename T, typename U>
@@ -518,6 +526,7 @@ void plot(std::string header, const T &arg) {
 	std::cout << "--- " << header << " -------------------------------------" << std::endl;
 	std::cout << "ncols=" << ArrayTraits<T>::ncols << std::endl;
 	std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
+	std::cout << "tuple=" << ArrayTraits<T>::val_is_tuple << std::endl;
 	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
 	typename ArrayTraits<T>::range_type range = ArrayTraits<T>::get_range(arg);
 	print_block(range);
@@ -548,19 +557,12 @@ int main() {
 	std::vector<std::vector<std::vector<int> > > vvvi(NX);
 	int ai[NX];
 	boost::array<int, NX> bi;
-#if DO_ARMA
-	arma::vec armacol(NX);
-	arma::mat armamat(NX, NY);
-#endif
 
 	for(int x=0; x<NX; x++) {
 		vd.push_back(x+7.5);
 		vi.push_back(x+7);
 		ai[x] = x+7;
 		bi[x] = x+70;
-#if DO_ARMA
-		armacol(x) = x+0.123;
-#endif
 		for(int y=0; y<NY; y++) {
 			vvd[x].push_back(100+x*10+y);
 			vvi[x].push_back(200+x*10+y);
@@ -568,9 +570,6 @@ int main() {
 			tup.push_back(300+x*10+y);
 			tup.push_back(400+x*10+y);
 			vvvi[x].push_back(tup);
-#if DO_ARMA
-			armamat(x, y) = x*10+y+0.123;
-#endif
 		}
 	}
 
@@ -580,7 +579,18 @@ int main() {
 	// FIXME - doesn't work because array gets cast to pointer
 	//plot(std::make_pair(ai, bi));
 	plot("vvd,vvi,vvvi", std::make_pair(vvd, std::make_pair(vvi, vvvi)));
+
 #if DO_ARMA
+	arma::vec armacol(NX);
+	arma::mat armamat(NX, NY);
+
+	for(int x=0; x<NX; x++) {
+		armacol(x) = x+0.123;
+		for(int y=0; y<NY; y++) {
+			armamat(x, y) = x*10+y+0.123;
+		}
+	}
+
 	plot("armacol", armacol);
 	plot("armamat", armamat);
 #endif
@@ -594,9 +604,18 @@ int main() {
 		blitz1d = i + 0.777;
 		blitz2d = i*10 + j;
 	}
+	blitz::Array<blitz::TinyVector<double, 2>, 2> blitz2d_tup(NX, NY);
+	for(int x=0; x<NX; x++) {
+		for(int y=0; y<NY; y++) {
+			blitz2d_tup(x, y)[0] = 100+x*10+y;
+			blitz2d_tup(x, y)[1] = 200+x*10+y;
+		}
+	}
+
 	plot("blitz1d", blitz1d);
 	plot("blitz1d,vd", std::make_pair(blitz1d, vd));
 	plot("blitz2d", blitz2d);
+	plot("blitz2d_tup", blitz2d_tup);
 	plot("blitz2d,vvi", std::make_pair(blitz2d, vvi));
 	plot("blitz2d,vd", std::make_pair(blitz2d, vd));
 #endif
