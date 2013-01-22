@@ -34,12 +34,13 @@ std::string get_typename() {
 
 template <typename T>
 void runtest(std::string header, const T &arg) {
+	Gnuplot gp("cat");
 	std::cout << "--- " << header << " -------------------------------------" << std::endl;
 	std::cout << "ncols=" << ArrayTraits<T>::ncols << std::endl;
 	std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
 	std::cout << "tuple=" << ArrayTraits<T>::val_is_tuple << std::endl;
+	std::cout << "bintype=" << gp.binfmt(arg) << std::endl;
 	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
-	Gnuplot gp("cat");
 	gp.send(arg);
 	gp.file(arg, "unittest-output/"+header+".txt");
 	gp.binaryFile(arg, "unittest-output/"+header+".bin");
@@ -52,10 +53,13 @@ void runtest_cols(std::string header, const T &arg) {
 	//std::cout << "ncols=" << ArrayTraits<T>::ncols << std::endl;
 	//std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
 	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
-	send_array_cols(std::cout, arg, boost::mpl::bool_<false>());
+	//send_array_cols(std::cout, arg, ModeText());
+	send_array_cols(std::cout, arg, ModeBinfmt());
 }
 
 int main() {
+	debug_array_print = 1;
+
 	const int NX=3, NY=4;
 	std::vector<double> vd;
 	std::vector<int> vi;

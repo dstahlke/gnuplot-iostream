@@ -442,8 +442,8 @@ public:
 
 template <typename RT, typename RU>
 class PairOfRange {
-	template <typename T, typename U, typename DoBinary>
-	friend void deref_and_print(std::ostream &, const PairOfRange<T, U> &, DoBinary);
+	template <typename T, typename U, typename PrintMode>
+	friend void deref_and_print(std::ostream &, const PairOfRange<T, U> &, PrintMode);
 
 public:
 	PairOfRange() { }
@@ -505,8 +505,8 @@ public:
 
 template <typename RT>
 class VecOfRange {
-	template <typename T, typename DoBinary>
-	friend void deref_and_print(std::ostream &, const VecOfRange<T> &, DoBinary);
+	template <typename T, typename PrintMode>
+	friend void deref_and_print(std::ostream &, const VecOfRange<T> &, PrintMode);
 
 public:
 	VecOfRange() { }
@@ -724,8 +724,19 @@ public:
 
 /// {{{2 Array printing functions
 
+static bool debug_array_print = 0;
+
+struct ModeText   { static const bool is_binfmt = 0; };
+struct ModeBinary { static const bool is_binfmt = 0; };
+struct ModeBinfmt { static const bool is_binfmt = 1; };
+
 template <typename T>
-void send_scalar(std::ostream &stream, const T &arg, boost::mpl::bool_<true>) {
+void send_scalar(std::ostream &stream, const T &arg, ModeText) {
+	GnuplotEntry<T>::send(stream, arg);
+}
+
+template <typename T>
+void send_scalar(std::ostream &stream, const T &arg, ModeBinary) {
 	// FIXME
 	stream << "bin(";
 	GnuplotEntry<T>::send(stream, arg);
@@ -734,61 +745,62 @@ void send_scalar(std::ostream &stream, const T &arg, boost::mpl::bool_<true>) {
 }
 
 template <typename T>
-void send_scalar(std::ostream &stream, const T &arg, boost::mpl::bool_<false>) {
-	GnuplotEntry<T>::send(stream, arg);
+void send_scalar(std::ostream &stream, const T &arg, ModeBinfmt) {
+	stream << GnuplotEntry<T>::formatCode();
 }
 
-template <typename T, typename DoBinary>
+template <typename T, typename PrintMode>
 typename boost::disable_if_c<T::is_container>::type
-deref_and_print(std::ostream &stream, const T &arg, DoBinary) {
+deref_and_print(std::ostream &stream, const T &arg, PrintMode) {
 	const typename T::value_type &v = arg.deref();
-	send_scalar(stream, v, DoBinary());
+	send_scalar(stream, v, PrintMode());
 }
 
-template <typename T, typename DoBinary>
+template <typename T, typename PrintMode>
 typename boost::enable_if_c<T::is_container>::type
-deref_and_print(std::ostream &stream, const T &arg, DoBinary) {
-	stream << "{";
+deref_and_print(std::ostream &stream, const T &arg, PrintMode) {
+	if(debug_array_print && !PrintMode::is_binfmt) stream << "{";
 	typename T::subiter_type subrange = arg.deref_subiter();
 	bool first = true;
 	while(!subrange.is_end()) {
-		if(!first) stream << " ";
+		if(!first && !PrintMode::is_binfmt) stream << " ";
 		first = false;
-		deref_and_print(stream, subrange, DoBinary());
+		deref_and_print(stream, subrange, PrintMode());
 		subrange.inc();
 	}
-	stream << "}";
+	if(debug_array_print && !PrintMode::is_binfmt) stream << "}";
 }
 
-template <typename T, typename U, typename DoBinary>
-void deref_and_print(std::ostream &stream, const PairOfRange<T, U> &arg, DoBinary) {
-	deref_and_print(stream, arg.l, DoBinary());
-	stream << " ";
-	deref_and_print(stream, arg.r, DoBinary());
+template <typename T, typename U, typename PrintMode>
+void deref_and_print(std::ostream &stream, const PairOfRange<T, U> &arg, PrintMode) {
+	deref_and_print(stream, arg.l, PrintMode());
+	if(!PrintMode::is_binfmt) stream << " ";
+	deref_and_print(stream, arg.r, PrintMode());
 }
 
-template <typename T, typename DoBinary>
-void deref_and_print(std::ostream &stream, const VecOfRange<T> &arg, DoBinary) {
+template <typename T, typename PrintMode>
+void deref_and_print(std::ostream &stream, const VecOfRange<T> &arg, PrintMode) {
 	for(size_t i=0; i<arg.rvec.size(); i++) {
-		if(i) stream << " ";
-		deref_and_print(stream, arg.rvec[i], DoBinary());
+		if(i && !PrintMode::is_binfmt) stream << " ";
+		deref_and_print(stream, arg.rvec[i], PrintMode());
 	}
 }
 
-template <typename T, typename DoBinary>
+template <typename T, typename PrintMode>
 typename boost::disable_if_c<T::is_container>::type
-print_block(std::ostream &stream, T &arg, DoBinary) {
+print_block(std::ostream &stream, T &arg, PrintMode) {
 	while(!arg.is_end()) {
 		//print_entry(arg.deref());
-		deref_and_print(stream, arg, DoBinary());
+		deref_and_print(stream, arg, PrintMode());
+		if(PrintMode::is_binfmt) break;
 		stream << std::endl;
 		arg.inc();
 	}
 }
 
-template <typename T, typename DoBinary>
+template <typename T, typename PrintMode>
 typename boost::enable_if_c<T::is_container>::type
-print_block(std::ostream &stream, T &arg, DoBinary) {
+print_block(std::ostream &stream, T &arg, PrintMode) {
 	bool first = true;
 	while(!arg.is_end()) {
 		if(first) {
@@ -796,25 +808,26 @@ print_block(std::ostream &stream, T &arg, DoBinary) {
 		} else {
 			stream << std::endl;
 		}
-		stream << "<block>" << std::endl;
+		if(debug_array_print && !PrintMode::is_binfmt) stream << "<block>" << std::endl;
 		typename T::subiter_type sub = arg.deref_subiter();
-		print_block(stream, sub, DoBinary());
+		print_block(stream, sub, PrintMode());
+		if(PrintMode::is_binfmt) break;
 		arg.inc();
 	}
 }
 
 // FIXME - limit the depth of descent maximum of 2D
 // FIXME - do the right thing depending on val_is_tuple
-template <typename T, typename DoBinary>
-void send_array(std::ostream &stream, const T &arg, DoBinary) {
+template <typename T, typename PrintMode>
+void send_array(std::ostream &stream, const T &arg, PrintMode) {
 	typename ArrayTraits<T>::range_type range = ArrayTraits<T>::get_range(arg);
-	print_block(stream, range, DoBinary());
+	print_block(stream, range, PrintMode());
 }
 
-template <typename T, typename DoBinary>
-void send_array_cols(std::ostream &stream, const T &arg, DoBinary) {
+template <typename T, typename PrintMode>
+void send_array_cols(std::ostream &stream, const T &arg, PrintMode) {
 	VecOfRange<typename ArrayTraits<T>::range_type::subiter_type> cols = get_columns_range(arg);
-	print_block(stream, cols, DoBinary());
+	print_block(stream, cols, PrintMode());
 }
 
 /// }}}2
@@ -1068,7 +1081,7 @@ private:
 public:
 	template <class T>
 	Gnuplot &send(const T &arg) {
-		send_array(*this, arg, boost::mpl::bool_<false>());
+		send_array(*this, arg, ModeText());
 		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
@@ -1109,10 +1122,10 @@ public:
 	}
 
 	template <class T>
-	std::string binfmt(const T &) {
-		// FIXME
-		return "TODO";
-		//return make_array_writer<T>(this).binfmt(arg);
+	std::string binfmt(const T &arg) {
+		std::ostringstream tmp;
+		send_array(tmp, arg, ModeBinfmt());
+		return tmp.str();
 	}
 
 private:
@@ -1134,7 +1147,7 @@ public:
 	std::string file(const T &arg, std::string filename="") {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
-		send_array(tmp_stream, arg, boost::mpl::bool_<false>());
+		send_array(tmp_stream, arg, ModeText());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
@@ -1148,7 +1161,7 @@ public:
 	std::string binaryFile(const T &arg, std::string filename="") {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out | std::fstream::binary);
-		send_array(tmp_stream, arg, boost::mpl::bool_<true>());
+		send_array(tmp_stream, arg, ModeBinary());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;

@@ -8,11 +8,26 @@ EVERYTHING=examples examples-blitz examples-interactive
 all: examples
 	@echo "Now type 'make blitz' if you have blitz installed, and 'make interactive' if you system has PTY support."
 
+*.o: $(wildcard *.h)
+
 blitz: examples-blitz
 
 interactive: examples-interactive
 
 everything: $(EVERYTHING)
+
+examples: examples.o
+	g++ -o $@ $^ $(LDFLAGS)
+
+examples-blitz: examples-blitz.o
+	g++ -o $@ $^ $(LDFLAGS)
+
+examples-interactive: examples-interactive.o
+	g++ -o $@ $^ $(LDFLAGS)
+
+# FIXME
+tests_v3: tests_v3.o
+	g++ -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -f *.o
