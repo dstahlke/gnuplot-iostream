@@ -39,7 +39,7 @@ void runtest(std::string header, const T &arg) {
 	std::cout << "ncols=" << ArrayTraits<T>::ncols << std::endl;
 	std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
 	std::cout << "tuple=" << ArrayTraits<T>::val_is_tuple << std::endl;
-	std::cout << "bintype=" << gp.binfmt(arg) << std::endl;
+	std::cout << "bintype=[" << gp.binfmt(arg) << "]" << std::endl;
 	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
 	gp.send(arg);
 	gp.file(arg, "unittest-output/"+header+".txt");
@@ -54,7 +54,7 @@ void runtest_cols(std::string header, const T &arg) {
 	//std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
 	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
 	//send_array_cols(std::cout, arg, ModeText());
-	send_array_cols(std::cout, arg, ModeBinfmt());
+	send_array_cols(std::cout, arg, ModeText());
 }
 
 int main() {

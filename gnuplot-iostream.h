@@ -29,6 +29,9 @@ THE SOFTWARE.
 		Verify that nested containers have consistent lengths between slices (at least along
 		the column dimension, sometimes it might be okay for blocks to be different lengths).
 		Move binary stuff to new infrastructure.
+
+	ChangeLog:
+		send() for iterators has been removed
 */
 
 #ifndef GNUPLOT_IOSTREAM_H
@@ -745,7 +748,7 @@ void send_scalar(std::ostream &stream, const T &arg, ModeBinary) {
 }
 
 template <typename T>
-void send_scalar(std::ostream &stream, const T &arg, ModeBinfmt) {
+void send_scalar(std::ostream &stream, const T &, ModeBinfmt) {
 	stream << GnuplotEntry<T>::formatCode();
 }
 
@@ -1064,20 +1067,6 @@ public:
 		if(feedback) delete(feedback);
 	}
 
-private:
-	// FIXME - not ideal to have this here
-	template <class U>
-	void sendEntry(const U &v) {
-		GnuplotEntry<U>::send(*this, v);
-	}
-
-	template <class T>
-	GnuplotArrayWriter<T> make_array_writer(std::ostream *stream) {
-		GnuplotArrayWriter<T> ret;
-		ret.stream = stream;
-		return ret;
-	}
-
 public:
 	template <class T>
 	Gnuplot &send(const T &arg) {
@@ -1086,45 +1075,19 @@ public:
 		return *this;
 	}
 
-	// Iterator.  I wish I had named this sendIter, but I didn't.
-	// Now I can't use the two argument send function for anything else.
-	template <class T>
-	Gnuplot &send(T p, T last) {
-		while(p != last) {
-			sendEntry(*p);
-			*this << "\n";
-			++p;
-		}
-		*this << "e" << std::endl; // gnuplot's "end of array" token
-		return *this;
-	}
-
-	template <class T, class U>
-	Gnuplot &send(T x, T x_last, U y, U y_last) {
-		while(x != x_last && y != y_last) {
-			sendEntry(*x);
-			*this <<  " ";
-			sendEntry(*y);
-			*this << "\n";
-			++x;
-			++y;
-		}
-		// assert inputs same size
-		assert(x==x_last && y==y_last);
-		*this << "e" << std::endl; // gnuplot's "end of array" token
-		return *this;
-	}
-
 	template <class T>
 	Gnuplot &sendBinary(const T &arg) {
-		make_array_writer<T>(this).sendBinary(arg);
+		send_array(*this, arg, ModeBinary());
 		return *this;
 	}
 
 	template <class T>
 	std::string binfmt(const T &arg) {
 		std::ostringstream tmp;
+		tmp << " format='";
 		send_array(tmp, arg, ModeBinfmt());
+		tmp << "' array=(" << "???" << ")"; // FIXME
+		tmp << " ";
 		return tmp.str();
 	}
 
