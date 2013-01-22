@@ -29,6 +29,7 @@ THE SOFTWARE.
 		Verify that nested containers have consistent lengths between slices (at least along
 		the column dimension, sometimes it might be okay for blocks to be different lengths).
 		Move binary stuff to new infrastructure.
+		Support std::tuple and boost::tuple.
 
 	ChangeLog:
 		send() for iterators has been removed
