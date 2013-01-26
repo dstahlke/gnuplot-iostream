@@ -17,25 +17,22 @@ interactive: examples-interactive
 everything: $(EVERYTHING)
 
 examples: examples.o
-	g++ -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 examples-blitz: examples-blitz.o
-	g++ -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 examples-interactive: examples-interactive.o
-	g++ -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 # FIXME
 tests_v3: tests_v3.o
-	g++ -o $@ $^ $(LDFLAGS)
-
-# FIXME
-tests_v4: tests_v4.o
-	g++ -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -f *.o
-	rm -f examples examples-blitz examples-interactive
+	# FIXME
+	rm -f examples examples-blitz examples-interactive tests_v3
 	# files created by demo scripts
 	rm -f my_graph_*.png external_binary.dat external_binary.gnu external_text.dat external_text.gnu inline_binary.gnu inline_text.gnu
 
