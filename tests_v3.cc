@@ -95,6 +95,7 @@ int main() {
 	}
 
 	runtest("vd,vi,bi", std::make_pair(vd, std::make_pair(vi, bi)));
+	runtest("vvd", vvd);
 	runtest("vvd,vvi", std::make_pair(vvd, vvi));
 	runtest("ai", ai);
 	// FIXME - doesn't work because array gets cast to pointer

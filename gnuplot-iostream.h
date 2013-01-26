@@ -30,6 +30,7 @@ THE SOFTWARE.
 		the column dimension, sometimes it might be okay for blocks to be different lengths).
 		Move binary stuff to new infrastructure.
 		Support std::tuple and boost::tuple.
+		Static asserts for non-containers or not enough depth.
 
 	ChangeLog:
 		send() for iterators has been removed
@@ -375,6 +376,7 @@ public:
 	typedef WasNotContainer range_type;
 	static const bool val_is_tuple = false;
 	static const bool is_container = false;
+	static const bool allow_colwrap = false;
 	static const size_t depth = 0;
 	static const size_t ncols = 1; // FIXME - eventually remove this, it is not really needed
 
@@ -389,6 +391,7 @@ public:
 	typedef V value_type;
 	static const bool val_is_tuple = GnuplotEntry<V>::is_tuple;
 	static const bool is_container = true;
+	static const bool allow_colwrap = true;
 	static const size_t depth = ArrayTraits<V>::depth + 1;
 	static const size_t ncols = 1;
 };
@@ -492,6 +495,8 @@ public:
 	typedef std::pair<typename ArrayTraits<T>::value_type, typename ArrayTraits<U>::value_type> value_type;
 	static const bool val_is_tuple = true;
 	static const bool is_container = ArrayTraits<T>::is_container && ArrayTraits<U>::is_container;
+	// Don't allow colwrap since it's already wrapped.
+	static const bool allow_colwrap = false;
 	// It is allowed for l_depth != r_depth, for example one column could be 'double' and the
 	// other column could be 'vector<double>'.
 	static const size_t l_depth = ArrayTraits<T>::depth;
@@ -517,6 +522,8 @@ public:
 	VecOfRange(const std::vector<RT> &_rvec) : rvec(_rvec) { }
 
 	static const bool is_container = RT::is_container;
+	// Don't allow colwrap since it's already wrapped.
+	static const bool allow_colwrap = false;
 
 	typedef std::vector<typename RT::value_type> value_type;
 	typedef VecOfRange<typename RT::subiter_type> subiter_type;
@@ -609,6 +616,7 @@ class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
 		size_t it;
 	};
 public:
+	static const bool allow_colwrap = false;
 	static const size_t depth = ArrayTraits<T>::depth + 2;
 
 	typedef ArmaMatRange range_type;
@@ -622,6 +630,8 @@ public:
 template <typename T>
 class ArrayTraits<arma::Col<T> > : public ArrayTraitsDefaults<T> {
 public:
+	static const bool allow_colwrap = false;
+
 	typedef IteratorRange<typename arma::Col<T>::const_iterator, T> range_type;
 
 	static range_type get_range(const arma::Col<T> &arg) {
@@ -715,6 +725,7 @@ private:
 template <typename T, int ArrayDim>
 class ArrayTraits<blitz::Array<T, ArrayDim> > : public ArrayTraitsDefaults<T> {
 public:
+	static const bool allow_colwrap = false;
 	static const size_t depth = ArrayTraits<T>::depth + ArrayDim;
 
 	typedef BlitzIterator<T, ArrayDim, ArrayDim> range_type;
@@ -824,8 +835,6 @@ print_block(std::ostream &stream, T &arg, PrintMode) {
 	}
 }
 
-// FIXME - limit the depth of descent maximum of 2D
-// FIXME - do the right thing depending on val_is_tuple
 template <size_t Depth, typename T, typename PrintMode>
 void send_array_nocolwrap(std::ostream &stream, const T &arg, PrintMode) {
 	typename ArrayTraits<T>::range_type range = ArrayTraits<T>::get_range(arg);
@@ -833,10 +842,18 @@ void send_array_nocolwrap(std::ostream &stream, const T &arg, PrintMode) {
 }
 
 template <size_t Depth, typename T, typename PrintMode>
-void send_array_cols(std::ostream &stream, const T &arg, PrintMode) {
+void send_array_colwrap(std::ostream &stream, const T &arg, PrintMode) {
 	VecOfRange<typename ArrayTraits<T>::range_type::subiter_type> cols = get_columns_range(arg);
 	print_block<Depth>(stream, cols, PrintMode());
 }
+
+// FIXME - somehow allow multiple args
+template <typename T, typename PrintMode>
+void send1d(std::ostream &stream, const T &arg, PrintMode) {
+	send_array_nocolwrap<1>(stream, arg, PrintMode());
+}
+
+/// {{{3 send_auto rules
 
 template <typename T, typename PrintMode>
 typename boost::enable_if_c<
@@ -848,11 +865,41 @@ send_auto(std::ostream &stream, const T &arg, PrintMode) {
 
 template <typename T, typename PrintMode>
 typename boost::enable_if_c<
-	(ArrayTraits<T>::depth > 1)
+	(ArrayTraits<T>::depth == 2) &&
+	!(ArrayTraits<T>::allow_colwrap && !ArrayTraits<T>::val_is_tuple)
 >::type
 send_auto(std::ostream &stream, const T &arg, PrintMode) {
 	send_array_nocolwrap<2>(stream, arg, PrintMode());
 }
+
+template <typename T, typename PrintMode>
+typename boost::enable_if_c<
+	(ArrayTraits<T>::depth == 2) &&
+	(ArrayTraits<T>::allow_colwrap && !ArrayTraits<T>::val_is_tuple)
+>::type
+send_auto(std::ostream &stream, const T &arg, PrintMode) {
+	send_array_colwrap<1>(stream, arg, PrintMode());
+}
+
+template <typename T, typename PrintMode>
+typename boost::enable_if_c<
+	(ArrayTraits<T>::depth > 2) &&
+	ArrayTraits<T>::allow_colwrap
+>::type
+send_auto(std::ostream &stream, const T &arg, PrintMode) {
+	send_array_colwrap<2>(stream, arg, PrintMode());
+}
+
+template <typename T, typename PrintMode>
+typename boost::enable_if_c<
+	(ArrayTraits<T>::depth > 2) &&
+	!ArrayTraits<T>::allow_colwrap
+>::type
+send_auto(std::ostream &stream, const T &arg, PrintMode) {
+	send_array_nocolwrap<2>(stream, arg, PrintMode());
+}
+
+/// }}}3
 
 /// }}}2
 
