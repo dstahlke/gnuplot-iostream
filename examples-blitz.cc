@@ -22,9 +22,9 @@ THE SOFTWARE.
 
 #include <vector>
 #include <math.h>
+// This must be included before gnuplot-iostream.h in order to support plotting blitz arrays.
 #include <blitz/array.h>
 
-#define GNUPLOT_ENABLE_BLITZ
 #include "gnuplot-iostream.h"
 
 // Yes, I'm including a *.cc file.  It contains main().

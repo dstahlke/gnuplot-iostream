@@ -1,7 +1,5 @@
-// FIXME
 #define DO_ARMA 1
 #define DO_BLITZ 1
-#define GNUPLOT_ENABLE_BLITZ 1
 
 #include <fstream>
 #include <vector>
@@ -145,6 +143,8 @@ int main() {
 #endif
 
 	runtest("vvvi cols", vvvi, gnuplotio::Mode2DUnwrap());
+
+#if DO_BLITZ
 	runtest("blitz2d cols", blitz2d, gnuplotio::Mode1DUnwrap());
 
 	Gnuplot gp("cat");
@@ -154,4 +154,5 @@ int main() {
 	gp.foobar(blitz2d);
 	gp << "### foobar ###" << std::endl;
 	gp.foobar<gnuplotio::Mode1D>(blitz2d);
+#endif
 }
