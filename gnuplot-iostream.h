@@ -1099,15 +1099,11 @@ public:
 	template <class T> Gnuplot &sendBinary1d_unwrap(const T &arg) { return sendBinary(arg, Mode1DUnwrap()); }
 	template <class T> Gnuplot &sendBinary2d_unwrap(const T &arg) { return sendBinary(arg, Mode2DUnwrap()); }
 
-	template <class T> std::string binfmt             (const T &arg) { return binfmt(arg, "array",  ModeAuto    ()); }
-	template <class T> std::string binfmt1d           (const T &arg) { return binfmt(arg, "array",  Mode1D      ()); }
-	template <class T> std::string binfmt2d           (const T &arg) { return binfmt(arg, "array",  Mode2D      ()); }
-	template <class T> std::string binfmt1d_unwrap    (const T &arg) { return binfmt(arg, "array",  Mode1DUnwrap()); }
-	template <class T> std::string binfmt2d_unwrap    (const T &arg) { return binfmt(arg, "array",  Mode2DUnwrap()); }
-	template <class T> std::string binfmt1d_rec       (const T &arg) { return binfmt(arg, "record", Mode1D      ()); }
-	template <class T> std::string binfmt2d_rec       (const T &arg) { return binfmt(arg, "record", Mode2D      ()); }
-	template <class T> std::string binfmt1d_rec_unwrap(const T &arg) { return binfmt(arg, "record", Mode1DUnwrap()); }
-	template <class T> std::string binfmt2d_rec_unwrap(const T &arg) { return binfmt(arg, "record", Mode2DUnwrap()); }
+	template <class T> std::string binfmt         (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  ModeAuto    ()); }
+	template <class T> std::string binfmt1d       (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode1D      ()); }
+	template <class T> std::string binfmt2d       (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode2D      ()); }
+	template <class T> std::string binfmt1d_unwrap(const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode1DUnwrap()); }
+	template <class T> std::string binfmt2d_unwrap(const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode2DUnwrap()); }
 
 	template <class T> std::string file         (const T &arg, const std::string &filename="") { return file(arg, filename, ModeAuto    ()); }
 	template <class T> std::string file1d       (const T &arg, const std::string &filename="") { return file(arg, filename, Mode1D      ()); }
@@ -1115,15 +1111,11 @@ public:
 	template <class T> std::string file1d_unwrap(const T &arg, const std::string &filename="") { return file(arg, filename, Mode1DUnwrap()); }
 	template <class T> std::string file2d_unwrap(const T &arg, const std::string &filename="") { return file(arg, filename, Mode2DUnwrap()); }
 
-	template <class T> std::string binaryFile             (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  ModeAuto    ()); }
-	template <class T> std::string binaryFile1d           (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode1D      ()); }
-	template <class T> std::string binaryFile2d           (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode2D      ()); }
-	template <class T> std::string binaryFile1d_unwrap    (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode1DUnwrap()); }
-	template <class T> std::string binaryFile2d_unwrap    (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode2DUnwrap()); }
-	template <class T> std::string binaryFile1d_rec       (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode1D      ()); }
-	template <class T> std::string binaryFile2d_rec       (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode2D      ()); }
-	template <class T> std::string binaryFile1d_rec_unwrap(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode1DUnwrap()); }
-	template <class T> std::string binaryFile2d_rec_unwrap(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode2DUnwrap()); }
+	template <class T> std::string binaryFile         (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  ModeAuto    ()); }
+	template <class T> std::string binaryFile1d       (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode1D      ()); }
+	template <class T> std::string binaryFile2d       (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode2D      ()); }
+	template <class T> std::string binaryFile1d_unwrap(const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode1DUnwrap()); }
+	template <class T> std::string binaryFile2d_unwrap(const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode2DUnwrap()); }
 
 #ifdef GNUPLOT_ENABLE_FEEDBACK
 	// Input variables are set to the mouse position and button.  If the gnuplot
