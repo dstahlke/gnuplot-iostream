@@ -1008,8 +1008,11 @@ public:
 	}
 
 public:
+	// FIXME - I would rather have the syntax send<ArrayMode>(arg), with the template parameter
+	// defaulting to ModeAuto.
+
 	template <typename T, typename ArrayMode>
-	Gnuplot &go(const T &arg, ArrayMode) {
+	Gnuplot &send(const T &arg, ArrayMode) {
 		generic_sender_level0(*this, arg, ArrayMode(), ModeText());
 		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;

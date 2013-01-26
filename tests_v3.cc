@@ -43,18 +43,20 @@ void runtest(std::string header, const T &arg) {
 	gp.send(arg);
 	gp.file(arg, "unittest-output/"+header+".txt");
 	gp.binaryFile(arg, "unittest-output/"+header+".bin");
-	//send_array(std::cout, arg);
 }
 
-template <typename T>
-void runtest_cols(std::string header, const T &arg) {
+template <typename T, typename ArrayMode>
+void runtest(std::string header, const T &arg, ArrayMode) {
+	Gnuplot gp("cat");
 	std::cout << "--- " << header << " -------------------------------------" << std::endl;
 	//std::cout << "ncols=" << ArrayTraits<T>::ncols << std::endl;
 	//std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
 	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
 	//send_array_cols(std::cout, arg, ModeText());
+	gp.send(arg, ArrayMode());
 	// FIXME
-	// send_array_cols(std::cout, arg, ModeText());
+	//gp.file(arg, "unittest-output/"+header+".txt");
+	//gp.binaryFile(arg, "unittest-output/"+header+".bin");
 }
 
 int main() {
@@ -142,10 +144,10 @@ int main() {
 	runtest("blitz2d,vd", std::make_pair(blitz2d, vd));
 #endif
 
-	runtest_cols("vvvi cols", vvvi);
-	runtest_cols("blitz2d cols", blitz2d);
+	runtest("vvvi cols", vvvi, Mode2DColumns());
+	runtest("blitz2d cols", blitz2d, Mode1DColumns());
 
 	std::cout << "### go ###" << std::endl;
 	Gnuplot gp("cat");
-	gp.go(blitz2d, ModeAuto());
+	gp.send(blitz2d, ModeAuto());
 }
