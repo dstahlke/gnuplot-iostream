@@ -144,4 +144,8 @@ int main() {
 
 	runtest_cols("vvvi cols", vvvi);
 	runtest_cols("blitz2d cols", blitz2d);
+
+	std::cout << "### go ###" << std::endl;
+	Gnuplot gp("cat");
+	gp.go(blitz2d, ModeAuto());
 }

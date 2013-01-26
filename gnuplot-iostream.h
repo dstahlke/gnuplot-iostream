@@ -740,6 +740,15 @@ struct ModeBinary { static const bool is_text = 0; static const bool is_binfmt =
 struct ModeBinfmt { static const bool is_text = 0; static const bool is_binfmt = 1; static const bool is_size = 0; };
 struct ModeSize   { static const bool is_text = 0; static const bool is_binfmt = 0; static const bool is_size = 1; };
 
+struct ColwrapNo  { };
+struct ColwrapYes { };
+
+struct Mode1D { };
+struct Mode2D { };
+struct Mode1DColumns { };
+struct Mode2DColumns { };
+struct ModeAuto { };
+
 template <typename T>
 size_t get_range_size(const T &arg) {
 	// FIXME - not the fastest way.  Implement a size() method for range.
@@ -845,31 +854,49 @@ print_block(std::ostream &stream, T &arg, PrintMode) {
 }
 
 template <size_t Depth, typename T, typename PrintMode>
-void send_array_nocolwrap(std::ostream &stream, const T &arg, PrintMode) {
-	typename ArrayTraits<T>::range_type range = ArrayTraits<T>::get_range(arg);
-	print_block<Depth>(stream, range, PrintMode());
+void generic_sender_level2(std::ostream &stream, T &arg, PrintMode) {
+	print_block<Depth>(stream, arg, PrintMode());
 }
 
 template <size_t Depth, typename T, typename PrintMode>
-void send_array_colwrap(std::ostream &stream, const T &arg, PrintMode) {
+void generic_sender_level1(std::ostream &stream, const T &arg, ColwrapNo, PrintMode) {
+	typename ArrayTraits<T>::range_type range = ArrayTraits<T>::get_range(arg);
+	generic_sender_level2<Depth>(stream, range, PrintMode());
+}
+
+template <size_t Depth, typename T, typename PrintMode>
+void generic_sender_level1(std::ostream &stream, const T &arg, ColwrapYes, PrintMode) {
 	VecOfRange<typename ArrayTraits<T>::range_type::subiter_type> cols = get_columns_range(arg);
-	print_block<Depth>(stream, cols, PrintMode());
+	generic_sender_level2<Depth>(stream, cols, PrintMode());
 }
 
-// FIXME - somehow allow multiple args
 template <typename T, typename PrintMode>
-void send1d(std::ostream &stream, const T &arg, PrintMode) {
-	send_array_nocolwrap<1>(stream, arg, PrintMode());
+void generic_sender_level0(std::ostream &stream, const T &arg, Mode1D, PrintMode) {
+	generic_sender_level1<1>(stream, arg, ColwrapNo(), PrintMode());
 }
 
-/// {{{3 send_auto rules
+template <typename T, typename PrintMode>
+void generic_sender_level0(std::ostream &stream, const T &arg, Mode2D, PrintMode) {
+	generic_sender_level1<2>(stream, arg, ColwrapNo(), PrintMode());
+}
+
+template <typename T, typename PrintMode>
+void generic_sender_level0(std::ostream &stream, const T &arg, Mode1DColumns, PrintMode) {
+	generic_sender_level1<1>(stream, arg, ColwrapYes(), PrintMode());
+}
+
+template <typename T, typename PrintMode>
+void generic_sender_level0(std::ostream &stream, const T &arg, Mode2DColumns, PrintMode) {
+	generic_sender_level1<2>(stream, arg, ColwrapYes(), PrintMode());
+}
 
 template <typename T, typename PrintMode>
 typename boost::enable_if_c<
 	(ArrayTraits<T>::depth == 1)
 >::type
-send_auto(std::ostream &stream, const T &arg, PrintMode) {
-	send_array_nocolwrap<1>(stream, arg, PrintMode());
+generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
+	//send_array_nocolwrap<1>(stream, arg, PrintMode());
+	generic_sender_level0(stream, arg, Mode1D(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
@@ -877,8 +904,9 @@ typename boost::enable_if_c<
 	(ArrayTraits<T>::depth == 2) &&
 	!ArrayTraits<T>::allow_colwrap
 >::type
-send_auto(std::ostream &stream, const T &arg, PrintMode) {
-	send_array_nocolwrap<2>(stream, arg, PrintMode());
+generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
+	//send_array_nocolwrap<2>(stream, arg, PrintMode());
+	generic_sender_level0(stream, arg, Mode2D(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
@@ -886,8 +914,9 @@ typename boost::enable_if_c<
 	(ArrayTraits<T>::depth == 2) &&
 	ArrayTraits<T>::allow_colwrap
 >::type
-send_auto(std::ostream &stream, const T &arg, PrintMode) {
-	send_array_colwrap<1>(stream, arg, PrintMode());
+generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
+	//send_array_colwrap<1>(stream, arg, PrintMode());
+	generic_sender_level0(stream, arg, Mode1DColumns(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
@@ -895,8 +924,9 @@ typename boost::enable_if_c<
 	(ArrayTraits<T>::depth > 2) &&
 	ArrayTraits<T>::allow_colwrap
 >::type
-send_auto(std::ostream &stream, const T &arg, PrintMode) {
-	send_array_colwrap<2>(stream, arg, PrintMode());
+generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
+	//send_array_colwrap<2>(stream, arg, PrintMode());
+	generic_sender_level0(stream, arg, Mode2DColumns(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
@@ -904,11 +934,10 @@ typename boost::enable_if_c<
 	(ArrayTraits<T>::depth > 2) &&
 	!ArrayTraits<T>::allow_colwrap
 >::type
-send_auto(std::ostream &stream, const T &arg, PrintMode) {
-	send_array_nocolwrap<2>(stream, arg, PrintMode());
+generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
+	//send_array_nocolwrap<2>(stream, arg, PrintMode());
+	generic_sender_level0(stream, arg, Mode2D(), PrintMode());
 }
-
-/// }}}3
 
 /// }}}2
 
@@ -979,16 +1008,23 @@ public:
 	}
 
 public:
+	template <typename T, typename ArrayMode>
+	Gnuplot &go(const T &arg, ArrayMode) {
+		generic_sender_level0(*this, arg, ArrayMode(), ModeText());
+		*this << "e" << std::endl; // gnuplot's "end of array" token
+		return *this;
+	}
+
 	template <class T>
 	Gnuplot &send(const T &arg) {
-		send_auto(*this, arg, ModeText());
+		generic_sender_level0(*this, arg, ModeAuto(), ModeText());
 		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
 
 	template <class T>
 	Gnuplot &sendBinary(const T &arg) {
-		send_auto(*this, arg, ModeBinary());
+		generic_sender_level0(*this, arg, ModeAuto(), ModeBinary());
 		return *this;
 	}
 
@@ -996,9 +1032,9 @@ public:
 	std::string binfmt(const T &arg) {
 		std::ostringstream tmp;
 		tmp << " format='";
-		send_auto(tmp, arg, ModeBinfmt());
-		tmp << "' record=("; // FIXME - sometimes want 'array' not 'record'
-		send_auto(tmp, arg, ModeSize());
+		generic_sender_level0(tmp, arg, ModeAuto(), ModeBinfmt());
+		tmp << "' array=("; // FIXME - sometimes want 'array' not 'record'
+		generic_sender_level0(tmp, arg, ModeAuto(), ModeSize());
 		tmp << ")";
 		tmp << " ";
 		return tmp.str();
@@ -1023,7 +1059,7 @@ public:
 	std::string file(const T &arg, std::string filename="") {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
-		send_auto(tmp_stream, arg, ModeText());
+		generic_sender_level0(tmp_stream, arg, ModeAuto(), ModeText());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
@@ -1037,7 +1073,7 @@ public:
 	std::string binaryFile(const T &arg, std::string filename="") {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out | std::fstream::binary);
-		send_auto(tmp_stream, arg, ModeBinary());
+		generic_sender_level0(tmp_stream, arg, ModeAuto(), ModeBinary());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
