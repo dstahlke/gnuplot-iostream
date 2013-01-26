@@ -247,64 +247,56 @@ private:
 /// }}}1
 
 /// {{{1 Traits and printers for scalar datatypes
+
 template <class T>
-class GnuplotEntry {
-public:
-	static const bool is_tuple = false;
+void send_entry(std::ostream &stream, const T &v) {
+	stream << v;
+}
 
-	static std::string formatCode();
+template <class T>
+void send_entry_bin(std::ostream &stream, const T &v) {
+	// FIXME - need to specialize for std::pair (at least)
+	stream.write(reinterpret_cast<const char *>(&v), sizeof(T));
+}
 
-	static void send(std::ostream &stream, const T &v) {
-		stream << v;
-	}
-};
-
-template<> std::string GnuplotEntry<   float>::formatCode() { return "%float"; }
-template<> std::string GnuplotEntry<  double>::formatCode() { return "%double"; }
-template<> std::string GnuplotEntry<  int8_t>::formatCode() { return "%int8"; }
-template<> std::string GnuplotEntry< uint8_t>::formatCode() { return "%uint8"; }
-template<> std::string GnuplotEntry< int16_t>::formatCode() { return "%int16"; }
-template<> std::string GnuplotEntry<uint16_t>::formatCode() { return "%uint16"; }
-template<> std::string GnuplotEntry< int32_t>::formatCode() { return "%int32"; }
-template<> std::string GnuplotEntry<uint32_t>::formatCode() { return "%uint32"; }
-template<> std::string GnuplotEntry< int64_t>::formatCode() { return "%int64"; }
-template<> std::string GnuplotEntry<uint64_t>::formatCode() { return "%uint64"; }
+std::string formatCode(const    float &) { return "%float"; }
+std::string formatCode(const   double &) { return "%double"; }
+std::string formatCode(const   int8_t &) { return "%int8"; }
+std::string formatCode(const  uint8_t &) { return "%uint8"; }
+std::string formatCode(const  int16_t &) { return "%int16"; }
+std::string formatCode(const uint16_t &) { return "%uint16"; }
+std::string formatCode(const  int32_t &) { return "%int32"; }
+std::string formatCode(const uint32_t &) { return "%uint32"; }
+std::string formatCode(const  int64_t &) { return "%int64"; }
+std::string formatCode(const uint64_t &) { return "%uint64"; }
 
 template <class T, class U>
-class GnuplotEntry<std::pair<T, U> > {
-public:
-	static const bool is_tuple = true;
+std::string formatCode(const std::pair<T, U> &arg) {
+	return formatCode(arg.first) + formatCode(arg.second);
+}
 
-	static std::string formatCode() {
-		return GnuplotEntry<T>::formatCode() + GnuplotEntry<U>::formatCode();
-	}
-
-	static void send(std::ostream &stream, const std::pair<T, U> &v) {
-		stream << v.first << " " << v.second;
-	}
-};
+template <class T, class U>
+void send_entry(std::ostream &stream, const std::pair<T, U> &v) {
+	stream << v.first << " " << v.second;
+}
 
 #ifdef GNUPLOT_ENABLE_BLITZ
 template <class T, int N>
-class GnuplotEntry<blitz::TinyVector<T, N> > {
-public:
-	static const bool is_tuple = true;
-
-	static std::string formatCode() {
-		std::ostringstream tmp;
-		for(int i=0; i<N; i++) {
-			tmp << GnuplotEntry<T>::formatCode();
-		}
-		return tmp.str();
+std::string formatCode(const blitz::TinyVector<T, N> &arg) {
+	std::ostringstream tmp;
+	for(int i=0; i<N; i++) {
+		tmp << formatCode(arg[i]);
 	}
+	return tmp.str();
+}
 
-	static void send(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
-		for(int i=0; i<N; i++) {
-			if(i) stream << " ";
-			stream << v[i];
-		}
+template <class T, int N>
+void send_entry(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
+	for(int i=0; i<N; i++) {
+		if(i) stream << " ";
+		stream << v[i];
 	}
-};
+}
 #endif // GNUPLOT_ENABLE_BLITZ
 /// }}}1
 
@@ -389,7 +381,11 @@ template <typename V>
 class ArrayTraitsDefaults {
 public:
 	typedef V value_type;
-	static const bool val_is_tuple = GnuplotEntry<V>::is_tuple;
+
+	// FIXME - demo_tuple won't compile with this.  Maybe just remove is_tuple altogether.
+	//static const bool val_is_tuple = GnuplotEntry<V>::is_tuple;
+	static const bool val_is_tuple = false;
+
 	static const bool is_container = true;
 	static const bool allow_colwrap = true;
 	static const size_t depth = ArrayTraits<V>::depth + 1;
@@ -519,7 +515,7 @@ class VecOfRange {
 
 public:
 	VecOfRange() { }
-	VecOfRange(const std::vector<RT> &_rvec) : rvec(_rvec) { }
+	explicit VecOfRange(const std::vector<RT> &_rvec) : rvec(_rvec) { }
 
 	static const bool is_container = RT::is_container;
 	// Don't allow colwrap since it's already wrapped.
@@ -593,7 +589,7 @@ class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
 	class ArmaMatRange {
 	public:
 		ArmaMatRange() : p(NULL), it(0) { }
-		ArmaMatRange(const arma::Mat<T> *_p) : p(_p), it(0) { }
+		explicit ArmaMatRange(const arma::Mat<T> *_p) : p(_p), it(0) { }
 
 		typedef T value_type;
 		typedef IteratorRange<typename arma::Mat<T>::const_row_iterator, T> subiter_type;
@@ -745,27 +741,32 @@ public:
 
 static bool debug_array_print = 0;
 
-struct ModeText   { static const bool is_binfmt = 0; };
-struct ModeBinary { static const bool is_binfmt = 0; };
-struct ModeBinfmt { static const bool is_binfmt = 1; };
+struct ModeText   { static const bool is_text = 1; static const bool is_binfmt = 0; static const bool is_size = 0; };
+struct ModeBinary { static const bool is_text = 0; static const bool is_binfmt = 0; static const bool is_size = 0; };
+struct ModeBinfmt { static const bool is_text = 0; static const bool is_binfmt = 1; static const bool is_size = 0; };
+struct ModeSize   { static const bool is_text = 0; static const bool is_binfmt = 0; static const bool is_size = 1; };
+
+template <typename T>
+size_t get_range_size(const T &arg) {
+	// FIXME - not the fastest way.  Implement a size() method for range.
+	size_t ret = 0;
+	for(T i=arg; !i.is_end(); i.inc()) ++ret;
+	return ret;
+}
 
 template <typename T>
 void send_scalar(std::ostream &stream, const T &arg, ModeText) {
-	GnuplotEntry<T>::send(stream, arg);
+	send_entry(stream, arg);
 }
 
 template <typename T>
 void send_scalar(std::ostream &stream, const T &arg, ModeBinary) {
-	// FIXME
-	stream << "bin(";
-	GnuplotEntry<T>::send(stream, arg);
-	stream << ")";
-	//stream->write(reinterpret_cast<const char *>(&val), sizeof(T));
+	send_entry_bin(stream, arg);
 }
 
 template <typename T>
-void send_scalar(std::ostream &stream, const T &, ModeBinfmt) {
-	stream << GnuplotEntry<T>::formatCode();
+void send_scalar(std::ostream &stream, const T &arg, ModeBinfmt) {
+	stream << formatCode(arg);
 }
 
 template <typename T, typename PrintMode>
@@ -778,44 +779,56 @@ deref_and_print(std::ostream &stream, const T &arg, PrintMode) {
 template <typename T, typename PrintMode>
 typename boost::enable_if_c<T::is_container>::type
 deref_and_print(std::ostream &stream, const T &arg, PrintMode) {
-	if(debug_array_print && !PrintMode::is_binfmt) stream << "{";
+	if(debug_array_print && PrintMode::is_text) stream << "{";
 	typename T::subiter_type subrange = arg.deref_subiter();
 	bool first = true;
 	while(!subrange.is_end()) {
-		if(!first && !PrintMode::is_binfmt) stream << " ";
+		if(!first && PrintMode::is_text) stream << " ";
 		first = false;
 		deref_and_print(stream, subrange, PrintMode());
 		subrange.inc();
 	}
-	if(debug_array_print && !PrintMode::is_binfmt) stream << "}";
+	if(debug_array_print && PrintMode::is_text) stream << "}";
 }
 
 template <typename T, typename U, typename PrintMode>
 void deref_and_print(std::ostream &stream, const PairOfRange<T, U> &arg, PrintMode) {
 	deref_and_print(stream, arg.l, PrintMode());
-	if(!PrintMode::is_binfmt) stream << " ";
+	if(PrintMode::is_text) stream << " ";
 	deref_and_print(stream, arg.r, PrintMode());
 }
 
 template <typename T, typename PrintMode>
 void deref_and_print(std::ostream &stream, const VecOfRange<T> &arg, PrintMode) {
 	for(size_t i=0; i<arg.rvec.size(); i++) {
-		if(i && !PrintMode::is_binfmt) stream << " ";
+		if(i && PrintMode::is_text) stream << " ";
 		deref_and_print(stream, arg.rvec[i], PrintMode());
 	}
 }
 
 template <size_t Depth, typename T, typename PrintMode>
-typename boost::enable_if_c<(Depth>1)>::type
+typename boost::enable_if_c<(Depth==1) && !PrintMode::is_size>::type
+print_block(std::ostream &stream, T &arg, PrintMode) {
+	while(!arg.is_end()) {
+		//print_entry(arg.deref());
+		deref_and_print(stream, arg, PrintMode());
+		if(PrintMode::is_binfmt) break;
+		if(PrintMode::is_text) stream << std::endl;
+		arg.inc();
+	}
+}
+
+template <size_t Depth, typename T, typename PrintMode>
+typename boost::enable_if_c<(Depth>1) && !PrintMode::is_size>::type
 print_block(std::ostream &stream, T &arg, PrintMode) {
 	bool first = true;
 	while(!arg.is_end()) {
 		if(first) {
 			first = false;
 		} else {
-			stream << std::endl;
+			if(PrintMode::is_text) stream << std::endl;
 		}
-		if(debug_array_print && !PrintMode::is_binfmt) stream << "<block>" << std::endl;
+		if(debug_array_print && PrintMode::is_text) stream << "<block>" << std::endl;
 		typename T::subiter_type sub = arg.deref_subiter();
 		print_block<Depth-1>(stream, sub, PrintMode());
 		if(PrintMode::is_binfmt) break;
@@ -824,15 +837,17 @@ print_block(std::ostream &stream, T &arg, PrintMode) {
 }
 
 template <size_t Depth, typename T, typename PrintMode>
-typename boost::enable_if_c<(Depth==1)>::type
+typename boost::enable_if_c<(Depth==1) && PrintMode::is_size>::type
 print_block(std::ostream &stream, T &arg, PrintMode) {
-	while(!arg.is_end()) {
-		//print_entry(arg.deref());
-		deref_and_print(stream, arg, PrintMode());
-		if(PrintMode::is_binfmt) break;
-		stream << std::endl;
-		arg.inc();
-	}
+	stream << get_range_size(arg);
+}
+
+template <size_t Depth, typename T, typename PrintMode>
+typename boost::enable_if_c<(Depth>1) && PrintMode::is_size>::type
+print_block(std::ostream &stream, T &arg, PrintMode) {
+	stream << get_range_size(arg) << ",";
+	typename T::subiter_type sub = arg.deref_subiter();
+	print_block<Depth-1>(stream, sub, PrintMode());
 }
 
 template <size_t Depth, typename T, typename PrintMode>
@@ -907,6 +922,7 @@ send_auto(std::ostream &stream, const T &arg, PrintMode) {
 
 /// {{{1 Old array writer (FIXME - to be deprecated)
 
+#if 0
 class GnuplotArrayWriterBase {
 public:
 	GnuplotArrayWriterBase() : stream(NULL) { }
@@ -1067,6 +1083,8 @@ public:
 };
 #endif // GNUPLOT_ENABLE_BLITZ
 
+#endif // #if 0
+
 /// }}}1
 
 /// {{{1 Main class
@@ -1080,6 +1098,7 @@ public:
 			FILENO(pout = POPEN(cmd.c_str(), "w")),
 			boost::iostreams::never_close_handle
 		),
+		// FIXME - clang says field is uninitialized here.  Is this true?
 		pout(pout), // keeps '-Weff++' quiet
 		is_pipe(true),
 		feedback(NULL),
@@ -1154,7 +1173,9 @@ public:
 		std::ostringstream tmp;
 		tmp << " format='";
 		send_auto(tmp, arg, ModeBinfmt());
-		tmp << "' array=(" << "???" << ")"; // FIXME
+		tmp << "' record=("; // FIXME - sometimes want 'array' not 'record'
+		send_auto(tmp, arg, ModeSize());
+		tmp << ")";
 		tmp << " ";
 		return tmp.str();
 	}

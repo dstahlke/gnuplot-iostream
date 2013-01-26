@@ -1,6 +1,6 @@
 #include <map>
 #include <cstdio>
-#include "boost/foreach.hpp"
+#include <boost/foreach.hpp>
 
 std::map<std::string, void (*)(void)> demos;
 

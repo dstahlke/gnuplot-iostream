@@ -91,13 +91,9 @@ struct Triple {
 	double x, y, z;
 };
 
-template <>
-class GnuplotEntry<Triple> {
-public:
-	static void send(std::ostream &stream, const Triple &v) {
-		stream << v.x << " " << v.y << " " << v.z;
-	}
-};
+void send_entry(std::ostream &stream, const Triple &v) {
+	stream << v.x << " " << v.y << " " << v.z;
+}
 
 void demo_tuple() {
 	// -persist option makes the window not disappear when your program exits
