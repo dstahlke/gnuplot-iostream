@@ -50,6 +50,7 @@ THE SOFTWARE.
 #endif // GNUPLOT_ENABLE_PTY
 
 // C++ system includes
+// FIXME - which of these are really needed?
 #include <fstream>
 #include <iostream>
 #include <sstream>
