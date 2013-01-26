@@ -126,7 +126,7 @@ int main() {
 		blitz::firstIndex i;
 		blitz::secondIndex j;
 		blitz1d = i + 0.777;
-		blitz2d = i*10 + j;
+		blitz2d = 100 + i*10 + j;
 	}
 	blitz::Array<blitz::TinyVector<double, 2>, 2> blitz2d_tup(NX, NY);
 	for(int x=0; x<NX; x++) {
@@ -144,10 +144,14 @@ int main() {
 	runtest("blitz2d,vd", std::make_pair(blitz2d, vd));
 #endif
 
-	runtest("vvvi cols", vvvi, Mode2DColumns());
-	runtest("blitz2d cols", blitz2d, Mode1DColumns());
+	runtest("vvvi cols", vvvi, Mode2DUnwrap());
+	runtest("blitz2d cols", blitz2d, Mode1DUnwrap());
 
-	std::cout << "### go ###" << std::endl;
 	Gnuplot gp("cat");
+	gp << "### foobar ###" << std::endl;
 	gp.send(blitz2d, ModeAuto());
+	gp << "### foobar ###" << std::endl;
+	gp.foobar(blitz2d);
+	gp << "### foobar ###" << std::endl;
+	gp.foobar<Mode1D>(blitz2d);
 }

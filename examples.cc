@@ -220,7 +220,6 @@ void demo_inline_text() {
 	gp.send(vecs);
 }
 
-// FIXME - y values don't make it
 void demo_inline_binary() {
 	std::cout << "Creating inline_binary.gnu" << std::endl;
 	// This file handle will be closed automatically when gp goes out of scope.
@@ -228,7 +227,7 @@ void demo_inline_binary() {
 
 	std::vector<std::vector<double> > vecs = get_trefoil();
 
-	gp << "splot '-' binary" << gp.binfmt(vecs) << "with lines notitle\n";
+	gp << "splot '-' binary" << gp.binfmt1d_rec_unwrap(vecs) << "with lines notitle\n";
 	gp.sendBinary(vecs);
 }
 
@@ -243,7 +242,6 @@ void demo_external_text() {
 	gp << "splot" << gp.file(vecs, "external_text.dat") << "with lines notitle\n";
 }
 
-// FIXME - y values don't make it
 void demo_external_binary() {
 	std::cout << "Creating external_binary.gnu" << std::endl;
 	// This file handle will be closed automatically when gp goes out of scope.
@@ -252,7 +250,7 @@ void demo_external_binary() {
 	std::vector<std::vector<double> > vecs = get_trefoil();
 
 	std::cout << "Creating external_binary.dat" << std::endl;
-	gp << "splot" << gp.binaryFile(vecs, "external_binary.dat") << "with lines notitle\n";
+	gp << "splot" << gp.binaryFile1d_rec_unwrap(vecs, "external_binary.dat") << "with lines notitle\n";
 }
 
 void demo_animation() {

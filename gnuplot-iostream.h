@@ -740,13 +740,13 @@ struct ModeBinary { static const bool is_text = 0; static const bool is_binfmt =
 struct ModeBinfmt { static const bool is_text = 0; static const bool is_binfmt = 1; static const bool is_size = 0; };
 struct ModeSize   { static const bool is_text = 0; static const bool is_binfmt = 0; static const bool is_size = 1; };
 
-struct ColwrapNo  { };
-struct ColwrapYes { };
+struct ColunwrapNo  { };
+struct ColunwrapYes { };
 
 struct Mode1D { };
 struct Mode2D { };
-struct Mode1DColumns { };
-struct Mode2DColumns { };
+struct Mode1DUnwrap { };
+struct Mode2DUnwrap { };
 struct ModeAuto { };
 
 template <typename T>
@@ -859,35 +859,35 @@ void generic_sender_level2(std::ostream &stream, T &arg, PrintMode) {
 }
 
 template <size_t Depth, typename T, typename PrintMode>
-void generic_sender_level1(std::ostream &stream, const T &arg, ColwrapNo, PrintMode) {
+void generic_sender_level1(std::ostream &stream, const T &arg, ColunwrapNo, PrintMode) {
 	typename ArrayTraits<T>::range_type range = ArrayTraits<T>::get_range(arg);
 	generic_sender_level2<Depth>(stream, range, PrintMode());
 }
 
 template <size_t Depth, typename T, typename PrintMode>
-void generic_sender_level1(std::ostream &stream, const T &arg, ColwrapYes, PrintMode) {
+void generic_sender_level1(std::ostream &stream, const T &arg, ColunwrapYes, PrintMode) {
 	VecOfRange<typename ArrayTraits<T>::range_type::subiter_type> cols = get_columns_range(arg);
 	generic_sender_level2<Depth>(stream, cols, PrintMode());
 }
 
 template <typename T, typename PrintMode>
 void generic_sender_level0(std::ostream &stream, const T &arg, Mode1D, PrintMode) {
-	generic_sender_level1<1>(stream, arg, ColwrapNo(), PrintMode());
+	generic_sender_level1<1>(stream, arg, ColunwrapNo(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
 void generic_sender_level0(std::ostream &stream, const T &arg, Mode2D, PrintMode) {
-	generic_sender_level1<2>(stream, arg, ColwrapNo(), PrintMode());
+	generic_sender_level1<2>(stream, arg, ColunwrapNo(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
-void generic_sender_level0(std::ostream &stream, const T &arg, Mode1DColumns, PrintMode) {
-	generic_sender_level1<1>(stream, arg, ColwrapYes(), PrintMode());
+void generic_sender_level0(std::ostream &stream, const T &arg, Mode1DUnwrap, PrintMode) {
+	generic_sender_level1<1>(stream, arg, ColunwrapYes(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
-void generic_sender_level0(std::ostream &stream, const T &arg, Mode2DColumns, PrintMode) {
-	generic_sender_level1<2>(stream, arg, ColwrapYes(), PrintMode());
+void generic_sender_level0(std::ostream &stream, const T &arg, Mode2DUnwrap, PrintMode) {
+	generic_sender_level1<2>(stream, arg, ColunwrapYes(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
@@ -916,7 +916,7 @@ typename boost::enable_if_c<
 >::type
 generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
 	//send_array_colwrap<1>(stream, arg, PrintMode());
-	generic_sender_level0(stream, arg, Mode1DColumns(), PrintMode());
+	generic_sender_level0(stream, arg, Mode1DUnwrap(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
@@ -926,7 +926,7 @@ typename boost::enable_if_c<
 >::type
 generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
 	//send_array_colwrap<2>(stream, arg, PrintMode());
-	generic_sender_level0(stream, arg, Mode2DColumns(), PrintMode());
+	generic_sender_level0(stream, arg, Mode2DUnwrap(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
@@ -1007,40 +1007,9 @@ public:
 		if(feedback) delete(feedback);
 	}
 
-public:
-	// FIXME - I would rather have the syntax send<ArrayMode>(arg), with the template parameter
-	// defaulting to ModeAuto.
-
-	template <typename T, typename ArrayMode>
-	Gnuplot &send(const T &arg, ArrayMode) {
-		generic_sender_level0(*this, arg, ArrayMode(), ModeText());
-		*this << "e" << std::endl; // gnuplot's "end of array" token
-		return *this;
-	}
-
-	template <class T>
-	Gnuplot &send(const T &arg) {
-		generic_sender_level0(*this, arg, ModeAuto(), ModeText());
-		*this << "e" << std::endl; // gnuplot's "end of array" token
-		return *this;
-	}
-
-	template <class T>
-	Gnuplot &sendBinary(const T &arg) {
-		generic_sender_level0(*this, arg, ModeAuto(), ModeBinary());
-		return *this;
-	}
-
-	template <class T>
-	std::string binfmt(const T &arg) {
-		std::ostringstream tmp;
-		tmp << " format='";
-		generic_sender_level0(tmp, arg, ModeAuto(), ModeBinfmt());
-		tmp << "' array=("; // FIXME - sometimes want 'array' not 'record'
-		generic_sender_level0(tmp, arg, ModeAuto(), ModeSize());
-		tmp << ")";
-		tmp << " ";
-		return tmp.str();
+	void clearTmpfiles() {
+		// destructors will cause deletion
+		tmp_files.clear();
 	}
 
 private:
@@ -1057,9 +1026,35 @@ private:
 	}
 
 public:
+	template <typename T, typename ArrayMode>
+	Gnuplot &send(const T &arg, ArrayMode) {
+		generic_sender_level0(*this, arg, ArrayMode(), ModeText());
+		*this << "e" << std::endl; // gnuplot's "end of array" token
+		return *this;
+	}
+
+	template <class T, typename ArrayMode>
+	Gnuplot &sendBinary(const T &arg, ArrayMode) {
+		generic_sender_level0(*this, arg, ModeAuto(), ModeBinary());
+		return *this;
+	}
+
+	template <class T, typename ArrayMode>
+	std::string binfmt(const T &arg, const std::string &arr_or_rec, ArrayMode) {
+		std::ostringstream tmp;
+		tmp << " format='";
+		generic_sender_level0(tmp, arg, ModeAuto(), ModeBinfmt());
+		tmp << "' " << arr_or_rec << "=(";
+		generic_sender_level0(tmp, arg, ModeAuto(), ModeSize());
+		tmp << ")";
+		tmp << " ";
+		return tmp.str();
+	}
+
+public:
 	// NOTE: empty filename makes temporary file
-	template <class T>
-	std::string file(const T &arg, std::string filename="") {
+	template <class T, typename ArrayMode>
+	std::string file(const T &arg, std::string filename, ArrayMode) {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
 		generic_sender_level0(tmp_stream, arg, ModeAuto(), ModeText());
@@ -1072,8 +1067,8 @@ public:
 	}
 
 	// NOTE: empty filename makes temporary file
-	template <class T>
-	std::string binaryFile(const T &arg, std::string filename="") {
+	template <class T, typename ArrayMode>
+	std::string binaryFile(const T &arg, std::string filename, const std::string &arr_or_rec, ArrayMode) {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out | std::fstream::binary);
 		generic_sender_level0(tmp_stream, arg, ModeAuto(), ModeBinary());
@@ -1081,14 +1076,54 @@ public:
 
 		std::ostringstream cmdline;
 		// FIXME - hopefully filename doesn't contain quotes or such...
-		cmdline << " '" << filename << "' binary" << binfmt(arg);
+		cmdline << " '" << filename << "' binary" << binfmt(arg, arr_or_rec, ArrayMode());
 		return cmdline.str();
 	}
 
-	void clearTmpfiles() {
-		// destructors will cause deletion
-		tmp_files.clear();
-	}
+	// FIXME - maybe this is better than the below
+	template <typename ArrayMode, typename T>
+	Gnuplot &foobar(const T &arg) { return send(arg, ArrayMode()); }
+	template <typename T>
+	Gnuplot &foobar(const T &arg) { return send(arg, ModeAuto()); }
+
+	// FIXME - there's gotta be a better way...
+	template <class T> Gnuplot &send         (const T &arg) { return send(arg, ModeAuto    ()); }
+	template <class T> Gnuplot &send1d       (const T &arg) { return send(arg, Mode1D      ()); }
+	template <class T> Gnuplot &send2d       (const T &arg) { return send(arg, Mode2D      ()); }
+	template <class T> Gnuplot &send1d_unwrap(const T &arg) { return send(arg, Mode1DUnwrap()); }
+	template <class T> Gnuplot &send2d_unwrap(const T &arg) { return send(arg, Mode2DUnwrap()); }
+
+	template <class T> Gnuplot &sendBinary         (const T &arg) { return sendBinary(arg, ModeAuto    ()); }
+	template <class T> Gnuplot &sendBinary1d       (const T &arg) { return sendBinary(arg, Mode1D      ()); }
+	template <class T> Gnuplot &sendBinary2d       (const T &arg) { return sendBinary(arg, Mode2D      ()); }
+	template <class T> Gnuplot &sendBinary1d_unwrap(const T &arg) { return sendBinary(arg, Mode1DUnwrap()); }
+	template <class T> Gnuplot &sendBinary2d_unwrap(const T &arg) { return sendBinary(arg, Mode2DUnwrap()); }
+
+	template <class T> std::string binfmt             (const T &arg) { return binfmt(arg, "array",  ModeAuto    ()); }
+	template <class T> std::string binfmt1d           (const T &arg) { return binfmt(arg, "array",  Mode1D      ()); }
+	template <class T> std::string binfmt2d           (const T &arg) { return binfmt(arg, "array",  Mode2D      ()); }
+	template <class T> std::string binfmt1d_unwrap    (const T &arg) { return binfmt(arg, "array",  Mode1DUnwrap()); }
+	template <class T> std::string binfmt2d_unwrap    (const T &arg) { return binfmt(arg, "array",  Mode2DUnwrap()); }
+	template <class T> std::string binfmt1d_rec       (const T &arg) { return binfmt(arg, "record", Mode1D      ()); }
+	template <class T> std::string binfmt2d_rec       (const T &arg) { return binfmt(arg, "record", Mode2D      ()); }
+	template <class T> std::string binfmt1d_rec_unwrap(const T &arg) { return binfmt(arg, "record", Mode1DUnwrap()); }
+	template <class T> std::string binfmt2d_rec_unwrap(const T &arg) { return binfmt(arg, "record", Mode2DUnwrap()); }
+
+	template <class T> std::string file         (const T &arg, const std::string &filename="") { return file(arg, filename, ModeAuto    ()); }
+	template <class T> std::string file1d       (const T &arg, const std::string &filename="") { return file(arg, filename, Mode1D      ()); }
+	template <class T> std::string file2d       (const T &arg, const std::string &filename="") { return file(arg, filename, Mode2D      ()); }
+	template <class T> std::string file1d_unwrap(const T &arg, const std::string &filename="") { return file(arg, filename, Mode1DUnwrap()); }
+	template <class T> std::string file2d_unwrap(const T &arg, const std::string &filename="") { return file(arg, filename, Mode2DUnwrap()); }
+
+	template <class T> std::string binaryFile             (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  ModeAuto    ()); }
+	template <class T> std::string binaryFile1d           (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode1D      ()); }
+	template <class T> std::string binaryFile2d           (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode2D      ()); }
+	template <class T> std::string binaryFile1d_unwrap    (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode1DUnwrap()); }
+	template <class T> std::string binaryFile2d_unwrap    (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode2DUnwrap()); }
+	template <class T> std::string binaryFile1d_rec       (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode1D      ()); }
+	template <class T> std::string binaryFile2d_rec       (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode2D      ()); }
+	template <class T> std::string binaryFile1d_rec_unwrap(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode1DUnwrap()); }
+	template <class T> std::string binaryFile2d_rec_unwrap(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode2DUnwrap()); }
 
 #ifdef GNUPLOT_ENABLE_FEEDBACK
 	// Input variables are set to the mouse position and button.  If the gnuplot
