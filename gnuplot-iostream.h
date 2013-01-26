@@ -925,8 +925,6 @@ public:
 			FILENO(pout = POPEN(cmd.c_str(), "w")),
 			boost::iostreams::never_close_handle
 		),
-		// FIXME - clang says field is uninitialized here.  Is this true?
-		pout(pout), // keeps '-Weff++' quiet
 		is_pipe(true),
 		feedback(NULL),
 		tmp_files(),
@@ -940,7 +938,6 @@ public:
 			FILENO(pout = fh),
 			boost::iostreams::never_close_handle
 		),
-		pout(pout), // keeps '-Weff++' quiet
 		is_pipe(false),
 		feedback(NULL),
 		tmp_files(),
