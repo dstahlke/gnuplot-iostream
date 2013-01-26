@@ -81,31 +81,42 @@ void demo_array() {
 	gp.send(arr);
 }
 
+// FIXME - this is only a template because I'm messing around with things.  Put it back to
+// double before release.
+template <typename T>
 struct Triple {
 	Triple(
-		double _x,
-		double _y,
-		double _z
+		T _x,
+		T _y,
+		T _z
 	) : x(_x), y(_y), z(_z) { }
 
-	double x, y, z;
+	T x, y, z;
 };
 
-void send_entry(std::ostream &stream, const Triple &v) {
+// FIXME - why does this work even though it is not in the gnuplotio namespace?
+// FIXME - in fact, putting it in the gnuplotio namespace breaks it!
+// FIXME - it doesn't work if Triple is in a namespace! (similarly, the sender for
+// blitz::TinyVector must be declared before the function gets called, perhaps because of
+// namespace?)
+//namespace gnuplotio {
+template <typename T>
+void send_entry(std::ostream &stream, const Triple<T> &v) {
 	stream << v.x << " " << v.y << " " << v.z;
 }
+//}
 
 void demo_tuple() {
 	// -persist option makes the window not disappear when your program exits
 	Gnuplot gp("gnuplot -persist");
 
-	std::vector<Triple> pts;
+	std::vector<Triple<double> > pts;
 	for(double alpha=0; alpha<1; alpha+=1.0/120.0) {
 		double theta = alpha*2.0*3.14159;
 		double x = (2+cos(3*theta))*cos(2*theta);
 		double y = (2+cos(3*theta))*sin(2*theta);
 		double z = sin(3*theta);
-		pts.push_back(Triple(x, y, z));
+		pts.push_back(Triple<double> (x, y, z));
 	}
 
 	gp << "splot '-' with lines notitle\n";

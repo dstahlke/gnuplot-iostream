@@ -36,10 +36,10 @@ template <typename T>
 void runtest(std::string header, const T &arg) {
 	Gnuplot gp("cat");
 	std::cout << "--- " << header << " -------------------------------------" << std::endl;
-	std::cout << "ncols=" << ArrayTraits<T>::ncols << std::endl;
-	std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
+	std::cout << "ncols=" << gnuplotio::ArrayTraits<T>::ncols << std::endl;
+	std::cout << "depth=" << gnuplotio::ArrayTraits<T>::depth << std::endl;
 	std::cout << "bintype=[" << gp.binfmt(arg) << "]" << std::endl;
-	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
+	//std::cout << "range_type=" << get_typename<typename gnuplotio::ArrayTraits<T>::range_type>() << std::endl;
 	gp.send(arg);
 	gp.file(arg, "unittest-output/"+header+".txt");
 	gp.binaryFile(arg, "unittest-output/"+header+".bin");
@@ -49,9 +49,9 @@ template <typename T, typename ArrayMode>
 void runtest(std::string header, const T &arg, ArrayMode) {
 	Gnuplot gp("cat");
 	std::cout << "--- " << header << " -------------------------------------" << std::endl;
-	//std::cout << "ncols=" << ArrayTraits<T>::ncols << std::endl;
-	//std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
-	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
+	//std::cout << "ncols=" << gnuplotio::ArrayTraits<T>::ncols << std::endl;
+	//std::cout << "depth=" << gnuplotio::ArrayTraits<T>::depth << std::endl;
+	//std::cout << "range_type=" << get_typename<typename gnuplotio::ArrayTraits<T>::range_type>() << std::endl;
 	//send_array_cols(std::cout, arg, ModeText());
 	gp.send(arg, ArrayMode());
 	// FIXME
@@ -60,7 +60,7 @@ void runtest(std::string header, const T &arg, ArrayMode) {
 }
 
 int main() {
-	debug_array_print = 1;
+	gnuplotio::set_debug_array_print(true);
 
 	const int NX=3, NY=4, NZ=2;
 	std::vector<double> vd;
@@ -144,14 +144,14 @@ int main() {
 	runtest("blitz2d,vd", std::make_pair(blitz2d, vd));
 #endif
 
-	runtest("vvvi cols", vvvi, Mode2DUnwrap());
-	runtest("blitz2d cols", blitz2d, Mode1DUnwrap());
+	runtest("vvvi cols", vvvi, gnuplotio::Mode2DUnwrap());
+	runtest("blitz2d cols", blitz2d, gnuplotio::Mode1DUnwrap());
 
 	Gnuplot gp("cat");
 	gp << "### foobar ###" << std::endl;
-	gp.send(blitz2d, ModeAuto());
+	gp.send(blitz2d, gnuplotio::ModeAuto());
 	gp << "### foobar ###" << std::endl;
 	gp.foobar(blitz2d);
 	gp << "### foobar ###" << std::endl;
-	gp.foobar<Mode1D>(blitz2d);
+	gp.foobar<gnuplotio::Mode1D>(blitz2d);
 }

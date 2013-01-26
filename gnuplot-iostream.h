@@ -65,8 +65,7 @@ THE SOFTWARE.
 #include <boost/version.hpp>
 #include <boost/utility.hpp>
 #include <boost/mpl/bool.hpp>
-// FIXME - this should be the only place this macro is used.  Elsewhere, just detect the blitz
-// header guard.
+
 #ifdef GNUPLOT_ENABLE_BLITZ
 #include <blitz/array.h>
 #endif
@@ -90,6 +89,8 @@ THE SOFTWARE.
 #endif
 
 /// }}}1
+
+namespace gnuplotio {
 
 /// {{{1 Tmpfile helper class
 #ifdef GNUPLOT_USE_TMPFILE
@@ -246,7 +247,9 @@ private:
 #endif // GNUPLOT_ENABLE_PTY, GNUPLOT_USE_TMPFILE
 /// }}}1
 
-/// {{{1 Traits and printers for scalar datatypes
+/// {{{1 Traits and printers for entry datatypes
+
+/// {{{2 Basic entry datatypes
 
 template <class T>
 void send_entry(std::ostream &stream, const T &v) {
@@ -280,7 +283,14 @@ void send_entry(std::ostream &stream, const std::pair<T, U> &v) {
 	stream << v.first << " " << v.second;
 }
 
-#ifdef GNUPLOT_ENABLE_BLITZ
+/// }}}2
+
+/// {{{2 Blitz support
+
+// FIXME - put this outside the main header guard, so that it can be picked up if this header
+// is included a second time, after blitz header is loaded.  It will then require its own
+// header guard.
+#ifdef BZ_BLITZ_H
 template <class T, int N>
 std::string formatCode(const blitz::TinyVector<T, N> &arg) {
 	std::ostringstream tmp;
@@ -297,7 +307,10 @@ void send_entry(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
 		stream << v[i];
 	}
 }
-#endif // GNUPLOT_ENABLE_BLITZ
+#endif // BZ_BLITZ_H
+
+/// }}}2
+
 /// }}}1
 
 /// {{{1 New array writer stuff
@@ -573,9 +586,10 @@ get_columns_range(const T &arg) {
 
 /// {{{2 Armadillo support
 
+// FIXME - put this outside the main header guard, so that it can be picked up if this header
+// is included a second time, after blitz header is loaded.  It will then require its own
+// header guard.
 #ifdef ARMA_INCLUDES
-#ifndef GNUPLOT_H_ARMA
-#define GNUPLOT_H_ARMA
 // FIXME - handle Row, Cube, Field
 
 template <typename T>
@@ -629,18 +643,18 @@ public:
 		return range_type(arg.begin(), arg.end());
 	}
 };
-#endif // GNUPLOT_H_ARMA
 #endif // ARMA_INCLUDES
 
 /// }}}2
 
 /// {{{2 Blitz support
 
+// FIXME - put this outside the main header guard, so that it can be picked up if this header
+// is included a second time, after blitz header is loaded.  It will then require its own
+// header guard.
 #ifdef BZ_BLITZ_H
-#ifndef GNUPLOT_H_BLITZ
-#define GNUPLOT_H_BLITZ
 // FIXME - raise static error if possible
-class WasPartialSlice { };
+class WasBlitzPartialSlice { };
 
 template <typename T, int ArrayDim, int SliceDim>
 class BlitzIterator {
@@ -651,7 +665,7 @@ public:
 		const blitz::TinyVector<int, ArrayDim> _idx
 	) : p(_p), idx(_idx) { }
 
-	typedef WasPartialSlice value_type;
+	typedef WasBlitzPartialSlice value_type;
 	typedef BlitzIterator<T, ArrayDim, SliceDim-1> subiter_type;
 	static const bool is_container = true;
 
@@ -726,7 +740,6 @@ public:
 		return range_type(&arg, start_idx);
 	}
 };
-#endif // GNUPLOT_H_BLITZ
 #endif // BZ_BLITZ_H
 
 /// }}}2
@@ -734,6 +747,7 @@ public:
 /// {{{2 Array printing functions
 
 static bool debug_array_print = 0;
+void set_debug_array_print(bool v) { debug_array_print = v; }
 
 struct ModeText   { static const bool is_text = 1; static const bool is_binfmt = 0; static const bool is_size = 0; };
 struct ModeBinary { static const bool is_text = 0; static const bool is_binfmt = 0; static const bool is_size = 0; };
@@ -1170,5 +1184,11 @@ public:
 };
 
 /// }}}1
+
+} // namespace gnuplotio
+
+// The first version of this library didn't use namespaces, and now this must be here forever
+// for reverse compatibility:
+using gnuplotio::Gnuplot;
 
 #endif // GNUPLOT_IOSTREAM_H
