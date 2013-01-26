@@ -366,7 +366,6 @@ class ArrayTraits {
 public:
 	typedef WasNotContainer value_type;
 	typedef WasNotContainer range_type;
-	static const bool val_is_tuple = false;
 	static const bool is_container = false;
 	static const bool allow_colwrap = false;
 	static const size_t depth = 0;
@@ -381,10 +380,6 @@ template <typename V>
 class ArrayTraitsDefaults {
 public:
 	typedef V value_type;
-
-	// FIXME - demo_tuple won't compile with this.  Maybe just remove is_tuple altogether.
-	//static const bool val_is_tuple = GnuplotEntry<V>::is_tuple;
-	static const bool val_is_tuple = false;
 
 	static const bool is_container = true;
 	static const bool allow_colwrap = true;
@@ -489,7 +484,6 @@ class ArrayTraits<std::pair<T, U> > {
 public:
 	typedef PairOfRange<typename ArrayTraits<T>::range_type, typename ArrayTraits<U>::range_type> range_type;
 	typedef std::pair<typename ArrayTraits<T>::value_type, typename ArrayTraits<U>::value_type> value_type;
-	static const bool val_is_tuple = true;
 	static const bool is_container = ArrayTraits<T>::is_container && ArrayTraits<U>::is_container;
 	// Don't allow colwrap since it's already wrapped.
 	static const bool allow_colwrap = false;
@@ -881,7 +875,7 @@ send_auto(std::ostream &stream, const T &arg, PrintMode) {
 template <typename T, typename PrintMode>
 typename boost::enable_if_c<
 	(ArrayTraits<T>::depth == 2) &&
-	!(ArrayTraits<T>::allow_colwrap && !ArrayTraits<T>::val_is_tuple)
+	!ArrayTraits<T>::allow_colwrap
 >::type
 send_auto(std::ostream &stream, const T &arg, PrintMode) {
 	send_array_nocolwrap<2>(stream, arg, PrintMode());
@@ -890,7 +884,7 @@ send_auto(std::ostream &stream, const T &arg, PrintMode) {
 template <typename T, typename PrintMode>
 typename boost::enable_if_c<
 	(ArrayTraits<T>::depth == 2) &&
-	(ArrayTraits<T>::allow_colwrap && !ArrayTraits<T>::val_is_tuple)
+	ArrayTraits<T>::allow_colwrap
 >::type
 send_auto(std::ostream &stream, const T &arg, PrintMode) {
 	send_array_colwrap<1>(stream, arg, PrintMode());
