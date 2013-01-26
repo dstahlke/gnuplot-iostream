@@ -29,6 +29,10 @@ examples-interactive: examples-interactive.o
 tests_v3: tests_v3.o
 	g++ -o $@ $^ $(LDFLAGS)
 
+# FIXME
+tests_v4: tests_v4.o
+	g++ -o $@ $^ $(LDFLAGS)
+
 clean:
 	rm -f *.o
 	rm -f examples examples-blitz examples-interactive

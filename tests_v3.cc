@@ -54,18 +54,20 @@ void runtest_cols(std::string header, const T &arg) {
 	//std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
 	//std::cout << "range_type=" << get_typename<typename ArrayTraits<T>::range_type>() << std::endl;
 	//send_array_cols(std::cout, arg, ModeText());
-	send_array_cols(std::cout, arg, ModeText());
+	// FIXME
+	// send_array_cols(std::cout, arg, ModeText());
 }
 
 int main() {
 	debug_array_print = 1;
 
-	const int NX=3, NY=4;
+	const int NX=3, NY=4, NZ=2;
 	std::vector<double> vd;
 	std::vector<int> vi;
 	std::vector<std::vector<double> > vvd(NX);
 	std::vector<std::vector<int> > vvi(NX);
 	std::vector<std::vector<std::vector<int> > > vvvi(NX);
+	std::vector<std::vector<std::vector<std::pair<double, int> > > > vvvp(NX);
 	int ai[NX];
 	boost::array<int, NX> bi;
 
@@ -81,6 +83,14 @@ int main() {
 			tup.push_back(300+x*10+y);
 			tup.push_back(400+x*10+y);
 			vvvi[x].push_back(tup);
+
+			std::vector<std::pair<double, int> > stuff;
+			for(int z=0; z<NZ; z++) {
+				stuff.push_back(std::make_pair(
+						x*1000+y*100+z+0.5,
+						x*1000+y*100+z));
+			}
+			vvvp[x].push_back(stuff);
 		}
 	}
 
@@ -90,6 +100,7 @@ int main() {
 	// FIXME - doesn't work because array gets cast to pointer
 	//runtest(std::make_pair(ai, bi));
 	runtest("vvd,vvi,vvvi", std::make_pair(vvd, std::make_pair(vvi, vvvi)));
+	runtest("vvvp", vvvp);
 
 #if DO_ARMA
 	arma::vec armacol(NX);

@@ -609,6 +609,8 @@ class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
 		size_t it;
 	};
 public:
+	static const size_t depth = ArrayTraits<T>::depth + 2;
+
 	typedef ArmaMatRange range_type;
 
 	static range_type get_range(const arma::Mat<T> &arg) {
@@ -713,6 +715,8 @@ private:
 template <typename T, int ArrayDim>
 class ArrayTraits<blitz::Array<T, ArrayDim> > : public ArrayTraitsDefaults<T> {
 public:
+	static const size_t depth = ArrayTraits<T>::depth + ArrayDim;
+
 	typedef BlitzIterator<T, ArrayDim, ArrayDim> range_type;
 
 	static range_type get_range(const blitz::Array<T, ArrayDim> &arg) {
@@ -790,20 +794,8 @@ void deref_and_print(std::ostream &stream, const VecOfRange<T> &arg, PrintMode) 
 	}
 }
 
-template <typename T, typename PrintMode>
-typename boost::disable_if_c<T::is_container>::type
-print_block(std::ostream &stream, T &arg, PrintMode) {
-	while(!arg.is_end()) {
-		//print_entry(arg.deref());
-		deref_and_print(stream, arg, PrintMode());
-		if(PrintMode::is_binfmt) break;
-		stream << std::endl;
-		arg.inc();
-	}
-}
-
-template <typename T, typename PrintMode>
-typename boost::enable_if_c<T::is_container>::type
+template <size_t Depth, typename T, typename PrintMode>
+typename boost::enable_if_c<(Depth>1)>::type
 print_block(std::ostream &stream, T &arg, PrintMode) {
 	bool first = true;
 	while(!arg.is_end()) {
@@ -814,24 +806,52 @@ print_block(std::ostream &stream, T &arg, PrintMode) {
 		}
 		if(debug_array_print && !PrintMode::is_binfmt) stream << "<block>" << std::endl;
 		typename T::subiter_type sub = arg.deref_subiter();
-		print_block(stream, sub, PrintMode());
+		print_block<Depth-1>(stream, sub, PrintMode());
 		if(PrintMode::is_binfmt) break;
+		arg.inc();
+	}
+}
+
+template <size_t Depth, typename T, typename PrintMode>
+typename boost::enable_if_c<(Depth==1)>::type
+print_block(std::ostream &stream, T &arg, PrintMode) {
+	while(!arg.is_end()) {
+		//print_entry(arg.deref());
+		deref_and_print(stream, arg, PrintMode());
+		if(PrintMode::is_binfmt) break;
+		stream << std::endl;
 		arg.inc();
 	}
 }
 
 // FIXME - limit the depth of descent maximum of 2D
 // FIXME - do the right thing depending on val_is_tuple
-template <typename T, typename PrintMode>
-void send_array(std::ostream &stream, const T &arg, PrintMode) {
+template <size_t Depth, typename T, typename PrintMode>
+void send_array_nocolwrap(std::ostream &stream, const T &arg, PrintMode) {
 	typename ArrayTraits<T>::range_type range = ArrayTraits<T>::get_range(arg);
-	print_block(stream, range, PrintMode());
+	print_block<Depth>(stream, range, PrintMode());
+}
+
+template <size_t Depth, typename T, typename PrintMode>
+void send_array_cols(std::ostream &stream, const T &arg, PrintMode) {
+	VecOfRange<typename ArrayTraits<T>::range_type::subiter_type> cols = get_columns_range(arg);
+	print_block<Depth>(stream, cols, PrintMode());
 }
 
 template <typename T, typename PrintMode>
-void send_array_cols(std::ostream &stream, const T &arg, PrintMode) {
-	VecOfRange<typename ArrayTraits<T>::range_type::subiter_type> cols = get_columns_range(arg);
-	print_block(stream, cols, PrintMode());
+typename boost::enable_if_c<
+	(ArrayTraits<T>::depth == 1)
+>::type
+send_auto(std::ostream &stream, const T &arg, PrintMode) {
+	send_array_nocolwrap<1>(stream, arg, PrintMode());
+}
+
+template <typename T, typename PrintMode>
+typename boost::enable_if_c<
+	(ArrayTraits<T>::depth > 1)
+>::type
+send_auto(std::ostream &stream, const T &arg, PrintMode) {
+	send_array_nocolwrap<2>(stream, arg, PrintMode());
 }
 
 /// }}}2
@@ -1071,14 +1091,14 @@ public:
 public:
 	template <class T>
 	Gnuplot &send(const T &arg) {
-		send_array(*this, arg, ModeText());
+		send_auto(*this, arg, ModeText());
 		*this << "e" << std::endl; // gnuplot's "end of array" token
 		return *this;
 	}
 
 	template <class T>
 	Gnuplot &sendBinary(const T &arg) {
-		send_array(*this, arg, ModeBinary());
+		send_auto(*this, arg, ModeBinary());
 		return *this;
 	}
 
@@ -1086,7 +1106,7 @@ public:
 	std::string binfmt(const T &arg) {
 		std::ostringstream tmp;
 		tmp << " format='";
-		send_array(tmp, arg, ModeBinfmt());
+		send_auto(tmp, arg, ModeBinfmt());
 		tmp << "' array=(" << "???" << ")"; // FIXME
 		tmp << " ";
 		return tmp.str();
@@ -1111,7 +1131,7 @@ public:
 	std::string file(const T &arg, std::string filename="") {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
-		send_array(tmp_stream, arg, ModeText());
+		send_auto(tmp_stream, arg, ModeText());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
@@ -1125,7 +1145,7 @@ public:
 	std::string binaryFile(const T &arg, std::string filename="") {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out | std::fstream::binary);
-		send_array(tmp_stream, arg, ModeBinary());
+		send_auto(tmp_stream, arg, ModeBinary());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
