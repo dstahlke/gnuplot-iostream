@@ -1,5 +1,6 @@
 #define DO_ARMA 1
 #define DO_BLITZ 1
+#define HAVE_CXXABI 1
 
 #include <fstream>
 #include <vector>
@@ -15,7 +16,7 @@
 
 #include "gnuplot-iostream.h"
 
-#if 0
+#if HAVE_CXXABI
 // for debugging
 #include <typeinfo>
 #include <cxxabi.h>
@@ -36,6 +37,9 @@ void runtest(std::string header, const T &arg) {
 	std::cout << "--- " << header << " -------------------------------------" << std::endl;
 	std::cout << "ncols=" << gnuplotio::ArrayTraits<T>::ncols << std::endl;
 	std::cout << "depth=" << gnuplotio::ArrayTraits<T>::depth << std::endl;
+#if HAVE_GCCABI
+	std::cout << "val=" << get_typename<typename gnuplotio::ArrayTraits<T>::value_type>() << std::endl;
+#endif
 	std::cout << "bintype=[" << gp.binfmt(arg) << "]" << std::endl;
 	//std::cout << "range_type=" << get_typename<typename gnuplotio::ArrayTraits<T>::range_type>() << std::endl;
 	gp.send(arg);
