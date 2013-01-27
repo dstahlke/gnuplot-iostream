@@ -79,7 +79,9 @@ THE SOFTWARE.
 
 // Patch for Windows by Damien Loison
 // FIXME - check if already defined
-#ifdef WIN32
+// FIXME - what's the best way here?
+#ifdef _WIN32
+#include <windows.h>
 #define PCLOSE _pclose
 #define POPEN  _popen
 #define FILENO _fileno
@@ -372,7 +374,10 @@ struct is_armadillo_mat {
 // Error messages involving this stem from treating something that was not a container as if it
 // was.  This is only here to allow compiliation without errors in normal cases.
 // FIXME - make use of static assertions
-class WasNotContainer { };
+struct WasNotContainer {
+	// FIXME - this is just here to make VC++ happy.
+	typedef void subiter_type;
+};
 
 // The unspecialized version of this class gives traits for things that are *not* arrays.
 template <typename T, typename Enable=void>
