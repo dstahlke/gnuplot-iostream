@@ -30,6 +30,9 @@ examples-interactive: examples-interactive.o
 tests_v3: tests_v3.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
+tup_to_pair: tup_to_pair.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
 clean:
 	rm -f *.o
 	rm -f examples examples-blitz examples-interactive tests_v3

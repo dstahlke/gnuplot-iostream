@@ -25,10 +25,8 @@ THE SOFTWARE.
 /*
 	FIXME/TODO:
 		What version of boost is currently required?
-		Use namespace.
 		Verify that nested containers have consistent lengths between slices (at least along
 		the column dimension, sometimes it might be okay for blocks to be different lengths).
-		Move binary stuff to new infrastructure.
 		Support std::tuple and boost::tuple.
 		Static asserts for non-containers or not enough depth.
 
