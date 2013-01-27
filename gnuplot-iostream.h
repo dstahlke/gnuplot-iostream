@@ -377,6 +377,7 @@ class is_boost_tuple {
     typedef char one;
     typedef long two;
 
+	// FIXME - be a little more choosy here to avoid false positives
     template <typename C> static one test(typename C::head_type *, typename C::tail_type *);
     template <typename C> static two test(...);
 
@@ -400,6 +401,8 @@ struct is_boost_tuple_nulltype<boost::tuples::null_type> {
 /// }}}2
 
 /// {{{2 ArrayTraits and Range classes
+
+/// {{{3 ArrayTraits generic class and defaults
 
 // Error messages involving this stem from treating something that was not a container as if it
 // was.  This is only here to allow compiliation without errors in normal cases.
@@ -435,6 +438,8 @@ public:
 	static const size_t depth = ArrayTraits<V>::depth + 1;
 	static const size_t ncols = 1;
 };
+
+/// }}}3
 
 /// {{{3 STL container support
 
@@ -481,6 +486,8 @@ public:
 
 /// }}}3
 
+/// {{{3 C style array support
+
 template <typename T, size_t N>
 class ArrayTraits<T[N]> : public ArrayTraitsDefaults<T> {
 public:
@@ -490,6 +497,8 @@ public:
 		return range_type(arg, arg+N);
 	}
 };
+
+/// }}}3
 
 /// {{{3 std::pair support
 
@@ -616,6 +625,8 @@ public:
 
 /// }}}3
 
+/// {{{3 Support column unwrap of container
+
 template <typename RT>
 class VecOfRange {
 	template <typename T, typename PrintMode>
@@ -682,6 +693,8 @@ get_columns_range(const T &arg) {
 	VecOfRange<U> ret(rvec);
 	return ret;
 }
+
+/// }}}3
 
 /// }}}2
 
