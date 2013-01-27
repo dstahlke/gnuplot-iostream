@@ -63,6 +63,7 @@ THE SOFTWARE.
 #include <boost/iostreams/stream.hpp>
 #include <boost/version.hpp>
 #include <boost/utility.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <boost/mpl/bool.hpp>
 
 #ifdef GNUPLOT_ENABLE_BLITZ
@@ -371,6 +372,31 @@ struct is_armadillo_mat {
 	typedef boost::mpl::bool_<value> type;
 };
 
+template <typename T>
+class is_boost_tuple {
+    typedef char one;
+    typedef long two;
+
+    template <typename C> static one test(typename C::head_type *, typename C::tail_type *);
+    template <typename C> static two test(...);
+
+public:
+    static const bool value = sizeof(test<T>(NULL, NULL)) == sizeof(char);
+	typedef boost::mpl::bool_<value> type;
+};
+
+template <typename T>
+struct is_boost_tuple_nulltype {
+	static const bool value = false;
+	typedef boost::mpl::bool_<value> type;
+};
+
+template <>
+struct is_boost_tuple_nulltype<boost::tuples::null_type> {
+	static const bool value = true;
+	typedef boost::mpl::bool_<value> type;
+};
+
 /// }}}2
 
 /// {{{2 ArrayTraits and Range classes
@@ -409,6 +435,8 @@ public:
 	static const size_t depth = ArrayTraits<V>::depth + 1;
 	static const size_t ncols = 1;
 };
+
+/// {{{3 STL container support
 
 template <typename TI, typename TV>
 class IteratorRange {
@@ -451,6 +479,8 @@ public:
 	}
 };
 
+/// }}}3
+
 template <typename T, size_t N>
 class ArrayTraits<T[N]> : public ArrayTraitsDefaults<T> {
 public:
@@ -460,6 +490,8 @@ public:
 		return range_type(arg, arg+N);
 	}
 };
+
+/// {{{3 std::pair support
 
 template <typename RT, typename RU>
 class PairOfRange {
@@ -524,6 +556,65 @@ public:
 		);
 	}
 };
+
+/// }}}3
+
+/// {{{3 boost::tuple support
+
+template <typename T>
+class ArrayTraits<T,
+	typename boost::enable_if<
+		boost::mpl::and_<
+			is_boost_tuple<T>,
+			boost::mpl::not_<is_boost_tuple_nulltype<typename T::tail_type> >
+		>
+	>::type
+> : public ArrayTraits<
+	typename std::pair<
+		typename T::head_type,
+		typename T::tail_type
+	>
+> {
+	typedef ArrayTraits<
+			typename std::pair<
+				typename T::head_type,
+				typename T::tail_type
+			>
+		> parent;
+
+public:
+	static typename parent::range_type get_range(const T &arg) {
+		return typename parent::range_type(
+			ArrayTraits<typename T::head_type>::get_range(arg.get_head()),
+			ArrayTraits<typename T::tail_type>::get_range(arg.get_tail())
+		);
+	}
+};
+
+template <typename T>
+class ArrayTraits<T,
+	typename boost::enable_if<
+		boost::mpl::and_<
+			is_boost_tuple<T>,
+			is_boost_tuple_nulltype<typename T::tail_type>
+		>
+	>::type
+> : public ArrayTraits<
+	typename T::head_type
+> {
+	typedef ArrayTraits<
+			typename T::head_type
+		> parent;
+
+public:
+	static typename parent::range_type get_range(const T &arg) {
+		return parent::get_range(
+			arg.get_head()
+		);
+	}
+};
+
+/// }}}3
 
 template <typename RT>
 class VecOfRange {

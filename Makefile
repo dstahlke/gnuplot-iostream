@@ -26,16 +26,22 @@ examples-blitz: examples-blitz.o
 examples-interactive: examples-interactive.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
+######################
 # FIXME - remove all mentions of tests_v3 from makefile
 tests_v3: tests_v3.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
+tests_v4: tests_v4.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
 tup_to_pair: tup_to_pair.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
+# FIXME - end of experimental stuff
+######################
 
 clean:
 	rm -f *.o
-	rm -f examples examples-blitz examples-interactive tests_v3
+	rm -f examples examples-blitz examples-interactive tests_v3 tests_v4
 	# Windows compilation
 	rm -f *.exe *.obj
 	# files created by demo scripts
