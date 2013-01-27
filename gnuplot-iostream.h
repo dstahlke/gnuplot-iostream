@@ -261,29 +261,36 @@ void send_entry(std::ostream &stream, const T &v) {
 
 template <class T>
 void send_entry_bin(std::ostream &stream, const T &v) {
-	// FIXME - need to specialize for std::pair (at least)
 	stream.write(reinterpret_cast<const char *>(&v), sizeof(T));
 }
 
-std::string formatCode(const    float &) { return "%float"; }
-std::string formatCode(const   double &) { return "%double"; }
-std::string formatCode(const   int8_t &) { return "%int8"; }
-std::string formatCode(const  uint8_t &) { return "%uint8"; }
-std::string formatCode(const  int16_t &) { return "%int16"; }
-std::string formatCode(const uint16_t &) { return "%uint16"; }
-std::string formatCode(const  int32_t &) { return "%int32"; }
-std::string formatCode(const uint32_t &) { return "%uint32"; }
-std::string formatCode(const  int64_t &) { return "%int64"; }
-std::string formatCode(const uint64_t &) { return "%uint64"; }
+void format_code(std::ostream &stream, const    float &) { stream << "%float"; }
+void format_code(std::ostream &stream, const   double &) { stream << "%double"; }
+void format_code(std::ostream &stream, const   int8_t &) { stream << "%int8"; }
+void format_code(std::ostream &stream, const  uint8_t &) { stream << "%uint8"; }
+void format_code(std::ostream &stream, const  int16_t &) { stream << "%int16"; }
+void format_code(std::ostream &stream, const uint16_t &) { stream << "%uint16"; }
+void format_code(std::ostream &stream, const  int32_t &) { stream << "%int32"; }
+void format_code(std::ostream &stream, const uint32_t &) { stream << "%uint32"; }
+void format_code(std::ostream &stream, const  int64_t &) { stream << "%int64"; }
+void format_code(std::ostream &stream, const uint64_t &) { stream << "%uint64"; }
 
 template <class T, class U>
-std::string formatCode(const std::pair<T, U> &arg) {
-	return formatCode(arg.first) + formatCode(arg.second);
+void format_code(std::ostream &stream, const std::pair<T, U> &v) {
+	format_code(stream, v.first);
+	format_code(stream, v.second);
 }
 
 template <class T, class U>
 void send_entry(std::ostream &stream, const std::pair<T, U> &v) {
-	stream << v.first << " " << v.second;
+	send_entry(stream, v.first);
+	send_entry(stream, v.second);
+}
+
+template <class T, class U>
+void send_entry_bin(std::ostream &stream, const std::pair<T, U> &v) {
+	send_entry_bin(stream, v.first);
+	send_entry_bin(stream, v.second);
 }
 
 /// }}}2
@@ -295,12 +302,10 @@ void send_entry(std::ostream &stream, const std::pair<T, U> &v) {
 // header guard.
 #ifdef BZ_BLITZ_H
 template <class T, int N>
-std::string formatCode(const blitz::TinyVector<T, N> &arg) {
-	std::ostringstream tmp;
+void format_code(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
 	for(int i=0; i<N; i++) {
-		tmp << formatCode(arg[i]);
+		format_code(stream, v[i]);
 	}
-	return tmp.str();
 }
 
 template <class T, int N>
@@ -789,7 +794,7 @@ void send_scalar(std::ostream &stream, const T &arg, ModeBinary) {
 
 template <typename T>
 void send_scalar(std::ostream &stream, const T &arg, ModeBinfmt) {
-	stream << formatCode(arg);
+	format_code(stream, arg);
 }
 
 template <typename T, typename PrintMode>
