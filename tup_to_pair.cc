@@ -6,6 +6,7 @@
 
 #include <typeinfo>
 #include <cxxabi.h>
+
 template <typename T>
 std::string get_typename() {
 	int status;
@@ -13,6 +14,11 @@ std::string get_typename() {
 	name = abi::__cxa_demangle(typeid(T).name(), 0, 0, &status);
 	assert(!status);
 	return std::string(name);
+}
+
+template <typename T>
+void print_typeof(const T &) {
+	std::cout << get_typename<T>() << std::endl;
 }
 
 //// FIXME - why doesn't boost::mpl::size_t work?
@@ -30,6 +36,19 @@ std::string get_typename() {
 //	std::cout << boost::get<0>(tup) << std::endl;
 //}
 
+template <typename T>
+class is_boost_tuple {
+    typedef char one;
+    typedef long two;
+
+    template <typename C> static one test(typename C::head_type *, typename C::tail_type *);
+    template <typename C> static two test(...);
+
+public:
+    static const bool value = sizeof(test<T>(NULL, NULL)) == sizeof(char);
+	typedef boost::mpl::bool_<value> type;
+};
+
 void foo(const boost::tuples::null_type&) {};
 
 template <typename H, typename T>
@@ -39,35 +58,54 @@ void foo(boost::tuples::cons<H, T>& x) {
 }
 
 template <typename T>
-class TupToPair {
+class BoostTupToPairHelper {
 public:
 	typedef long pair_type; // FIXME
 };
 
 template <typename H, typename TL, typename TR>
-class TupToPair<boost::tuples::cons<H, boost::tuples::cons<TL, TR> > > {
+class BoostTupToPairHelper<boost::tuples::cons<H, boost::tuples::cons<TL, TR> > > {
 public:
-	typedef typename std::pair<H, typename TupToPair<boost::tuples::cons<TL, TR> >::pair_type> pair_type;
+	typedef typename std::pair<H, typename BoostTupToPairHelper<boost::tuples::cons<TL, TR> >::pair_type> pair_type;
 };
 
 template <typename H, typename TL>
-class TupToPair<boost::tuples::cons<H, boost::tuples::cons<TL, boost::tuples::null_type> > > {
+class BoostTupToPairHelper<boost::tuples::cons<H, boost::tuples::cons<TL, boost::tuples::null_type> > > {
 public:
 	typedef typename std::pair<H, TL> pair_type;
 };
 
-template <typename H, typename T>
-void bar(boost::tuples::cons<H, T>) {
-	std::cout << get_typename<typename TupToPair<boost::tuples::cons<H, T> >::pair_type>() << std::endl;
+template <typename T>
+typename boost::disable_if<is_boost_tuple<T>, T>::type
+tup_unwind(const T &arg) {
+	return arg;
+}
+
+template <typename H, typename TL>
+typename std::pair<H, TL>
+tup_unwind(const boost::tuples::cons<H, boost::tuples::cons<TL, boost::tuples::null_type> > &arg) {
+	typedef typename std::pair<H, TL> RetType;
+	return RetType(arg.get_head(), arg.get_tail().get_head());
+}
+
+template <typename H, typename TL, typename TR>
+typename BoostTupToPairHelper<boost::tuples::cons<H, boost::tuples::cons<TL, TR> > >::pair_type
+tup_unwind(const boost::tuples::cons<H, boost::tuples::cons<TL, TR> > &arg) {
+	typedef typename BoostTupToPairHelper<boost::tuples::cons<H, boost::tuples::cons<TL, TR> > >::pair_type RetType;
+	return RetType(arg.get_head(), tup_unwind(arg.get_tail()));
 }
 
 int main() {
-	boost::tuple<int, double, char> tup;
-	tup.get<0>() = 10;
-	tup.get<1>() = 123.456;
-	tup.get<2>() = 'x';
-	//print_tup(tup, int_<2>());
-	foo(tup);
-	//std::cout << get_typename<TupToPair<boost::tuple<short, int, double, char>::tail_type >::pair_type >() << std::endl;
-	bar(tup);
+	boost::tuple<int, double, char> tup3(10, 123.456, 'x');
+	boost::tuple<int, double> tup2(20, 3.14);
+	boost::tuple<char, boost::tuple<int, double>, short> tup_tup('y', tup2, 99);
+	int scalar = 5;
+	//foo(tup3);
+	print_typeof(tup_unwind(scalar));
+	print_typeof(tup_unwind(tup2));
+	gnuplotio::send_entry(std::cout, tup_unwind(tup2)); std::cout << std::endl;
+	print_typeof(tup_unwind(tup3));
+	gnuplotio::send_entry(std::cout, tup_unwind(tup3)); std::cout << std::endl;
+	print_typeof(tup_unwind(tup_tup));
+	//gnuplotio::send_entry(std::cout, tup_unwind(tup_tup)); std::cout << std::endl;
 }

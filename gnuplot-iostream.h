@@ -282,6 +282,7 @@ void format_code(std::ostream &stream, const std::pair<T, U> &v) {
 template <class T, class U>
 void send_entry(std::ostream &stream, const std::pair<T, U> &v) {
 	send_entry(stream, v.first);
+	stream << " ";
 	send_entry(stream, v.second);
 }
 
