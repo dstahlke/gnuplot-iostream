@@ -63,6 +63,7 @@ int main() {
 	const int NX=3, NY=4, NZ=2;
 	std::vector<double> vd;
 	std::vector<int> vi;
+	std::vector<float> vf;
 	std::vector<std::vector<double> > vvd(NX);
 	std::vector<std::vector<int> > vvi(NX);
 	std::vector<std::vector<std::vector<int> > > vvvi(NX);
@@ -73,6 +74,7 @@ int main() {
 	for(int x=0; x<NX; x++) {
 		vd.push_back(x+7.5);
 		vi.push_back(x+7);
+		vf.push_back(x+7.2);
 		ai[x] = x+7;
 		bi[x] = x+70;
 		for(int y=0; y<NY; y++) {
@@ -143,6 +145,8 @@ int main() {
 #endif
 
 	runtest("vvvi cols", vvvi, gnuplotio::Mode2DUnwrap());
+
+	runtest("pair{vf,btup{vd,pair{vi,vi},vf}}", std::make_pair(vf, boost::make_tuple(vd, std::make_pair(vi, vi), vf)));
 
 #if DO_BLITZ
 	runtest("blitz2d cols", blitz2d, gnuplotio::Mode1DUnwrap());
