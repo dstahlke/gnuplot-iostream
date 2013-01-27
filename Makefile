@@ -33,6 +33,8 @@ tests_v3: tests_v3.o
 clean:
 	rm -f *.o
 	rm -f examples examples-blitz examples-interactive tests_v3
+	# Windows compilation
+	rm -f *.exe *.obj
 	# files created by demo scripts
 	rm -f my_graph_*.png external_binary.dat external_binary.gnu external_text.dat external_text.gnu inline_binary.gnu inline_text.gnu
 
