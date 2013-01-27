@@ -1,5 +1,8 @@
 #include <fstream>
 #include <vector>
+#if __cplusplus >= 201103
+#include <tuple>
+#endif
 
 #include <boost/array.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -38,6 +41,7 @@ void go(const T &arg) {
 	auto range = gnuplotio::ArrayTraits<T>::get_range(arg);
 	auto val = range.deref();
 	gnuplotio::send_entry(std::cout, val);
+	std::cout << std::endl;
 }
 
 int main() {
@@ -56,5 +60,12 @@ int main() {
 
 	//go(boost::make_tuple(vd, vi));
 	//runtest("vd,vi,vf", boost::make_tuple(vd, vi));
-	runtest("vd,vi,vf", std::make_pair(vf, boost::make_tuple(vd, std::make_pair(vi, vi), vf)));
+
+	runtest("pair{vf,btup{vd,pair{vi,vi},vf}}", std::make_pair(vf, boost::make_tuple(vd, std::make_pair(vi, vi), vf)));
+#if __cplusplus >= 201103
+	//runtest("pair{vf,btup{vd,pair{vi,vi},vf}}", std::make_pair(vf, std::make_tuple(vd, std::make_pair(vi, vi), vf)));
+	go(std::make_pair(vf, std::make_tuple(vd, std::make_pair(vi, vi), vf)));
+#endif
+
+	std::cout << __cplusplus << std::endl;
 }

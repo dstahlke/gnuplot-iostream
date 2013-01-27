@@ -4,6 +4,9 @@
 
 #include <fstream>
 #include <vector>
+#if __cplusplus >= 201103
+#include <tuple>
+#endif
 
 #include <boost/array.hpp>
 

@@ -57,6 +57,9 @@ THE SOFTWARE.
 #include <utility>
 #include <iomanip>
 #include <vector>
+#if __cplusplus >= 201103
+#include <tuple>
+#endif
 
 // library includes: double quotes make cpplint not complain
 #include <boost/iostreams/device/file_descriptor.hpp>
@@ -622,6 +625,51 @@ public:
 		);
 	}
 };
+
+/// }}}3
+
+/// {{{3 std::tuple support
+
+#if __cplusplus >= 201103
+
+template <typename Tuple, size_t idx>
+struct StdTupUnwinder {
+	typedef std::pair<
+		typename StdTupUnwinder<Tuple, idx-1>::type,
+		typename std::tuple_element<idx, Tuple>::type
+	> type;
+
+	static typename ArrayTraits<type>::range_type get_range(const Tuple &arg) {
+		return typename ArrayTraits<type>::range_type(
+			StdTupUnwinder<Tuple, idx-1>::get_range(arg),
+			ArrayTraits<typename std::tuple_element<idx, Tuple>::type>::get_range(std::get<idx>(arg))
+		);
+	}
+};
+
+template <typename Tuple>
+struct StdTupUnwinder<Tuple, 0> {
+	typedef typename std::tuple_element<0, Tuple>::type type;
+
+	static typename ArrayTraits<type>::range_type get_range(const Tuple &arg) {
+		return ArrayTraits<type>::get_range(std::get<0>(arg));
+	}
+};
+
+template <typename... Args>
+class ArrayTraits<std::tuple<Args...> > :
+	public ArrayTraits<typename StdTupUnwinder<std::tuple<Args...>, sizeof...(Args)-1>::type>
+{
+	typedef std::tuple<Args...> Tuple;
+	typedef ArrayTraits<typename StdTupUnwinder<Tuple, sizeof...(Args)-1>::type> parent;
+
+public:
+	static typename parent::range_type get_range(const Tuple &arg) {
+		return StdTupUnwinder<std::tuple<Args...>, sizeof...(Args)-1>::get_range(arg);
+	}
+};
+
+#endif // __cplusplus >= 201103
 
 /// }}}3
 

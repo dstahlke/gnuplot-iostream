@@ -34,7 +34,10 @@ tests_v3: tests_v3.o
 tests_v4: tests_v4.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-tup_to_pair: tup_to_pair.o
+btup_to_pair: btup_to_pair.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+stup_to_pair: stup_to_pair.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 # FIXME - end of experimental stuff
 ######################
