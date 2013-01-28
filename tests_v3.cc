@@ -43,11 +43,11 @@ void runtest(std::string header, const T &arg) {
 #if HAVE_GCCABI
 	std::cout << "val=" << get_typename<typename gnuplotio::ArrayTraits<T>::value_type>() << std::endl;
 #endif
-	std::cout << "bintype=[" << gp.binfmt(arg) << "]" << std::endl;
+	//std::cout << "bintype=[" << gp.binfmt(arg) << "]" << std::endl;
 	//std::cout << "range_type=" << get_typename<typename gnuplotio::ArrayTraits<T>::range_type>() << std::endl;
 	gp.send(arg);
 	gp.file(arg, "unittest-output/"+header+".txt");
-	gp.binaryFile(arg, "unittest-output/"+header+".bin");
+	//gp.binaryFile(arg, "unittest-output/"+header+".bin");
 }
 
 template <typename T, typename ArrayMode>
@@ -77,11 +77,13 @@ int main() {
 	std::vector<std::vector<std::vector<std::pair<double, int> > > > vvvp(NX);
 	int ai[NX];
 	boost::array<int, NX> bi;
+	std::vector<boost::tuple<double, int, int> > v_bt;
 
 	for(int x=0; x<NX; x++) {
 		vd.push_back(x+7.5);
 		vi.push_back(x+7);
 		vf.push_back(x+7.2);
+		v_bt.push_back(boost::make_tuple(x+0.123, 100+x, 200+x));
 		ai[x] = x+7;
 		bi[x] = x+70;
 		for(int y=0; y<NY; y++) {
@@ -154,6 +156,12 @@ int main() {
 	runtest("vvvi cols", vvvi, gnuplotio::Mode2DUnwrap());
 
 	runtest("pair{vf,btup{vd,pair{vi,vi},vf}}", std::make_pair(vf, boost::make_tuple(vd, std::make_pair(vi, vi), vf)));
+#if __cplusplus >= 201103
+	runtest("pair{vf,stup{vd,pair{vi,vi},vf}}", std::make_pair(vf, std::make_tuple(vd, std::make_pair(vi, vi), vf)));
+	runtest("btup{vd,stup{vi,btup{vf},vi},vd}", boost::make_tuple(vd, std::make_tuple(vi, boost::make_tuple(vf), vi), vd));
+#endif
+
+	runtest("v_bt", v_bt);
 
 #if DO_BLITZ
 	runtest("blitz2d cols", blitz2d, gnuplotio::Mode1DUnwrap());

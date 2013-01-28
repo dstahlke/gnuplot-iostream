@@ -97,6 +97,83 @@ THE SOFTWARE.
 
 namespace gnuplotio {
 
+/// {{{1 Basic traits helpers
+
+// FIXME - maybe use BOOST_MPL_HAS_XXX_TRAIT_DEF
+template <typename T>
+class is_like_stl_container {
+    typedef char one;
+    typedef long two;
+
+    template <typename C> static one test(typename C::value_type *, typename C::const_iterator *);
+    template <typename C> static two test(...);
+
+public:
+    static const bool value = sizeof(test<T>(NULL, NULL)) == sizeof(char);
+	typedef boost::mpl::bool_<value> type;
+};
+
+// http://stackoverflow.com/a/1007175/1048959
+template<typename T> struct has_attrib_n_rows {
+    struct Fallback { int n_rows; };
+    struct Derived : T, Fallback { };
+
+    template<typename C, C> struct ChT;
+
+    template<typename C> static char (&f(ChT<int Fallback::*, &C::n_rows>*))[1];
+    template<typename C> static char (&f(...))[2];
+
+    static bool const value = sizeof(f<Derived>(0)) == 2;
+	typedef boost::mpl::bool_<value> type;
+};
+
+template<typename T> struct has_attrib_n_cols {
+    struct Fallback { int n_cols; };
+    struct Derived : T, Fallback { };
+
+    template<typename C, C> struct ChT;
+
+    template<typename C> static char (&f(ChT<int Fallback::*, &C::n_cols>*))[1];
+    template<typename C> static char (&f(...))[2];
+
+    static bool const value = sizeof(f<Derived>(0)) == 2;
+	typedef boost::mpl::bool_<value> type;
+};
+
+template <typename T>
+struct is_armadillo_mat {
+	static const bool value = has_attrib_n_rows<T>::value && has_attrib_n_cols<T>::value;
+	typedef boost::mpl::bool_<value> type;
+};
+
+template <typename T>
+class is_boost_tuple {
+    typedef char one;
+    typedef long two;
+
+	// FIXME - be a little more choosy here to avoid false positives
+    template <typename C> static one test(typename C::head_type *, typename C::tail_type *);
+    template <typename C> static two test(...);
+
+public:
+    static const bool value = sizeof(test<T>(NULL, NULL)) == sizeof(char);
+	typedef boost::mpl::bool_<value> type;
+};
+
+template <typename T>
+struct is_boost_tuple_nulltype {
+	static const bool value = false;
+	typedef boost::mpl::bool_<value> type;
+};
+
+template <>
+struct is_boost_tuple_nulltype<boost::tuples::null_type> {
+	static const bool value = true;
+	typedef boost::mpl::bool_<value> type;
+};
+
+/// }}}1
+
 /// {{{1 Tmpfile helper class
 #ifdef GNUPLOT_USE_TMPFILE
 // RAII temporary file.  File is removed when this object goes out of scope.
@@ -257,7 +334,8 @@ private:
 /// {{{2 Basic entry datatypes
 
 template <class T>
-void send_entry(std::ostream &stream, const T &v) {
+typename boost::disable_if<is_boost_tuple<T> >::type
+send_entry(std::ostream &stream, const T &v) {
 	stream << v;
 }
 
@@ -298,6 +376,22 @@ void send_entry_bin(std::ostream &stream, const std::pair<T, U> &v) {
 
 /// }}}2
 
+/// {{{2 boost::tuple support
+
+template <typename H>
+void send_entry(std::ostream &stream, const typename boost::tuples::cons<H, boost::tuples::null_type> &v) {
+	send_entry(stream, v.get_head());
+}
+
+template <typename H, typename T>
+void send_entry(std::ostream &stream, const typename boost::tuples::cons<H, T> &v) {
+	send_entry(stream, v.get_head());
+	stream << " ";
+	send_entry(stream, v.get_tail());
+}
+
+/// }}}2
+
 /// {{{2 Blitz support
 
 // FIXME - put this outside the main header guard, so that it can be picked up if this header
@@ -325,83 +419,6 @@ void send_entry(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
 /// }}}1
 
 /// {{{1 New array writer stuff
-
-/// {{{2 Basic traits helpers
-
-// FIXME - maybe use BOOST_MPL_HAS_XXX_TRAIT_DEF
-template <typename T>
-class is_like_stl_container {
-    typedef char one;
-    typedef long two;
-
-    template <typename C> static one test(typename C::value_type *, typename C::const_iterator *);
-    template <typename C> static two test(...);
-
-public:
-    static const bool value = sizeof(test<T>(NULL, NULL)) == sizeof(char);
-	typedef boost::mpl::bool_<value> type;
-};
-
-// http://stackoverflow.com/a/1007175/1048959
-template<typename T> struct has_attrib_n_rows {
-    struct Fallback { int n_rows; };
-    struct Derived : T, Fallback { };
-
-    template<typename C, C> struct ChT;
-
-    template<typename C> static char (&f(ChT<int Fallback::*, &C::n_rows>*))[1];
-    template<typename C> static char (&f(...))[2];
-
-    static bool const value = sizeof(f<Derived>(0)) == 2;
-	typedef boost::mpl::bool_<value> type;
-};
-
-template<typename T> struct has_attrib_n_cols {
-    struct Fallback { int n_cols; };
-    struct Derived : T, Fallback { };
-
-    template<typename C, C> struct ChT;
-
-    template<typename C> static char (&f(ChT<int Fallback::*, &C::n_cols>*))[1];
-    template<typename C> static char (&f(...))[2];
-
-    static bool const value = sizeof(f<Derived>(0)) == 2;
-	typedef boost::mpl::bool_<value> type;
-};
-
-template <typename T>
-struct is_armadillo_mat {
-	static const bool value = has_attrib_n_rows<T>::value && has_attrib_n_cols<T>::value;
-	typedef boost::mpl::bool_<value> type;
-};
-
-template <typename T>
-class is_boost_tuple {
-    typedef char one;
-    typedef long two;
-
-	// FIXME - be a little more choosy here to avoid false positives
-    template <typename C> static one test(typename C::head_type *, typename C::tail_type *);
-    template <typename C> static two test(...);
-
-public:
-    static const bool value = sizeof(test<T>(NULL, NULL)) == sizeof(char);
-	typedef boost::mpl::bool_<value> type;
-};
-
-template <typename T>
-struct is_boost_tuple_nulltype {
-	static const bool value = false;
-	typedef boost::mpl::bool_<value> type;
-};
-
-template <>
-struct is_boost_tuple_nulltype<boost::tuples::null_type> {
-	static const bool value = true;
-	typedef boost::mpl::bool_<value> type;
-};
-
-/// }}}2
 
 /// {{{2 ArrayTraits and Range classes
 

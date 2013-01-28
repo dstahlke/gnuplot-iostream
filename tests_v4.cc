@@ -7,8 +7,6 @@
 #include <boost/array.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include "gnuplot-iostream.h"
-
 // for debugging
 #include <typeinfo>
 #include <cxxabi.h>
@@ -21,6 +19,13 @@ std::string get_typename() {
 	assert(!status);
 	return std::string(name);
 }
+
+template <typename T>
+std::string get_typename_of(const T &) {
+	return get_typename<T>();
+}
+
+#include "gnuplot-iostream.h"
 
 template <typename T>
 void runtest(std::string header, const T &arg) {
@@ -36,36 +41,32 @@ void runtest(std::string header, const T &arg) {
 	gp.binaryFile(arg, "unittest-output/"+header+".bin");
 }
 
-template <typename T>
-void go(const T &arg) {
-	auto range = gnuplotio::ArrayTraits<T>::get_range(arg);
-	auto val = range.deref();
-	gnuplotio::send_entry(std::cout, val);
-	std::cout << std::endl;
-}
+//template <typename T>
+//void go(const T &arg) {
+//	auto range = gnuplotio::ArrayTraits<T>::get_range(arg);
+//	auto val = range.deref();
+//	gnuplotio::send_entry(std::cout, val);
+//	std::cout << std::endl;
+//}
 
 int main() {
 	gnuplotio::set_debug_array_print(true);
 
-	const int NX=3;
-	std::vector<double> vd;
-	std::vector<int> vi;
-	std::vector<float> vf;
+	//const int NX=3;
+	//std::vector<double> vd;
+	//std::vector<int> vi;
+	//std::vector<float> vf;
 
-	for(int x=0; x<NX; x++) {
-		vd.push_back(x+7.1);
-		vi.push_back(x+7.2);
-		vf.push_back(x+7.3);
-	}
+	//for(int x=0; x<NX; x++) {
+	//	vd.push_back(x+7.1);
+	//	vi.push_back(x+7.2);
+	//	vf.push_back(x+7.3);
+	//}
 
 	//go(boost::make_tuple(vd, vi));
 	//runtest("vd,vi,vf", boost::make_tuple(vd, vi));
 
-	runtest("pair{vf,btup{vd,pair{vi,vi},vf}}", std::make_pair(vf, boost::make_tuple(vd, std::make_pair(vi, vi), vf)));
-#if __cplusplus >= 201103
-	//runtest("pair{vf,btup{vd,pair{vi,vi},vf}}", std::make_pair(vf, std::make_tuple(vd, std::make_pair(vi, vi), vf)));
-	go(std::make_pair(vf, std::make_tuple(vd, std::make_pair(vi, vi), vf)));
-#endif
-
-	std::cout << __cplusplus << std::endl;
+	boost::tuple<double, int, int> tup(1,2,3);
+	gnuplotio::send_entry(std::cout, tup);
+	std::cout << std::endl;
 }
