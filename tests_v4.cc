@@ -66,7 +66,7 @@ int main() {
 	//go(boost::make_tuple(vd, vi));
 	//runtest("vd,vi,vf", boost::make_tuple(vd, vi));
 
-	boost::tuple<double, int, int> tup(1,2,3);
+	std::tuple<double, int, int> tup(1,2,3);
 	gnuplotio::send_entry(std::cout, tup);
 	std::cout << std::endl;
 }

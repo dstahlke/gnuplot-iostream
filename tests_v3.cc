@@ -78,12 +78,16 @@ int main() {
 	int ai[NX];
 	boost::array<int, NX> bi;
 	std::vector<boost::tuple<double, int, int> > v_bt;
+	std::vector<  std::tuple<double, int, int> > v_st;
 
 	for(int x=0; x<NX; x++) {
 		vd.push_back(x+7.5);
 		vi.push_back(x+7);
 		vf.push_back(x+7.2);
 		v_bt.push_back(boost::make_tuple(x+0.123, 100+x, 200+x));
+#if __cplusplus >= 201103
+		v_st.push_back(std::make_tuple(x+0.123, 100+x, 200+x));
+#endif
 		ai[x] = x+7;
 		bi[x] = x+70;
 		for(int y=0; y<NY; y++) {
@@ -162,6 +166,9 @@ int main() {
 #endif
 
 	runtest("v_bt", v_bt);
+#if __cplusplus >= 201103
+	runtest("v_st", v_st);
+#endif
 
 #if DO_BLITZ
 	runtest("blitz2d cols", blitz2d, gnuplotio::Mode1DUnwrap());

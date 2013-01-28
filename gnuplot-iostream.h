@@ -392,6 +392,35 @@ void send_entry(std::ostream &stream, const typename boost::tuples::cons<H, T> &
 
 /// }}}2
 
+/// {{{2 std::tuple support
+
+#if __cplusplus >= 201103
+
+// http://stackoverflow.com/questions/6245735/pretty-print-stdtuple
+
+template<std::size_t> struct int_{}; // compile-time counter
+
+template<class Tuple, std::size_t I>
+void send_std_tup(std::ostream &stream, Tuple const &v, int_<I>) {
+  send_std_tup(stream, v, int_<I-1>());
+  stream << " ";
+  send_entry(stream, std::get<I>(v));
+}
+
+template<class Tuple>
+void send_std_tup(std::ostream &stream, Tuple const &v, int_<0>) {
+  send_entry(stream, std::get<0>(v));
+}
+
+template<class... Args>
+void send_entry(std::ostream &stream, std::tuple<Args...> const &v) {
+  send_std_tup(stream, v, int_<sizeof...(Args)-1>());
+}
+
+#endif
+
+/// }}}2
+
 /// {{{2 Blitz support
 
 // FIXME - put this outside the main header guard, so that it can be picked up if this header
