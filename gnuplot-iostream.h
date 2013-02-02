@@ -393,9 +393,10 @@ void send_entry_bin(std::ostream &stream, const T &v) {
 // FIXME - rename this?
 template <typename T, typename Enable=void>
 struct FormatCodes {
-	static void send(std::ostream &stream) {
-		throw std::invalid_argument("no format code defined for this type");
-	}
+	BOOST_STATIC_ASSERT_MSG(sizeof(T) == 0, "FormatCodes class not specialized for this type");
+
+	// This is here to avoid further compilation errors, beyond what the assert prints.
+	static void send(std::ostream &);
 };
 
 template<> struct FormatCodes<   float> { static void send(std::ostream &stream) { stream << "%float";  } };
