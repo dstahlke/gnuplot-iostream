@@ -27,19 +27,19 @@ std::string get_typename_of(const T &) {
 
 #include "gnuplot-iostream.h"
 
-template <typename T>
-void runtest(std::string header, const T &arg) {
-	Gnuplot gp("cat");
-	std::cout << "--- " << header << " -------------------------------------" << std::endl;
-	std::cout << "ncols=" << gnuplotio::ArrayTraits<T>::ncols << std::endl;
-	std::cout << "depth=" << gnuplotio::ArrayTraits<T>::depth << std::endl;
-	std::cout << "val=" << get_typename<typename gnuplotio::ArrayTraits<T>::value_type>() << std::endl;
-	std::cout << "bintype=[" << gp.binfmt(arg) << "]" << std::endl;
-	std::cout << "range_type=" << get_typename<typename gnuplotio::ArrayTraits<T>::range_type>() << std::endl;
-	gp.send(arg);
-	gp.file(arg, "unittest-output/"+header+".txt");
-	gp.binaryFile(arg, "unittest-output/"+header+".bin");
-}
+//template <typename T>
+//void runtest(std::string header, const T &arg) {
+//	Gnuplot gp("cat");
+//	std::cout << "--- " << header << " -------------------------------------" << std::endl;
+//	std::cout << "ncols=" << gnuplotio::ArrayTraits<T>::ncols << std::endl;
+//	std::cout << "depth=" << gnuplotio::ArrayTraits<T>::depth << std::endl;
+//	std::cout << "val=" << get_typename<typename gnuplotio::ArrayTraits<T>::value_type>() << std::endl;
+//	std::cout << "bintype=[" << gp.binfmt(arg) << "]" << std::endl;
+//	std::cout << "range_type=" << get_typename<typename gnuplotio::ArrayTraits<T>::range_type>() << std::endl;
+//	gp.send(arg);
+//	gp.file(arg, "unittest-output/"+header+".txt");
+//	gp.binaryFile(arg, "unittest-output/"+header+".bin");
+//}
 
 //template <typename T>
 //void go(const T &arg) {
@@ -66,7 +66,11 @@ int main() {
 	//go(boost::make_tuple(vd, vi));
 	//runtest("vd,vi,vf", boost::make_tuple(vd, vi));
 
-	std::tuple<double, int, int> tup(1,2,3);
-	gnuplotio::send_entry(std::cout, tup);
-	std::cout << std::endl;
+	//std::tuple<double, int, int> tup(1,2,3);
+	//gnuplotio::send_entry(std::cout, tup);
+	//std::cout << std::endl;
+
+	std::cout << gnuplotio::is_boost_tuple<boost::tuple<int, double> >::type::value << std::endl;
+	std::cout << gnuplotio::is_boost_tuple<boost::tuple<int> >::type::value << std::endl;
+	std::cout << gnuplotio::is_boost_tuple<std::vector<double> >::type::value << std::endl;
 }

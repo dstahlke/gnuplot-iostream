@@ -67,6 +67,7 @@ THE SOFTWARE.
 #include <boost/utility.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/mpl/bool.hpp>
+//#include <boost/type_traits.hpp>
 // This is the version of boost which has v3 of the filesystem libraries by default.
 #if BOOST_VERSION >= 104600
 #define GNUPLOT_USE_TMPFILE
@@ -95,18 +96,30 @@ namespace gnuplotio {
 
 /// {{{1 Basic traits helpers
 
-// FIXME - maybe use BOOST_MPL_HAS_XXX_TRAIT_DEF
+// Old version, to be used if BOOST_MPL_HAS_XXX_TRAIT_DEF doesn't work well.
+//template <typename T>
+//class is_like_stl_container {
+//    typedef char one;
+//    typedef long two;
+//
+//    template <typename C> static one test(typename C::value_type *, typename C::const_iterator *);
+//    template <typename C> static two test(...);
+//
+//public:
+//    static const bool value = sizeof(test<T>(NULL, NULL)) == sizeof(char);
+//	typedef boost::mpl::bool_<value> type;
+//};
+
+BOOST_MPL_HAS_XXX_TRAIT_DEF(value_type)
+BOOST_MPL_HAS_XXX_TRAIT_DEF(const_iterator)
+
 template <typename T>
-class is_like_stl_container {
-    typedef char one;
-    typedef long two;
-
-    template <typename C> static one test(typename C::value_type *, typename C::const_iterator *);
-    template <typename C> static two test(...);
-
-public:
-    static const bool value = sizeof(test<T>(NULL, NULL)) == sizeof(char);
-	typedef boost::mpl::bool_<value> type;
+struct is_like_stl_container {
+	typedef boost::mpl::and_<
+			typename has_value_type<T>::type,
+			typename has_const_iterator<T>::type
+		> type;
+	static const bool value = type::value;
 };
 
 // http://stackoverflow.com/a/1007175/1048959
@@ -138,22 +151,10 @@ template<typename T> struct has_attrib_n_cols {
 
 template <typename T>
 struct is_armadillo_mat {
-	static const bool value = has_attrib_n_rows<T>::value && has_attrib_n_cols<T>::value;
-	typedef boost::mpl::bool_<value> type;
-};
-
-template <typename T>
-class is_boost_tuple {
-    typedef char one;
-    typedef long two;
-
-	// FIXME - be a little more choosy here to avoid false positives
-    template <typename C> static one test(typename C::head_type *, typename C::tail_type *);
-    template <typename C> static two test(...);
-
-public:
-    static const bool value = sizeof(test<T>(NULL, NULL)) == sizeof(char);
-	typedef boost::mpl::bool_<value> type;
+	typedef boost::mpl::and_<
+			typename has_attrib_n_rows<T>::type,
+			typename has_attrib_n_cols<T>::type
+		> type;
 };
 
 template <typename T>
@@ -167,6 +168,55 @@ struct is_boost_tuple_nulltype<boost::tuples::null_type> {
 	static const bool value = true;
 	typedef boost::mpl::bool_<value> type;
 };
+
+// Old version, to be used if BOOST_MPL_HAS_XXX_TRAIT_DEF doesn't work well.
+//template <typename T>
+//class is_boost_tuple {
+//    typedef char one;
+//    typedef long two;
+//
+//    template <typename C> static one test(typename C::head_type *, typename C::tail_type *);
+//    template <typename C> static two test(...);
+//
+//public:
+//    static const bool value = sizeof(test<T>(NULL, NULL)) == sizeof(char);
+//	typedef boost::mpl::bool_<value> type;
+//};
+
+BOOST_MPL_HAS_XXX_TRAIT_DEF(head_type)
+BOOST_MPL_HAS_XXX_TRAIT_DEF(tail_type)
+
+template <typename T>
+struct is_boost_tuple {
+	typedef boost::mpl::and_<
+			typename has_head_type<T>::type,
+			typename has_tail_type<T>::type
+		> type;
+	static const bool value = type::value;
+};
+
+// More fine-grained, but doesn't compile!
+//template <typename T>
+//struct is_boost_tuple {
+//	typedef boost::mpl::and_<
+//		typename boost::is_class<T>::type,
+//		typename boost::mpl::and_<
+//			typename has_head_type<T>::type,
+//			typename boost::mpl::and_<
+//				typename has_tail_type<T>::type,
+//				typename boost::mpl::or_<
+//					typename is_boost_tuple_nulltype<typename T::tail_type>::type,
+//					typename is_boost_tuple<typename T::tail_type>::type
+//				>::type
+//			>::type
+//		>::type
+//	> type;
+//};
+//
+//template <>
+//struct is_boost_tuple<boost::tuples::null_type> {
+//	typedef boost::mpl::bool_<false> type;
+//};
 
 /// }}}1
 
