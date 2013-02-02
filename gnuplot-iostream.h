@@ -390,22 +390,32 @@ void send_entry_bin(std::ostream &stream, const T &v) {
 	stream.write(reinterpret_cast<const char *>(&v), sizeof(T));
 }
 
-void format_code(std::ostream &stream, const    float &) { stream << "%float"; }
-void format_code(std::ostream &stream, const   double &) { stream << "%double"; }
-void format_code(std::ostream &stream, const   int8_t &) { stream << "%int8"; }
-void format_code(std::ostream &stream, const  uint8_t &) { stream << "%uint8"; }
-void format_code(std::ostream &stream, const  int16_t &) { stream << "%int16"; }
-void format_code(std::ostream &stream, const uint16_t &) { stream << "%uint16"; }
-void format_code(std::ostream &stream, const  int32_t &) { stream << "%int32"; }
-void format_code(std::ostream &stream, const uint32_t &) { stream << "%uint32"; }
-void format_code(std::ostream &stream, const  int64_t &) { stream << "%int64"; }
-void format_code(std::ostream &stream, const uint64_t &) { stream << "%uint64"; }
+// FIXME - rename this?
+template <typename T, typename Enable=void>
+struct FormatCodes {
+	static void send(std::ostream &stream) {
+		throw std::invalid_argument("no format code defined for this type");
+	}
+};
+
+template<> struct FormatCodes<   float> { static void send(std::ostream &stream) { stream << "%float";  } };
+template<> struct FormatCodes<  double> { static void send(std::ostream &stream) { stream << "%double"; } };
+template<> struct FormatCodes<  int8_t> { static void send(std::ostream &stream) { stream << "%int8";   } };
+template<> struct FormatCodes< uint8_t> { static void send(std::ostream &stream) { stream << "%uint8";  } };
+template<> struct FormatCodes< int16_t> { static void send(std::ostream &stream) { stream << "%int16";  } };
+template<> struct FormatCodes<uint16_t> { static void send(std::ostream &stream) { stream << "%uint16"; } };
+template<> struct FormatCodes< int32_t> { static void send(std::ostream &stream) { stream << "%int32";  } };
+template<> struct FormatCodes<uint32_t> { static void send(std::ostream &stream) { stream << "%uint32"; } };
+template<> struct FormatCodes< int64_t> { static void send(std::ostream &stream) { stream << "%int64";  } };
+template<> struct FormatCodes<uint64_t> { static void send(std::ostream &stream) { stream << "%uint64"; } };
 
 template <class T, class U>
-void format_code(std::ostream &stream, const std::pair<T, U> &v) {
-	format_code(stream, v.first);
-	format_code(stream, v.second);
-}
+struct FormatCodes<std::pair<T, U> > {
+	static void send(std::ostream &stream) {
+		FormatCodes<T>::send(stream);
+		FormatCodes<U>::send(stream);
+	}
+};
 
 template <class T, class U>
 void send_entry(std::ostream &stream, const std::pair<T, U> &v) {
@@ -424,17 +434,35 @@ void send_entry_bin(std::ostream &stream, const std::pair<T, U> &v) {
 
 /// {{{2 boost::tuple support
 
-template <typename H>
-void format_code(std::ostream &stream, const typename boost::tuples::cons<H, boost::tuples::null_type> &v) {
-	format_code(stream, v.get_head());
-}
+template <typename T>
+struct FormatCodes<T,
+	typename boost::enable_if<
+		boost::mpl::and_<
+			is_boost_tuple<T>,
+			boost::mpl::not_<is_boost_tuple_nulltype<typename T::tail_type> >
+		>
+	>::type
+> {
+	static void send(std::ostream &stream) {
+		FormatCodes<typename T::head_type>::send(stream);
+		stream << " ";
+		FormatCodes<typename T::tail_type>::send(stream);
+	}
+};
 
-template <typename H, typename T>
-void format_code(std::ostream &stream, const typename boost::tuples::cons<H, T> &v) {
-	format_code(stream, v.get_head());
-	stream << " ";
-	format_code(stream, v.get_tail());
-}
+template <typename T>
+struct FormatCodes<T,
+	typename boost::enable_if<
+		boost::mpl::and_<
+			is_boost_tuple<T>,
+			is_boost_tuple_nulltype<typename T::tail_type>
+		>
+	>::type
+> {
+	static void send(std::ostream &stream) {
+		FormatCodes<typename T::head_type>::send(stream);
+	}
+};
 
 template <typename H>
 void send_entry(std::ostream &stream, const typename boost::tuples::cons<H, boost::tuples::null_type> &v) {
@@ -458,38 +486,42 @@ void send_entry(std::ostream &stream, const typename boost::tuples::cons<H, T> &
 
 template<std::size_t> struct int_{}; // compile-time counter
 
-template<class Tuple, std::size_t I>
-void format_code_std_tup(std::ostream &stream, Tuple const &v, int_<I>) {
-  format_code_std_tup(stream, v, int_<I-1>());
-  stream << " ";
-  format_code(stream, std::get<I>(v));
+template <typename Tuple, std::size_t I>
+void std_tuple_formatcode_helper(std::ostream &stream, const Tuple *, int_<I>) {
+	std_tuple_formatcode_helper(stream, (const Tuple *)(0), int_<I-1>());
+	stream << " ";
+	FormatCodes<typename std::tuple_element<I, Tuple>::type>::send(stream);
 }
 
-template<class Tuple>
-void format_code_std_tup(std::ostream &stream, Tuple const &v, int_<0>) {
-  format_code(stream, std::get<0>(v));
+template <typename Tuple>
+void std_tuple_formatcode_helper(std::ostream &stream, const Tuple *, int_<0>) {
+	FormatCodes<typename std::tuple_element<0, Tuple>::type>::send(stream);
 }
 
-template<class... Args>
-void format_code(std::ostream &stream, std::tuple<Args...> const &v) {
-  format_code_std_tup(stream, v, int_<sizeof...(Args)-1>());
-}
+template <typename... Args>
+struct FormatCodes<std::tuple<Args...> > {
+	typedef typename std::tuple<Args...> Tuple;
+
+	static void send(std::ostream &stream) {
+		std_tuple_formatcode_helper(stream, (const Tuple *)(0), int_<sizeof...(Args)-1>());
+	}
+};
 
 template<class Tuple, std::size_t I>
 void send_std_tup(std::ostream &stream, Tuple const &v, int_<I>) {
-  send_std_tup(stream, v, int_<I-1>());
-  stream << " ";
-  send_entry(stream, std::get<I>(v));
+	send_std_tup(stream, v, int_<I-1>());
+	stream << " ";
+	send_entry(stream, std::get<I>(v));
 }
 
 template<class Tuple>
 void send_std_tup(std::ostream &stream, Tuple const &v, int_<0>) {
-  send_entry(stream, std::get<0>(v));
+	send_entry(stream, std::get<0>(v));
 }
 
 template<class... Args>
 void send_entry(std::ostream &stream, std::tuple<Args...> const &v) {
-  send_std_tup(stream, v, int_<sizeof...(Args)-1>());
+	send_std_tup(stream, v, int_<sizeof...(Args)-1>());
 }
 
 #endif
@@ -503,11 +535,13 @@ void send_entry(std::ostream &stream, std::tuple<Args...> const &v) {
 // header guard.
 #ifdef BZ_BLITZ_H
 template <class T, int N>
-void format_code(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
-	for(int i=0; i<N; i++) {
-		format_code(stream, v[i]);
+struct FormatCodes<blitz::TinyVector<T, N> > {
+	static void send(std::ostream &stream) {
+		for(int i=0; i<N; i++) {
+			FormatCodes<T>::send(stream);
+		}
 	}
-}
+};
 
 template <class T, int N>
 void send_entry(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
@@ -1065,8 +1099,8 @@ void send_scalar(std::ostream &stream, const T &arg, ModeBinary) {
 }
 
 template <typename T>
-void send_scalar(std::ostream &stream, const T &arg, ModeBinfmt) {
-	format_code(stream, arg);
+void send_scalar(std::ostream &stream, const T &, ModeBinfmt) {
+	FormatCodes<T>::send(stream);
 }
 
 template <typename T, typename PrintMode>

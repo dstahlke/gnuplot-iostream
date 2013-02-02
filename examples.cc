@@ -83,6 +83,7 @@ void demo_array() {
 
 // FIXME - this is only a template because I'm messing around with things.  Put it back to
 // double before release.
+namespace xyz {
 template <typename T>
 struct Triple {
 	Triple(
@@ -93,17 +94,35 @@ struct Triple {
 
 	T x, y, z;
 };
+}
+using xyz::Triple;
 
 // FIXME - why does this work even though it is not in the gnuplotio namespace?
 // FIXME - in fact, putting it in the gnuplotio namespace breaks it!
 // FIXME - it doesn't work if Triple is in a namespace! (similarly, the sender for
 // blitz::TinyVector must be declared before the function gets called, perhaps because of
 // namespace?)
-//namespace gnuplotio {
 template <typename T>
 void send_entry(std::ostream &stream, const Triple<T> &v) {
 	stream << v.x << " " << v.y << " " << v.z;
 }
+
+namespace gnuplotio {
+template<typename T>
+struct FormatCodes<Triple<T> > {
+	static void send(std::ostream &stream) {
+		FormatCodes<T>::send(stream);
+		FormatCodes<T>::send(stream);
+		FormatCodes<T>::send(stream);
+	}
+};
+}
+
+//template <class T>
+//void format_code(std::ostream &stream, const Triple<T> &v) {
+//	gnuplotio::format_code(stream, v.x);
+//	gnuplotio::format_code(stream, v.y);
+//	gnuplotio::format_code(stream, v.z);
 //}
 
 void demo_tuple() {
@@ -119,8 +138,11 @@ void demo_tuple() {
 		pts.push_back(Triple<double> (x, y, z));
 	}
 
-	gp << "splot '-' with lines notitle\n";
-	gp.send(pts);
+	// FIXME
+	//gp << "splot '-' with lines notitle\n";
+	//gp.send(pts);
+	gp << "splot '-' binary" << gp.binfmt(pts, "record") << "with lines notitle\n";
+	gp.sendBinary(pts);
 }
 
 void demo_tmpfile() {
