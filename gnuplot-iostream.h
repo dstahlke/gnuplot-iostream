@@ -27,8 +27,9 @@ THE SOFTWARE.
 		What version of boost is currently required?
 		Verify that nested containers have consistent lengths between slices (at least along
 		the column dimension, sometimes it might be okay for blocks to be different lengths).
-		Support std::tuple and boost::tuple.
 		Static asserts for non-containers or not enough depth.
+		Have version numbers.
+		Write some docs.
 
 	ChangeLog:
 		send() for iterators has been removed
@@ -48,7 +49,6 @@ THE SOFTWARE.
 #endif // GNUPLOT_ENABLE_PTY
 
 // C++ system includes
-// FIXME - which of these are really needed?
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -61,36 +61,32 @@ THE SOFTWARE.
 #include <tuple>
 #endif
 
-// library includes: double quotes make cpplint not complain
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/version.hpp>
 #include <boost/utility.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/mpl/bool.hpp>
-
-#ifdef GNUPLOT_ENABLE_BLITZ
-#include <blitz/array.h>
-#endif
-
 // This is the version of boost which has v3 of the filesystem libraries by default.
 #if BOOST_VERSION >= 104600
 #define GNUPLOT_USE_TMPFILE
 #include <boost/filesystem.hpp>
 #endif // BOOST_VERSION
 
+#ifdef GNUPLOT_ENABLE_BLITZ
+#include <blitz/array.h>
+#endif
+
 // Patch for Windows by Damien Loison
-// FIXME - check if already defined
-// FIXME - what's the best way here?
 #ifdef _WIN32
 #include <windows.h>
-#define PCLOSE _pclose
-#define POPEN  _popen
-#define FILENO _fileno
+#define GNUPLOT_PCLOSE _pclose
+#define GNUPLOT_POPEN  _popen
+#define GNUPLOT_FILENO _fileno
 #else
-#define PCLOSE pclose
-#define POPEN  popen
-#define FILENO fileno
+#define GNUPLOT_PCLOSE pclose
+#define GNUPLOT_POPEN  popen
+#define GNUPLOT_FILENO fileno
 #endif
 
 /// }}}1
@@ -1173,7 +1169,7 @@ class Gnuplot : public boost::iostreams::stream<
 public:
 	explicit Gnuplot(const std::string &cmd = "gnuplot") :
 		boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
-			FILENO(pout = POPEN(cmd.c_str(), "w")),
+			GNUPLOT_FILENO(pout = GNUPLOT_POPEN(cmd.c_str(), "w")),
 			boost::iostreams::never_close_handle
 		),
 		is_pipe(true),
@@ -1186,7 +1182,7 @@ public:
 
 	explicit Gnuplot(FILE *fh) :
 		boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
-			FILENO(pout = fh),
+			GNUPLOT_FILENO(pout = fh),
 			boost::iostreams::never_close_handle
 		),
 		is_pipe(false),
@@ -1217,7 +1213,7 @@ public:
 		//close();
 
 		if(is_pipe) {
-			if(PCLOSE(pout)) {
+			if(GNUPLOT_PCLOSE(pout)) {
 				std::cerr << "pclose returned error" << std::endl;
 			}
 		} else {
