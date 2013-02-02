@@ -97,33 +97,27 @@ struct Triple {
 }
 using xyz::Triple;
 
-// FIXME - why does this work even though it is not in the gnuplotio namespace?
-// FIXME - in fact, putting it in the gnuplotio namespace breaks it!
-// FIXME - it doesn't work if Triple is in a namespace! (similarly, the sender for
-// blitz::TinyVector must be declared before the function gets called, perhaps because of
-// namespace?)
-template <typename T>
-void send_entry(std::ostream &stream, const Triple<T> &v) {
-	stream << v.x << " " << v.y << " " << v.z;
-}
-
 namespace gnuplotio {
-template<typename T>
-struct FormatCodes<Triple<T> > {
-	static void send(std::ostream &stream) {
-		FormatCodes<T>::send(stream);
-		FormatCodes<T>::send(stream);
-		FormatCodes<T>::send(stream);
-	}
-};
-}
+	template<typename T>
+	struct FormatCodes<Triple<T> > {
+		static void send(std::ostream &stream) {
+			FormatCodes<T>::send(stream);
+			FormatCodes<T>::send(stream);
+			FormatCodes<T>::send(stream);
+		}
+	};
 
-//template <class T>
-//void format_code(std::ostream &stream, const Triple<T> &v) {
-//	gnuplotio::format_code(stream, v.x);
-//	gnuplotio::format_code(stream, v.y);
-//	gnuplotio::format_code(stream, v.z);
-//}
+	template<typename T>
+	struct TextSender<Triple<T> > {
+		static void send(std::ostream &stream, const Triple<T> &v) {
+			TextSender<T>::send(stream, v.x);
+			stream << " ";
+			TextSender<T>::send(stream, v.y);
+			stream << " ";
+			TextSender<T>::send(stream, v.z);
+		}
+	};
+}
 
 void demo_tuple() {
 	// -persist option makes the window not disappear when your program exits
@@ -139,10 +133,10 @@ void demo_tuple() {
 	}
 
 	// FIXME
-	//gp << "splot '-' with lines notitle\n";
-	//gp.send(pts);
-	gp << "splot '-' binary" << gp.binfmt(pts, "record") << "with lines notitle\n";
-	gp.sendBinary(pts);
+	gp << "splot '-' with lines notitle\n";
+	gp.send(pts);
+	//gp << "splot '-' binary" << gp.binfmt(pts, "record") << "with lines notitle\n";
+	//gp.sendBinary(pts);
 }
 
 void demo_tmpfile() {

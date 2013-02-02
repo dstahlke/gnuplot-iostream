@@ -30,6 +30,7 @@ THE SOFTWARE.
 		Static asserts for non-containers or not enough depth.
 		Have version numbers.
 		Write some docs.
+		Need binary writers for all tuple-like types.
 
 	ChangeLog:
 		send() for iterators has been removed
@@ -379,11 +380,12 @@ private:
 
 /// {{{2 Basic entry datatypes
 
-template <class T>
-typename boost::disable_if<is_boost_tuple<T> >::type
-send_entry(std::ostream &stream, const T &v) {
-	stream << v;
-}
+template <typename T, typename Enable=void>
+struct TextSender {
+	static void send(std::ostream &stream, const T &v) {
+		stream << v;
+	}
+};
 
 template <class T>
 void send_entry_bin(std::ostream &stream, const T &v) {
@@ -419,11 +421,13 @@ struct FormatCodes<std::pair<T, U> > {
 };
 
 template <class T, class U>
-void send_entry(std::ostream &stream, const std::pair<T, U> &v) {
-	send_entry(stream, v.first);
-	stream << " ";
-	send_entry(stream, v.second);
-}
+struct TextSender<std::pair<T, U> > {
+	static void send(std::ostream &stream, const std::pair<T, U> &v) {
+		TextSender<T>::send(stream, v.first);
+		stream << " ";
+		TextSender<U>::send(stream, v.second);
+	}
+};
 
 template <class T, class U>
 void send_entry_bin(std::ostream &stream, const std::pair<T, U> &v) {
@@ -465,17 +469,35 @@ struct FormatCodes<T,
 	}
 };
 
-template <typename H>
-void send_entry(std::ostream &stream, const typename boost::tuples::cons<H, boost::tuples::null_type> &v) {
-	send_entry(stream, v.get_head());
-}
+template <typename T>
+struct TextSender<T,
+	typename boost::enable_if<
+		boost::mpl::and_<
+			is_boost_tuple<T>,
+			boost::mpl::not_<is_boost_tuple_nulltype<typename T::tail_type> >
+		>
+	>::type
+> {
+	static void send(std::ostream &stream, const T &v) {
+		TextSender<typename T::head_type>::send(stream, v.get_head());
+		stream << " ";
+		TextSender<typename T::tail_type>::send(stream, v.get_tail());
+	}
+};
 
-template <typename H, typename T>
-void send_entry(std::ostream &stream, const typename boost::tuples::cons<H, T> &v) {
-	send_entry(stream, v.get_head());
-	stream << " ";
-	send_entry(stream, v.get_tail());
-}
+template <typename T>
+struct TextSender<T,
+	typename boost::enable_if<
+		boost::mpl::and_<
+			is_boost_tuple<T>,
+			is_boost_tuple_nulltype<typename T::tail_type>
+		>
+	>::type
+> {
+	static void send(std::ostream &stream, const T &v) {
+		TextSender<typename T::head_type>::send(stream, v.get_head());
+	}
+};
 
 /// }}}2
 
@@ -508,22 +530,26 @@ struct FormatCodes<std::tuple<Args...> > {
 	}
 };
 
-template<class Tuple, std::size_t I>
-void send_std_tup(std::ostream &stream, Tuple const &v, int_<I>) {
-	send_std_tup(stream, v, int_<I-1>());
+template <typename Tuple, std::size_t I>
+void std_tuple_textsend_helper(std::ostream &stream, const Tuple &v, int_<I>) {
+	std_tuple_textsend_helper(stream, v, int_<I-1>());
 	stream << " ";
-	send_entry(stream, std::get<I>(v));
+	TextSender<typename std::tuple_element<I, Tuple>::type>::send(stream, std::get<I>(v));
 }
 
-template<class Tuple>
-void send_std_tup(std::ostream &stream, Tuple const &v, int_<0>) {
-	send_entry(stream, std::get<0>(v));
+template <typename Tuple>
+void std_tuple_textsend_helper(std::ostream &stream, const Tuple &v, int_<0>) {
+	TextSender<typename std::tuple_element<0, Tuple>::type>::send(stream, std::get<0>(v));
 }
 
-template<class... Args>
-void send_entry(std::ostream &stream, std::tuple<Args...> const &v) {
-	send_std_tup(stream, v, int_<sizeof...(Args)-1>());
-}
+template <typename... Args>
+struct TextSender<std::tuple<Args...> > {
+	typedef typename std::tuple<Args...> Tuple;
+
+	static void send(std::ostream &stream, const Tuple &v) {
+		std_tuple_textsend_helper(stream, v, int_<sizeof...(Args)-1>());
+	}
+};
 
 #endif
 
@@ -545,12 +571,14 @@ struct FormatCodes<blitz::TinyVector<T, N> > {
 };
 
 template <class T, int N>
-void send_entry(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
-	for(int i=0; i<N; i++) {
-		if(i) stream << " ";
-		stream << v[i];
+struct TextSender<blitz::TinyVector<T, N> > {
+	static void send(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
+		for(int i=0; i<N; i++) {
+			if(i) stream << " ";
+			TextSender<T>::send(stream, v[i]);
+		}
 	}
-}
+};
 #endif // BZ_BLITZ_H
 
 /// }}}2
@@ -1091,7 +1119,7 @@ size_t get_range_size(const T &arg) {
 
 template <typename T>
 void send_scalar(std::ostream &stream, const T &arg, ModeText) {
-	send_entry(stream, arg);
+	TextSender<T>::send(stream, arg);
 }
 
 template <typename T>
