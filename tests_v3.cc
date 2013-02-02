@@ -43,25 +43,21 @@ void runtest(std::string header, const T &arg) {
 #if HAVE_GCCABI
 	std::cout << "val=" << get_typename<typename gnuplotio::ArrayTraits<T>::value_type>() << std::endl;
 #endif
-	//std::cout << "bintype=[" << gp.binfmt(arg) << "]" << std::endl;
+	std::cout << "binaryFile=[" << gp.binaryFile(arg, "unittest-output/"+header+".bin") << "]" << std::endl;
 	//std::cout << "range_type=" << get_typename<typename gnuplotio::ArrayTraits<T>::range_type>() << std::endl;
 	gp.send(arg);
 	gp.file(arg, "unittest-output/"+header+".txt");
-	//gp.binaryFile(arg, "unittest-output/"+header+".bin");
 }
 
 template <typename T, typename ArrayMode>
 void runtest(std::string header, const T &arg, ArrayMode) {
 	Gnuplot gp("cat");
 	std::cout << "--- " << header << " -------------------------------------" << std::endl;
-	//std::cout << "ncols=" << gnuplotio::ArrayTraits<T>::ncols << std::endl;
-	//std::cout << "depth=" << gnuplotio::ArrayTraits<T>::depth << std::endl;
-	//std::cout << "range_type=" << get_typename<typename gnuplotio::ArrayTraits<T>::range_type>() << std::endl;
-	//send_array_cols(std::cout, arg, ModeText());
+	std::cout << "ncols=" << gnuplotio::ArrayTraits<T>::ncols << std::endl;
+	std::cout << "depth=" << gnuplotio::ArrayTraits<T>::depth << std::endl;
+	std::cout << "binaryFile=[" << gp.binaryFile(arg, "unittest-output/"+header+".bin", "record", ArrayMode()) << "]" << std::endl;
 	gp.send(arg, ArrayMode());
-	// FIXME
-	//gp.file(arg, "unittest-output/"+header+".txt");
-	//gp.binaryFile(arg, "unittest-output/"+header+".bin");
+	gp.file(arg, "unittest-output/"+header+".txt", ArrayMode());
 }
 
 int main() {
@@ -78,7 +74,9 @@ int main() {
 	int ai[NX];
 	boost::array<int, NX> bi;
 	std::vector<boost::tuple<double, int, int> > v_bt;
+#if __cplusplus >= 201103
 	std::vector<  std::tuple<double, int, int> > v_st;
+#endif
 
 	for(int x=0; x<NX; x++) {
 		vd.push_back(x+7.5);

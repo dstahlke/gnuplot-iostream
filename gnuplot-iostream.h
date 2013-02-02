@@ -375,6 +375,18 @@ void send_entry_bin(std::ostream &stream, const std::pair<T, U> &v) {
 /// {{{2 boost::tuple support
 
 template <typename H>
+void format_code(std::ostream &stream, const typename boost::tuples::cons<H, boost::tuples::null_type> &v) {
+	format_code(stream, v.get_head());
+}
+
+template <typename H, typename T>
+void format_code(std::ostream &stream, const typename boost::tuples::cons<H, T> &v) {
+	format_code(stream, v.get_head());
+	stream << " ";
+	format_code(stream, v.get_tail());
+}
+
+template <typename H>
 void send_entry(std::ostream &stream, const typename boost::tuples::cons<H, boost::tuples::null_type> &v) {
 	send_entry(stream, v.get_head());
 }
@@ -395,6 +407,23 @@ void send_entry(std::ostream &stream, const typename boost::tuples::cons<H, T> &
 // http://stackoverflow.com/questions/6245735/pretty-print-stdtuple
 
 template<std::size_t> struct int_{}; // compile-time counter
+
+template<class Tuple, std::size_t I>
+void format_code_std_tup(std::ostream &stream, Tuple const &v, int_<I>) {
+  format_code_std_tup(stream, v, int_<I-1>());
+  stream << " ";
+  format_code(stream, std::get<I>(v));
+}
+
+template<class Tuple>
+void format_code_std_tup(std::ostream &stream, Tuple const &v, int_<0>) {
+  format_code(stream, std::get<0>(v));
+}
+
+template<class... Args>
+void format_code(std::ostream &stream, std::tuple<Args...> const &v) {
+  format_code_std_tup(stream, v, int_<sizeof...(Args)-1>());
+}
 
 template<class Tuple, std::size_t I>
 void send_std_tup(std::ostream &stream, Tuple const &v, int_<I>) {
