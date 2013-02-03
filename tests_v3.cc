@@ -121,9 +121,13 @@ int main() {
 	runtest("bi", bi);
 #if __cplusplus >= 201103
 	runtest("si", si);
+	runtest("tie{si,bi}", boost::tie(si, bi));
+	runtest("pair{&si,&bi}", std::pair<std::array<int, NX>&, boost::array<int, NX>&>(si, bi));
 #endif
-	// FIXME - doesn't work because array gets cast to pointer
+	// Doesn't work because array gets cast to pointer
 	//runtest("pair{ai,bi}", std::make_pair(ai, bi));
+	// However, this does work:
+	runtest("tie{ai,bi}", boost::tie(ai, bi));
 	runtest("pair{ai,bi}", std::pair<int(&)[NX], boost::array<int, NX> >(ai, bi));
 	runtest("vvd,vvi,vvvi", std::make_pair(vvd, std::make_pair(vvi, vvvi)));
 	runtest("vvvp", vvvp);

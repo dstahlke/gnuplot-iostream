@@ -651,6 +651,10 @@ public:
 	static const size_t depth = ArrayTraits<V>::depth + 1;
 };
 
+// This handles reference types, such as are given with boost::tie.
+template <typename T>
+class ArrayTraits<T&> : public ArrayTraits<T> { };
+
 /// }}}3
 
 /// {{{3 STL container support
@@ -702,19 +706,6 @@ public:
 
 template <typename T, size_t N>
 class ArrayTraits<T[N]> : public ArrayTraitsDefaults<T> {
-public:
-	typedef IteratorRange<const T*, T> range_type;
-
-	static range_type get_range(const T (&arg)[N]) {
-		return range_type(arg, arg+N);
-	}
-};
-
-// FIXME - this works, but I don't understand it!
-// It supports the following:
-// gp.send( std::pair<int(&)[3], int(&)[3]>(ai, ai) );
-template <typename T, size_t N>
-class ArrayTraits<T(&)[N]> : public ArrayTraitsDefaults<T> {
 public:
 	typedef IteratorRange<const T*, T> range_type;
 
@@ -808,18 +799,16 @@ class ArrayTraits<T,
 		typename T::tail_type
 	>
 > {
-	typedef ArrayTraits<
-			typename std::pair<
-				typename T::head_type,
-				typename T::tail_type
-			>
-		> parent;
-
 public:
+	typedef typename T::head_type HT;
+	typedef typename T::tail_type TT;
+
+	typedef ArrayTraits<typename std::pair<HT, TT> > parent;
+
 	static typename parent::range_type get_range(const T &arg) {
 		return typename parent::range_type(
-			ArrayTraits<typename T::head_type>::get_range(arg.get_head()),
-			ArrayTraits<typename T::tail_type>::get_range(arg.get_tail())
+			ArrayTraits<HT>::get_range(arg.get_head()),
+			ArrayTraits<TT>::get_range(arg.get_tail())
 		);
 	}
 };
@@ -835,15 +824,13 @@ class ArrayTraits<T,
 > : public ArrayTraits<
 	typename T::head_type
 > {
-	typedef ArrayTraits<
-			typename T::head_type
-		> parent;
+	typedef typename T::head_type HT;
+
+	typedef ArrayTraits<HT> parent;
 
 public:
 	static typename parent::range_type get_range(const T &arg) {
-		return parent::get_range(
-			arg.get_head()
-		);
+		return parent::get_range(arg.get_head());
 	}
 };
 
