@@ -75,6 +75,7 @@ THE SOFTWARE.
 #include <boost/filesystem.hpp>
 #endif // BOOST_VERSION
 
+// FIXME - note about new way
 #ifdef GNUPLOT_ENABLE_BLITZ
 #include <blitz/array.h>
 #endif
@@ -555,34 +556,6 @@ struct TextSender<std::tuple<Args...> > {
 
 /// }}}2
 
-/// {{{2 Blitz support
-
-// FIXME - put this outside the main header guard, so that it can be picked up if this header
-// is included a second time, after blitz header is loaded.  It will then require its own
-// header guard.
-#ifdef BZ_BLITZ_H
-template <class T, int N>
-struct FormatCodes<blitz::TinyVector<T, N> > {
-	static void send(std::ostream &stream) {
-		for(int i=0; i<N; i++) {
-			FormatCodes<T>::send(stream);
-		}
-	}
-};
-
-template <class T, int N>
-struct TextSender<blitz::TinyVector<T, N> > {
-	static void send(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
-		for(int i=0; i<N; i++) {
-			if(i) stream << " ";
-			TextSender<T>::send(stream, v[i]);
-		}
-	}
-};
-#endif // BZ_BLITZ_H
-
-/// }}}2
-
 /// }}}1
 
 /// {{{1 New array writer stuff
@@ -927,166 +900,6 @@ get_columns_range(const T &arg) {
 }
 
 /// }}}3
-
-/// }}}2
-
-/// {{{2 Armadillo support
-
-// FIXME - put this outside the main header guard, so that it can be picked up if this header
-// is included a second time, after blitz header is loaded.  It will then require its own
-// header guard.
-#ifdef ARMA_INCLUDES
-// FIXME - handle Row, Cube, Field
-
-template <typename T>
-class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
-	class ArmaMatRange {
-	public:
-		ArmaMatRange() : p(NULL), it(0) { }
-		explicit ArmaMatRange(const arma::Mat<T> *_p) : p(_p), it(0) { }
-
-		typedef T value_type;
-		typedef IteratorRange<typename arma::Mat<T>::const_row_iterator, T> subiter_type;
-		static const bool is_container = true;
-
-		bool is_end() const { return it == p->n_rows; }
-
-		void inc() { ++it; }
-
-		value_type deref() const {
-			throw std::logic_error("can't call deref on an armadillo slice");
-		}
-
-		subiter_type deref_subiter() const {
-			return subiter_type(p->begin_row(it), p->end_row(it));
-		}
-
-	private:
-		const arma::Mat<T> *p;
-		size_t it;
-	};
-public:
-	static const bool allow_colwrap = false;
-	static const size_t depth = ArrayTraits<T>::depth + 2;
-
-	typedef ArmaMatRange range_type;
-
-	static range_type get_range(const arma::Mat<T> &arg) {
-		//std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;
-		return range_type(&arg);
-	}
-};
-
-template <typename T>
-class ArrayTraits<arma::Col<T> > : public ArrayTraitsDefaults<T> {
-public:
-	static const bool allow_colwrap = false;
-
-	typedef IteratorRange<typename arma::Col<T>::const_iterator, T> range_type;
-
-	static range_type get_range(const arma::Col<T> &arg) {
-		//std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;
-		return range_type(arg.begin(), arg.end());
-	}
-};
-#endif // ARMA_INCLUDES
-
-/// }}}2
-
-/// {{{2 Blitz support
-
-// FIXME - put this outside the main header guard, so that it can be picked up if this header
-// is included a second time, after blitz header is loaded.  It will then require its own
-// header guard.
-#ifdef BZ_BLITZ_H
-// FIXME - raise static error if possible
-class WasBlitzPartialSlice { };
-
-template <typename T, int ArrayDim, int SliceDim>
-class BlitzIterator {
-public:
-	BlitzIterator() : p(NULL) { }
-	BlitzIterator(
-		const blitz::Array<T, ArrayDim> *_p,
-		const blitz::TinyVector<int, ArrayDim> _idx
-	) : p(_p), idx(_idx) { }
-
-	typedef WasBlitzPartialSlice value_type;
-	typedef BlitzIterator<T, ArrayDim, SliceDim-1> subiter_type;
-	static const bool is_container = true;
-
-	// FIXME - handle one-based arrays
-	bool is_end() const {
-		return idx[ArrayDim-SliceDim] == p->shape()[ArrayDim-SliceDim];
-	}
-
-	void inc() {
-		++idx[ArrayDim-SliceDim];
-	}
-
-	value_type deref() const {
-		throw std::logic_error("cannot deref a blitz slice");
-	}
-
-	subiter_type deref_subiter() const {
-		return BlitzIterator<T, ArrayDim, SliceDim-1>(p, idx);
-	}
-
-private:
-	const blitz::Array<T, ArrayDim> *p;
-	blitz::TinyVector<int, ArrayDim> idx;
-};
-
-template <typename T, int ArrayDim>
-class BlitzIterator<T, ArrayDim, 1> {
-public:
-	BlitzIterator() : p(NULL) { }
-	BlitzIterator(
-		const blitz::Array<T, ArrayDim> *_p,
-		const blitz::TinyVector<int, ArrayDim> _idx
-	) : p(_p), idx(_idx) { }
-
-	typedef T value_type;
-	typedef WasNotContainer subiter_type;
-	static const bool is_container = false;
-
-	// FIXME - handle one-based arrays
-	bool is_end() const {
-		return idx[ArrayDim-1] == p->shape()[ArrayDim-1];
-	}
-
-	void inc() {
-		++idx[ArrayDim-1];
-	}
-
-	value_type deref() const {
-		return (*p)(idx);
-	}
-
-	subiter_type deref_subiter() const {
-		throw std::invalid_argument("argument was not a container");
-	}
-
-private:
-	const blitz::Array<T, ArrayDim> *p;
-	blitz::TinyVector<int, ArrayDim> idx;
-};
-
-template <typename T, int ArrayDim>
-class ArrayTraits<blitz::Array<T, ArrayDim> > : public ArrayTraitsDefaults<T> {
-public:
-	static const bool allow_colwrap = false;
-	static const size_t depth = ArrayTraits<T>::depth + ArrayDim;
-
-	typedef BlitzIterator<T, ArrayDim, ArrayDim> range_type;
-
-	static range_type get_range(const blitz::Array<T, ArrayDim> &arg) {
-		blitz::TinyVector<int, ArrayDim> start_idx;
-		start_idx = 0;
-		return range_type(&arg, start_idx);
-	}
-};
-#endif // BZ_BLITZ_H
 
 /// }}}2
 
@@ -1538,3 +1351,208 @@ public:
 using gnuplotio::Gnuplot;
 
 #endif // GNUPLOT_IOSTREAM_H
+
+/// {{{1 Support for 3rd party array libraries
+
+/// {{{2 Blitz support
+
+// This is outside of the main header guard so that it will be compiled when people do
+// something like this:
+//    #include "gnuplot-iostream.h"
+//    #include <blitz/array.h>
+//    #include "gnuplot-iostream.h"
+// Note that it has its own header guard to avoid double inclusion.
+
+#ifdef BZ_BLITZ_H
+#ifndef GNUPLOT_BLITZ_SUPPORT_LOADED
+#define GNUPLOT_BLITZ_SUPPORT_LOADED
+namespace gnuplotio {
+
+template <class T, int N>
+struct FormatCodes<blitz::TinyVector<T, N> > {
+	static void send(std::ostream &stream) {
+		for(int i=0; i<N; i++) {
+			FormatCodes<T>::send(stream);
+		}
+	}
+};
+
+template <class T, int N>
+struct TextSender<blitz::TinyVector<T, N> > {
+	static void send(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
+		for(int i=0; i<N; i++) {
+			if(i) stream << " ";
+			TextSender<T>::send(stream, v[i]);
+		}
+	}
+};
+
+// FIXME - raise static error if possible
+class WasBlitzPartialSlice { };
+
+template <typename T, int ArrayDim, int SliceDim>
+class BlitzIterator {
+public:
+	BlitzIterator() : p(NULL) { }
+	BlitzIterator(
+		const blitz::Array<T, ArrayDim> *_p,
+		const blitz::TinyVector<int, ArrayDim> _idx
+	) : p(_p), idx(_idx) { }
+
+	typedef WasBlitzPartialSlice value_type;
+	typedef BlitzIterator<T, ArrayDim, SliceDim-1> subiter_type;
+	static const bool is_container = true;
+
+	// FIXME - handle one-based arrays
+	bool is_end() const {
+		return idx[ArrayDim-SliceDim] == p->shape()[ArrayDim-SliceDim];
+	}
+
+	void inc() {
+		++idx[ArrayDim-SliceDim];
+	}
+
+	value_type deref() const {
+		throw std::logic_error("cannot deref a blitz slice");
+	}
+
+	subiter_type deref_subiter() const {
+		return BlitzIterator<T, ArrayDim, SliceDim-1>(p, idx);
+	}
+
+private:
+	const blitz::Array<T, ArrayDim> *p;
+	blitz::TinyVector<int, ArrayDim> idx;
+};
+
+template <typename T, int ArrayDim>
+class BlitzIterator<T, ArrayDim, 1> {
+public:
+	BlitzIterator() : p(NULL) { }
+	BlitzIterator(
+		const blitz::Array<T, ArrayDim> *_p,
+		const blitz::TinyVector<int, ArrayDim> _idx
+	) : p(_p), idx(_idx) { }
+
+	typedef T value_type;
+	typedef WasNotContainer subiter_type;
+	static const bool is_container = false;
+
+	// FIXME - handle one-based arrays
+	bool is_end() const {
+		return idx[ArrayDim-1] == p->shape()[ArrayDim-1];
+	}
+
+	void inc() {
+		++idx[ArrayDim-1];
+	}
+
+	value_type deref() const {
+		return (*p)(idx);
+	}
+
+	subiter_type deref_subiter() const {
+		throw std::invalid_argument("argument was not a container");
+	}
+
+private:
+	const blitz::Array<T, ArrayDim> *p;
+	blitz::TinyVector<int, ArrayDim> idx;
+};
+
+template <typename T, int ArrayDim>
+class ArrayTraits<blitz::Array<T, ArrayDim> > : public ArrayTraitsDefaults<T> {
+public:
+	static const bool allow_colwrap = false;
+	static const size_t depth = ArrayTraits<T>::depth + ArrayDim;
+
+	typedef BlitzIterator<T, ArrayDim, ArrayDim> range_type;
+
+	static range_type get_range(const blitz::Array<T, ArrayDim> &arg) {
+		blitz::TinyVector<int, ArrayDim> start_idx;
+		start_idx = 0;
+		return range_type(&arg, start_idx);
+	}
+};
+
+} // namespace gnuplotio
+#endif // GNUPLOT_BLITZ_SUPPORT_LOADED
+#endif // BZ_BLITZ_H
+
+/// }}}2
+
+/// {{{2 Armadillo support
+
+// This is outside of the main header guard so that it will be compiled when people do
+// something like this:
+//    #include "gnuplot-iostream.h"
+//    #include <armadillo>
+//    #include "gnuplot-iostream.h"
+// Note that it has its own header guard to avoid double inclusion.
+
+#ifdef ARMA_INCLUDES
+#ifndef GNUPLOT_ARMADILLO_SUPPORT_LOADED
+#define GNUPLOT_ARMADILLO_SUPPORT_LOADED
+namespace gnuplotio {
+
+// FIXME - handle Row, Cube, Field
+
+template <typename T>
+class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
+	class ArmaMatRange {
+	public:
+		ArmaMatRange() : p(NULL), it(0) { }
+		explicit ArmaMatRange(const arma::Mat<T> *_p) : p(_p), it(0) { }
+
+		typedef T value_type;
+		typedef IteratorRange<typename arma::Mat<T>::const_row_iterator, T> subiter_type;
+		static const bool is_container = true;
+
+		bool is_end() const { return it == p->n_rows; }
+
+		void inc() { ++it; }
+
+		value_type deref() const {
+			throw std::logic_error("can't call deref on an armadillo slice");
+		}
+
+		subiter_type deref_subiter() const {
+			return subiter_type(p->begin_row(it), p->end_row(it));
+		}
+
+	private:
+		const arma::Mat<T> *p;
+		size_t it;
+	};
+public:
+	static const bool allow_colwrap = false;
+	static const size_t depth = ArrayTraits<T>::depth + 2;
+
+	typedef ArmaMatRange range_type;
+
+	static range_type get_range(const arma::Mat<T> &arg) {
+		//std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;
+		return range_type(&arg);
+	}
+};
+
+template <typename T>
+class ArrayTraits<arma::Col<T> > : public ArrayTraitsDefaults<T> {
+public:
+	static const bool allow_colwrap = false;
+
+	typedef IteratorRange<typename arma::Col<T>::const_iterator, T> range_type;
+
+	static range_type get_range(const arma::Col<T> &arg) {
+		//std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;
+		return range_type(arg.begin(), arg.end());
+	}
+};
+
+} // namespace gnuplotio
+#endif // GNUPLOT_ARMADILLO_SUPPORT_LOADED
+#endif // ARMA_INCLUDES
+
+/// }}}2
+
+/// }}}1

@@ -10,13 +10,20 @@
 
 #include <boost/array.hpp>
 
+// Include this several times to test delayed loading of armadillo/blitz support.
+#include "gnuplot-iostream.h"
+
 #if DO_ARMA
 #include <armadillo>
 #endif
+
+#include "gnuplot-iostream.h"
+
 #if DO_BLITZ
 #include <blitz/array.h>
 #endif
 
+#include "gnuplot-iostream.h"
 #include "gnuplot-iostream.h"
 
 #if HAVE_CXXABI
