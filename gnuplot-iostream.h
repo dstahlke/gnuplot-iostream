@@ -388,10 +388,12 @@ struct TextSender {
 	}
 };
 
-template <class T>
-void send_entry_bin(std::ostream &stream, const T &v) {
-	stream.write(reinterpret_cast<const char *>(&v), sizeof(T));
-}
+template <typename T, typename Enable=void>
+struct BinarySender {
+	static void send(std::ostream &stream, const T &v) {
+		stream.write(reinterpret_cast<const char *>(&v), sizeof(T));
+	}
+};
 
 // FIXME - rename this?
 template <typename T, typename Enable=void>
@@ -431,10 +433,12 @@ struct TextSender<std::pair<T, U> > {
 };
 
 template <class T, class U>
-void send_entry_bin(std::ostream &stream, const std::pair<T, U> &v) {
-	send_entry_bin(stream, v.first);
-	send_entry_bin(stream, v.second);
-}
+struct BinarySender<std::pair<T, U> > {
+	static void send(std::ostream &stream, const std::pair<T, U> &v) {
+		BinarySender<T>::send(stream, v.first);
+		BinarySender<U>::send(stream, v.second);
+	}
+};
 
 /// }}}2
 
@@ -937,7 +941,7 @@ void send_scalar(std::ostream &stream, const T &arg, ModeText) {
 
 template <typename T>
 void send_scalar(std::ostream &stream, const T &arg, ModeBinary) {
-	send_entry_bin(stream, arg);
+	BinarySender<T>::send(stream, arg);
 }
 
 template <typename T>
