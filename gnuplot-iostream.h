@@ -1,7 +1,7 @@
 // vim:foldmethod=marker
 
 /*
-Copyright (c) 2009 Daniel Stahlke
+Copyright (c) 2013 Daniel Stahlke
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@ THE SOFTWARE.
 		Static asserts for non-containers or not enough depth.
 		Have version numbers.
 		Write some docs.
-		Need binary writers for all tuple-like types.
+		Copyright notice in all files.
 
 	ChangeLog:
 		send() for iterators has been removed
@@ -504,6 +504,35 @@ struct TextSender<T,
 	}
 };
 
+template <typename T>
+struct BinarySender<T,
+	typename boost::enable_if<
+		boost::mpl::and_<
+			is_boost_tuple<T>,
+			boost::mpl::not_<is_boost_tuple_nulltype<typename T::tail_type> >
+		>
+	>::type
+> {
+	static void send(std::ostream &stream, const T &v) {
+		BinarySender<typename T::head_type>::send(stream, v.get_head());
+		BinarySender<typename T::tail_type>::send(stream, v.get_tail());
+	}
+};
+
+template <typename T>
+struct BinarySender<T,
+	typename boost::enable_if<
+		boost::mpl::and_<
+			is_boost_tuple<T>,
+			is_boost_tuple_nulltype<typename T::tail_type>
+		>
+	>::type
+> {
+	static void send(std::ostream &stream, const T &v) {
+		BinarySender<typename T::head_type>::send(stream, v.get_head());
+	}
+};
+
 /// }}}2
 
 /// {{{2 std::tuple support
@@ -553,6 +582,26 @@ struct TextSender<std::tuple<Args...> > {
 
 	static void send(std::ostream &stream, const Tuple &v) {
 		std_tuple_textsend_helper(stream, v, int_<sizeof...(Args)-1>());
+	}
+};
+
+template <typename Tuple, std::size_t I>
+void std_tuple_binsend_helper(std::ostream &stream, const Tuple &v, int_<I>) {
+	std_tuple_binsend_helper(stream, v, int_<I-1>());
+	BinarySender<typename std::tuple_element<I, Tuple>::type>::send(stream, std::get<I>(v));
+}
+
+template <typename Tuple>
+void std_tuple_binsend_helper(std::ostream &stream, const Tuple &v, int_<0>) {
+	BinarySender<typename std::tuple_element<0, Tuple>::type>::send(stream, std::get<0>(v));
+}
+
+template <typename... Args>
+struct BinarySender<std::tuple<Args...> > {
+	typedef typename std::tuple<Args...> Tuple;
+
+	static void send(std::ostream &stream, const Tuple &v) {
+		std_tuple_binsend_helper(stream, v, int_<sizeof...(Args)-1>());
 	}
 };
 
@@ -1387,6 +1436,15 @@ struct TextSender<blitz::TinyVector<T, N> > {
 		for(int i=0; i<N; i++) {
 			if(i) stream << " ";
 			TextSender<T>::send(stream, v[i]);
+		}
+	}
+};
+
+template <class T, int N>
+struct BinarySender<blitz::TinyVector<T, N> > {
+	static void send(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
+		for(int i=0; i<N; i++) {
+			BinarySender<T>::send(stream, v[i]);
 		}
 	}
 };
