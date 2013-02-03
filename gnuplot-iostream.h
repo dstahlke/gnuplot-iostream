@@ -710,6 +710,19 @@ public:
 	}
 };
 
+// FIXME - this works, but I don't understand it!
+// It supports the following:
+// gp.send( std::pair<int(&)[3], int(&)[3]>(ai, ai) );
+template <typename T, size_t N>
+class ArrayTraits<T(&)[N]> : public ArrayTraitsDefaults<T> {
+public:
+	typedef IteratorRange<const T*, T> range_type;
+
+	static range_type get_range(const T (&arg)[N]) {
+		return range_type(arg, arg+N);
+	}
+};
+
 /// }}}3
 
 /// {{{3 std::pair support

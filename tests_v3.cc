@@ -117,6 +117,7 @@ int main() {
 	runtest("ai", ai);
 	// FIXME - doesn't work because array gets cast to pointer
 	//runtest("pair{ai,bi}", std::make_pair(ai, bi));
+	runtest("pair{ai,bi}", std::pair<int(&)[NX], boost::array<int, NX> >(ai, bi));
 	runtest("vvd,vvi,vvvi", std::make_pair(vvd, std::make_pair(vvi, vvvi)));
 	runtest("vvvp", vvvp);
 
