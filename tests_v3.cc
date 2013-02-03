@@ -6,6 +6,7 @@
 #include <vector>
 #if __cplusplus >= 201103
 #include <tuple>
+#include <array>
 #endif
 
 #include <boost/array.hpp>
@@ -80,6 +81,7 @@ int main() {
 	boost::array<int, NX> bi;
 	std::vector<boost::tuple<double, int, int> > v_bt;
 #if __cplusplus >= 201103
+	std::array<int, NX> si;
 	std::vector<  std::tuple<double, int, int> > v_st;
 #endif
 
@@ -90,6 +92,7 @@ int main() {
 		v_bt.push_back(boost::make_tuple(x+0.123, 100+x, 200+x));
 #if __cplusplus >= 201103
 		v_st.push_back(std::make_tuple(x+0.123, 100+x, 200+x));
+		si[x] = x+90;
 #endif
 		ai[x] = x+7;
 		bi[x] = x+70;
@@ -115,6 +118,10 @@ int main() {
 	runtest("vvd", vvd);
 	runtest("vvd,vvi", std::make_pair(vvd, vvi));
 	runtest("ai", ai);
+	runtest("bi", bi);
+#if __cplusplus >= 201103
+	runtest("si", si);
+#endif
 	// FIXME - doesn't work because array gets cast to pointer
 	//runtest("pair{ai,bi}", std::make_pair(ai, bi));
 	runtest("pair{ai,bi}", std::pair<int(&)[NX], boost::array<int, NX> >(ai, bi));
