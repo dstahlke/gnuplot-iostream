@@ -416,7 +416,7 @@ template<> struct BinfmtSender<uint32_t> { static void send(std::ostream &stream
 template<> struct BinfmtSender< int64_t> { static void send(std::ostream &stream) { stream << "%int64";  } };
 template<> struct BinfmtSender<uint64_t> { static void send(std::ostream &stream) { stream << "%uint64"; } };
 
-template <class T, class U>
+template <typename T, typename U>
 struct BinfmtSender<std::pair<T, U> > {
 	static void send(std::ostream &stream) {
 		BinfmtSender<T>::send(stream);
@@ -424,7 +424,7 @@ struct BinfmtSender<std::pair<T, U> > {
 	}
 };
 
-template <class T, class U>
+template <typename T, typename U>
 struct TextSender<std::pair<T, U> > {
 	static void send(std::ostream &stream, const std::pair<T, U> &v) {
 		TextSender<T>::send(stream, v.first);
@@ -433,7 +433,7 @@ struct TextSender<std::pair<T, U> > {
 	}
 };
 
-template <class T, class U>
+template <typename T, typename U>
 struct BinarySender<std::pair<T, U> > {
 	static void send(std::ostream &stream, const std::pair<T, U> &v) {
 		BinarySender<T>::send(stream, v.first);
@@ -620,9 +620,9 @@ struct BinarySender<std::tuple<Args...> > {
 
 // Error messages involving this stem from treating something that was not a container as if it
 // was.  This is only here to allow compiliation without errors in normal cases.
-// FIXME - make use of static assertions
-struct WasNotContainer {
-	// FIXME - this is just here to make VC++ happy.
+struct Error_WasNotContainer {
+	// This is just here to make VC++ happy.
+	// https://connect.microsoft.com/VisualStudio/feedback/details/777612/class-template-specialization-that-compiles-in-g-but-not-visual-c
 	typedef void subiter_type;
 };
 
@@ -630,8 +630,8 @@ struct WasNotContainer {
 template <typename T, typename Enable=void>
 class ArrayTraits {
 public:
-	typedef WasNotContainer value_type;
-	typedef WasNotContainer range_type;
+	typedef Error_WasNotContainer value_type;
+	typedef Error_WasNotContainer range_type;
 	static const bool is_container = false;
 	static const bool allow_colwrap = false;
 	static const size_t depth = 0;
@@ -1257,13 +1257,13 @@ public:
 		return *this;
 	}
 
-	template <class T, typename ArrayMode>
+	template <typename T, typename ArrayMode>
 	Gnuplot &sendBinary(const T &arg, ArrayMode) {
 		generic_sender_level0(*this, arg, ModeAuto(), ModeBinary());
 		return *this;
 	}
 
-	template <class T, typename ArrayMode>
+	template <typename T, typename ArrayMode>
 	std::string binfmt(const T &arg, const std::string &arr_or_rec, ArrayMode) {
 		std::ostringstream tmp;
 		tmp << " format='";
@@ -1277,7 +1277,7 @@ public:
 
 public:
 	// NOTE: empty filename makes temporary file
-	template <class T, typename ArrayMode>
+	template <typename T, typename ArrayMode>
 	std::string file(const T &arg, std::string filename, ArrayMode) {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
@@ -1291,7 +1291,7 @@ public:
 	}
 
 	// NOTE: empty filename makes temporary file
-	template <class T, typename ArrayMode>
+	template <typename T, typename ArrayMode>
 	std::string binaryFile(const T &arg, std::string filename, const std::string &arr_or_rec, ArrayMode) {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out | std::fstream::binary);
@@ -1311,35 +1311,35 @@ public:
 	Gnuplot &foobar(const T &arg) { return send(arg, ModeAuto()); }
 
 	// FIXME - there's gotta be a better way...
-	template <class T> Gnuplot &send         (const T &arg) { return send(arg, ModeAuto    ()); }
-	template <class T> Gnuplot &send1d       (const T &arg) { return send(arg, Mode1D      ()); }
-	template <class T> Gnuplot &send2d       (const T &arg) { return send(arg, Mode2D      ()); }
-	template <class T> Gnuplot &send1d_unwrap(const T &arg) { return send(arg, Mode1DUnwrap()); }
-	template <class T> Gnuplot &send2d_unwrap(const T &arg) { return send(arg, Mode2DUnwrap()); }
+	template <typename T> Gnuplot &send         (const T &arg) { return send(arg, ModeAuto    ()); }
+	template <typename T> Gnuplot &send1d       (const T &arg) { return send(arg, Mode1D      ()); }
+	template <typename T> Gnuplot &send2d       (const T &arg) { return send(arg, Mode2D      ()); }
+	template <typename T> Gnuplot &send1d_unwrap(const T &arg) { return send(arg, Mode1DUnwrap()); }
+	template <typename T> Gnuplot &send2d_unwrap(const T &arg) { return send(arg, Mode2DUnwrap()); }
 
-	template <class T> Gnuplot &sendBinary         (const T &arg) { return sendBinary(arg, ModeAuto    ()); }
-	template <class T> Gnuplot &sendBinary1d       (const T &arg) { return sendBinary(arg, Mode1D      ()); }
-	template <class T> Gnuplot &sendBinary2d       (const T &arg) { return sendBinary(arg, Mode2D      ()); }
-	template <class T> Gnuplot &sendBinary1d_unwrap(const T &arg) { return sendBinary(arg, Mode1DUnwrap()); }
-	template <class T> Gnuplot &sendBinary2d_unwrap(const T &arg) { return sendBinary(arg, Mode2DUnwrap()); }
+	template <typename T> Gnuplot &sendBinary         (const T &arg) { return sendBinary(arg, ModeAuto    ()); }
+	template <typename T> Gnuplot &sendBinary1d       (const T &arg) { return sendBinary(arg, Mode1D      ()); }
+	template <typename T> Gnuplot &sendBinary2d       (const T &arg) { return sendBinary(arg, Mode2D      ()); }
+	template <typename T> Gnuplot &sendBinary1d_unwrap(const T &arg) { return sendBinary(arg, Mode1DUnwrap()); }
+	template <typename T> Gnuplot &sendBinary2d_unwrap(const T &arg) { return sendBinary(arg, Mode2DUnwrap()); }
 
-	template <class T> std::string binfmt         (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  ModeAuto    ()); }
-	template <class T> std::string binfmt1d       (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode1D      ()); }
-	template <class T> std::string binfmt2d       (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode2D      ()); }
-	template <class T> std::string binfmt1d_unwrap(const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode1DUnwrap()); }
-	template <class T> std::string binfmt2d_unwrap(const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode2DUnwrap()); }
+	template <typename T> std::string binfmt         (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  ModeAuto    ()); }
+	template <typename T> std::string binfmt1d       (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode1D      ()); }
+	template <typename T> std::string binfmt2d       (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode2D      ()); }
+	template <typename T> std::string binfmt1d_unwrap(const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode1DUnwrap()); }
+	template <typename T> std::string binfmt2d_unwrap(const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode2DUnwrap()); }
 
-	template <class T> std::string file         (const T &arg, const std::string &filename="") { return file(arg, filename, ModeAuto    ()); }
-	template <class T> std::string file1d       (const T &arg, const std::string &filename="") { return file(arg, filename, Mode1D      ()); }
-	template <class T> std::string file2d       (const T &arg, const std::string &filename="") { return file(arg, filename, Mode2D      ()); }
-	template <class T> std::string file1d_unwrap(const T &arg, const std::string &filename="") { return file(arg, filename, Mode1DUnwrap()); }
-	template <class T> std::string file2d_unwrap(const T &arg, const std::string &filename="") { return file(arg, filename, Mode2DUnwrap()); }
+	template <typename T> std::string file         (const T &arg, const std::string &filename="") { return file(arg, filename, ModeAuto    ()); }
+	template <typename T> std::string file1d       (const T &arg, const std::string &filename="") { return file(arg, filename, Mode1D      ()); }
+	template <typename T> std::string file2d       (const T &arg, const std::string &filename="") { return file(arg, filename, Mode2D      ()); }
+	template <typename T> std::string file1d_unwrap(const T &arg, const std::string &filename="") { return file(arg, filename, Mode1DUnwrap()); }
+	template <typename T> std::string file2d_unwrap(const T &arg, const std::string &filename="") { return file(arg, filename, Mode2DUnwrap()); }
 
-	template <class T> std::string binaryFile         (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  ModeAuto    ()); }
-	template <class T> std::string binaryFile1d       (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode1D      ()); }
-	template <class T> std::string binaryFile2d       (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode2D      ()); }
-	template <class T> std::string binaryFile1d_unwrap(const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode1DUnwrap()); }
-	template <class T> std::string binaryFile2d_unwrap(const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode2DUnwrap()); }
+	template <typename T> std::string binaryFile         (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  ModeAuto    ()); }
+	template <typename T> std::string binaryFile1d       (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode1D      ()); }
+	template <typename T> std::string binaryFile2d       (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode2D      ()); }
+	template <typename T> std::string binaryFile1d_unwrap(const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode1DUnwrap()); }
+	template <typename T> std::string binaryFile2d_unwrap(const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode2DUnwrap()); }
 
 #ifdef GNUPLOT_ENABLE_FEEDBACK
 	// Input variables are set to the mouse position and button.  If the gnuplot
@@ -1419,7 +1419,7 @@ using gnuplotio::Gnuplot;
 #define GNUPLOT_BLITZ_SUPPORT_LOADED
 namespace gnuplotio {
 
-template <class T, int N>
+template <typename T, int N>
 struct BinfmtSender<blitz::TinyVector<T, N> > {
 	static void send(std::ostream &stream) {
 		for(int i=0; i<N; i++) {
@@ -1428,7 +1428,7 @@ struct BinfmtSender<blitz::TinyVector<T, N> > {
 	}
 };
 
-template <class T, int N>
+template <typename T, int N>
 struct TextSender<blitz::TinyVector<T, N> > {
 	static void send(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
 		for(int i=0; i<N; i++) {
@@ -1438,7 +1438,7 @@ struct TextSender<blitz::TinyVector<T, N> > {
 	}
 };
 
-template <class T, int N>
+template <typename T, int N>
 struct BinarySender<blitz::TinyVector<T, N> > {
 	static void send(std::ostream &stream, const blitz::TinyVector<T, N> &v) {
 		for(int i=0; i<N; i++) {
@@ -1447,8 +1447,7 @@ struct BinarySender<blitz::TinyVector<T, N> > {
 	}
 };
 
-// FIXME - raise static error if possible
-class WasBlitzPartialSlice { };
+class Error_WasBlitzPartialSlice { };
 
 template <typename T, int ArrayDim, int SliceDim>
 class BlitzIterator {
@@ -1459,7 +1458,7 @@ public:
 		const blitz::TinyVector<int, ArrayDim> _idx
 	) : p(_p), idx(_idx) { }
 
-	typedef WasBlitzPartialSlice value_type;
+	typedef Error_WasBlitzPartialSlice value_type;
 	typedef BlitzIterator<T, ArrayDim, SliceDim-1> subiter_type;
 	static const bool is_container = true;
 
@@ -1495,7 +1494,7 @@ public:
 	) : p(_p), idx(_idx) { }
 
 	typedef T value_type;
-	typedef WasNotContainer subiter_type;
+	typedef Error_WasNotContainer subiter_type;
 	static const bool is_container = false;
 
 	// FIXME - handle one-based arrays
