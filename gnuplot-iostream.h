@@ -656,6 +656,7 @@ public:
 };
 
 // This handles reference types, such as are given with boost::tie.
+// FIXME - I need to understand this better
 template <typename T>
 class ArrayTraits<T&> : public ArrayTraits<T> { };
 
