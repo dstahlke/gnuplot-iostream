@@ -41,6 +41,10 @@ THE SOFTWARE.
 
 /// {{{1 Includes and defines
 
+#ifndef GNUPLOT_ENABLE_CXX11
+#define GNUPLOT_ENABLE_CXX11 (__cplusplus >= 201103)
+#endif
+
 // C system includes
 #include <stdio.h>
 #ifdef GNUPLOT_ENABLE_PTY
@@ -58,7 +62,7 @@ THE SOFTWARE.
 #include <utility>
 #include <iomanip>
 #include <vector>
-#if __cplusplus >= 201103
+#if GNUPLOT_ENABLE_CXX11
 #include <tuple>
 #endif
 
@@ -538,7 +542,7 @@ struct BinarySender<T,
 
 /// {{{2 std::tuple support
 
-#if __cplusplus >= 201103
+#if GNUPLOT_ENABLE_CXX11
 
 // http://stackoverflow.com/questions/6245735/pretty-print-stdtuple
 
@@ -606,7 +610,7 @@ struct BinarySender<std::tuple<Args...> > {
 	}
 };
 
-#endif
+#endif // GNUPLOT_ENABLE_CXX11
 
 /// }}}2
 
@@ -838,7 +842,7 @@ public:
 
 /// {{{3 std::tuple support
 
-#if __cplusplus >= 201103
+#if GNUPLOT_ENABLE_CXX11
 
 template <typename Tuple, size_t idx>
 struct StdTupUnwinder {
@@ -877,7 +881,7 @@ public:
 	}
 };
 
-#endif // __cplusplus >= 201103
+#endif // GNUPLOT_ENABLE_CXX11
 
 /// }}}3
 

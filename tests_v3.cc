@@ -1,18 +1,19 @@
 #define DO_ARMA 1
 #define DO_BLITZ 1
 #define HAVE_CXXABI 1
+//#define GNUPLOT_ENABLE_CXX11 1 //(__cplusplus >= 201103)
+
+// Include this several times to test delayed loading of armadillo/blitz support.
+#include "gnuplot-iostream.h"
 
 #include <fstream>
 #include <vector>
-#if __cplusplus >= 201103
+#if GNUPLOT_ENABLE_CXX11
 #include <tuple>
 #include <array>
 #endif
 
 #include <boost/array.hpp>
-
-// Include this several times to test delayed loading of armadillo/blitz support.
-#include "gnuplot-iostream.h"
 
 #if DO_ARMA
 #include <armadillo>
@@ -80,7 +81,7 @@ int main() {
 	int ai[NX];
 	boost::array<int, NX> bi;
 	std::vector<boost::tuple<double, int, int> > v_bt;
-#if __cplusplus >= 201103
+#if GNUPLOT_ENABLE_CXX11
 	std::array<int, NX> si;
 	std::vector<  std::tuple<double, int, int> > v_st;
 #endif
@@ -90,7 +91,7 @@ int main() {
 		vi.push_back(x+7);
 		vf.push_back(x+7.2);
 		v_bt.push_back(boost::make_tuple(x+0.123, 100+x, 200+x));
-#if __cplusplus >= 201103
+#if GNUPLOT_ENABLE_CXX11
 		v_st.push_back(std::make_tuple(x+0.123, 100+x, 200+x));
 		si[x] = x+90;
 #endif
@@ -119,7 +120,7 @@ int main() {
 	runtest("vvd,vvi", std::make_pair(vvd, vvi));
 	runtest("ai", ai);
 	runtest("bi", bi);
-#if __cplusplus >= 201103
+#if GNUPLOT_ENABLE_CXX11
 	runtest("si", si);
 	runtest("tie{si,bi}", boost::tie(si, bi));
 	runtest("pair{&si,&bi}", std::pair<std::array<int, NX>&, boost::array<int, NX>&>(si, bi));
@@ -175,13 +176,13 @@ int main() {
 	runtest("vvvi cols", vvvi, gnuplotio::Mode2DUnwrap());
 
 	runtest("pair{vf,btup{vd,pair{vi,vi},vf}}", std::make_pair(vf, boost::make_tuple(vd, std::make_pair(vi, vi), vf)));
-#if __cplusplus >= 201103
+#if GNUPLOT_ENABLE_CXX11
 	runtest("pair{vf,stup{vd,pair{vi,vi},vf}}", std::make_pair(vf, std::make_tuple(vd, std::make_pair(vi, vi), vf)));
 	runtest("btup{vd,stup{vi,btup{vf},vi},vd}", boost::make_tuple(vd, std::make_tuple(vi, boost::make_tuple(vf), vi), vd));
 #endif
 
 	runtest("v_bt", v_bt);
-#if __cplusplus >= 201103
+#if GNUPLOT_ENABLE_CXX11
 	runtest("v_st", v_st);
 #endif
 
