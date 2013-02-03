@@ -635,7 +635,6 @@ public:
 	static const bool is_container = false;
 	static const bool allow_colwrap = false;
 	static const size_t depth = 0;
-	static const size_t ncols = 1; // FIXME - eventually remove this, it is not really needed
 
 	static range_type get_range(const T &) {
 		throw std::invalid_argument("argument was not a container");
@@ -650,7 +649,6 @@ public:
 	static const bool is_container = true;
 	static const bool allow_colwrap = true;
 	static const size_t depth = ArrayTraits<V>::depth + 1;
-	static const size_t ncols = 1;
 };
 
 /// }}}3
@@ -770,7 +768,6 @@ public:
 	static const size_t l_depth = ArrayTraits<T>::depth;
 	static const size_t r_depth = ArrayTraits<U>::depth;
 	static const size_t depth = (l_depth < r_depth) ? l_depth : r_depth;
-	static const size_t ncols = ArrayTraits<T>::ncols + ArrayTraits<U>::ncols;
 
 	static range_type get_range(const std::pair<T, U> &arg) {
 		return range_type(

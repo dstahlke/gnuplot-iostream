@@ -45,7 +45,6 @@ template <typename T>
 void runtest(std::string header, const T &arg) {
 	Gnuplot gp("cat");
 	std::cout << "--- " << header << " -------------------------------------" << std::endl;
-	std::cout << "ncols=" << gnuplotio::ArrayTraits<T>::ncols << std::endl;
 	std::cout << "depth=" << gnuplotio::ArrayTraits<T>::depth << std::endl;
 #if HAVE_GCCABI
 	std::cout << "val=" << get_typename<typename gnuplotio::ArrayTraits<T>::value_type>() << std::endl;
@@ -60,7 +59,6 @@ template <typename T, typename ArrayMode>
 void runtest(std::string header, const T &arg, ArrayMode) {
 	Gnuplot gp("cat");
 	std::cout << "--- " << header << " -------------------------------------" << std::endl;
-	std::cout << "ncols=" << gnuplotio::ArrayTraits<T>::ncols << std::endl;
 	std::cout << "depth=" << gnuplotio::ArrayTraits<T>::depth << std::endl;
 	std::cout << "binaryFile=[" << gp.binaryFile(arg, "unittest-output/"+header+".bin", "record", ArrayMode()) << "]" << std::endl;
 	gp.send(arg, ArrayMode());
