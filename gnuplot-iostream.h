@@ -75,7 +75,9 @@ THE SOFTWARE.
 #include <boost/filesystem.hpp>
 #endif // BOOST_VERSION
 
-// FIXME - note about new way
+// Note: this is here for reverse compatibility.  The new way to enable blitz support is to
+// just include the gnuplot-iostream.h header after you include the blitz header (likewise for
+// armadillo).
 #ifdef GNUPLOT_ENABLE_BLITZ
 #include <blitz/array.h>
 #endif
@@ -395,31 +397,30 @@ struct BinarySender {
 	}
 };
 
-// FIXME - rename this?
 template <typename T, typename Enable=void>
-struct FormatCodes {
-	BOOST_STATIC_ASSERT_MSG(sizeof(T) == 0, "FormatCodes class not specialized for this type");
+struct BinfmtSender {
+	BOOST_STATIC_ASSERT_MSG(sizeof(T) == 0, "BinfmtSender class not specialized for this type");
 
 	// This is here to avoid further compilation errors, beyond what the assert prints.
 	static void send(std::ostream &);
 };
 
-template<> struct FormatCodes<   float> { static void send(std::ostream &stream) { stream << "%float";  } };
-template<> struct FormatCodes<  double> { static void send(std::ostream &stream) { stream << "%double"; } };
-template<> struct FormatCodes<  int8_t> { static void send(std::ostream &stream) { stream << "%int8";   } };
-template<> struct FormatCodes< uint8_t> { static void send(std::ostream &stream) { stream << "%uint8";  } };
-template<> struct FormatCodes< int16_t> { static void send(std::ostream &stream) { stream << "%int16";  } };
-template<> struct FormatCodes<uint16_t> { static void send(std::ostream &stream) { stream << "%uint16"; } };
-template<> struct FormatCodes< int32_t> { static void send(std::ostream &stream) { stream << "%int32";  } };
-template<> struct FormatCodes<uint32_t> { static void send(std::ostream &stream) { stream << "%uint32"; } };
-template<> struct FormatCodes< int64_t> { static void send(std::ostream &stream) { stream << "%int64";  } };
-template<> struct FormatCodes<uint64_t> { static void send(std::ostream &stream) { stream << "%uint64"; } };
+template<> struct BinfmtSender<   float> { static void send(std::ostream &stream) { stream << "%float";  } };
+template<> struct BinfmtSender<  double> { static void send(std::ostream &stream) { stream << "%double"; } };
+template<> struct BinfmtSender<  int8_t> { static void send(std::ostream &stream) { stream << "%int8";   } };
+template<> struct BinfmtSender< uint8_t> { static void send(std::ostream &stream) { stream << "%uint8";  } };
+template<> struct BinfmtSender< int16_t> { static void send(std::ostream &stream) { stream << "%int16";  } };
+template<> struct BinfmtSender<uint16_t> { static void send(std::ostream &stream) { stream << "%uint16"; } };
+template<> struct BinfmtSender< int32_t> { static void send(std::ostream &stream) { stream << "%int32";  } };
+template<> struct BinfmtSender<uint32_t> { static void send(std::ostream &stream) { stream << "%uint32"; } };
+template<> struct BinfmtSender< int64_t> { static void send(std::ostream &stream) { stream << "%int64";  } };
+template<> struct BinfmtSender<uint64_t> { static void send(std::ostream &stream) { stream << "%uint64"; } };
 
 template <class T, class U>
-struct FormatCodes<std::pair<T, U> > {
+struct BinfmtSender<std::pair<T, U> > {
 	static void send(std::ostream &stream) {
-		FormatCodes<T>::send(stream);
-		FormatCodes<U>::send(stream);
+		BinfmtSender<T>::send(stream);
+		BinfmtSender<U>::send(stream);
 	}
 };
 
@@ -445,7 +446,7 @@ struct BinarySender<std::pair<T, U> > {
 /// {{{2 boost::tuple support
 
 template <typename T>
-struct FormatCodes<T,
+struct BinfmtSender<T,
 	typename boost::enable_if<
 		boost::mpl::and_<
 			is_boost_tuple<T>,
@@ -454,14 +455,14 @@ struct FormatCodes<T,
 	>::type
 > {
 	static void send(std::ostream &stream) {
-		FormatCodes<typename T::head_type>::send(stream);
+		BinfmtSender<typename T::head_type>::send(stream);
 		stream << " ";
-		FormatCodes<typename T::tail_type>::send(stream);
+		BinfmtSender<typename T::tail_type>::send(stream);
 	}
 };
 
 template <typename T>
-struct FormatCodes<T,
+struct BinfmtSender<T,
 	typename boost::enable_if<
 		boost::mpl::and_<
 			is_boost_tuple<T>,
@@ -470,7 +471,7 @@ struct FormatCodes<T,
 	>::type
 > {
 	static void send(std::ostream &stream) {
-		FormatCodes<typename T::head_type>::send(stream);
+		BinfmtSender<typename T::head_type>::send(stream);
 	}
 };
 
@@ -547,16 +548,16 @@ template <typename Tuple, std::size_t I>
 void std_tuple_formatcode_helper(std::ostream &stream, const Tuple *, int_<I>) {
 	std_tuple_formatcode_helper(stream, (const Tuple *)(0), int_<I-1>());
 	stream << " ";
-	FormatCodes<typename std::tuple_element<I, Tuple>::type>::send(stream);
+	BinfmtSender<typename std::tuple_element<I, Tuple>::type>::send(stream);
 }
 
 template <typename Tuple>
 void std_tuple_formatcode_helper(std::ostream &stream, const Tuple *, int_<0>) {
-	FormatCodes<typename std::tuple_element<0, Tuple>::type>::send(stream);
+	BinfmtSender<typename std::tuple_element<0, Tuple>::type>::send(stream);
 }
 
 template <typename... Args>
-struct FormatCodes<std::tuple<Args...> > {
+struct BinfmtSender<std::tuple<Args...> > {
 	typedef typename std::tuple<Args...> Tuple;
 
 	static void send(std::ostream &stream) {
@@ -995,7 +996,7 @@ void send_scalar(std::ostream &stream, const T &arg, ModeBinary) {
 
 template <typename T>
 void send_scalar(std::ostream &stream, const T &, ModeBinfmt) {
-	FormatCodes<T>::send(stream);
+	BinfmtSender<T>::send(stream);
 }
 
 template <typename T, typename PrintMode>
@@ -1422,10 +1423,10 @@ using gnuplotio::Gnuplot;
 namespace gnuplotio {
 
 template <class T, int N>
-struct FormatCodes<blitz::TinyVector<T, N> > {
+struct BinfmtSender<blitz::TinyVector<T, N> > {
 	static void send(std::ostream &stream) {
 		for(int i=0; i<N; i++) {
-			FormatCodes<T>::send(stream);
+			BinfmtSender<T>::send(stream);
 		}
 	}
 };
