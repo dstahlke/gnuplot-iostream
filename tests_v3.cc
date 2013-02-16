@@ -129,8 +129,10 @@ int main() {
 	//runtest("pair{ai,bi}", std::make_pair(ai, bi));
 	// However, these work:
 	runtest("boost_tie{ai,bi}", boost::tie(ai, bi));
+#if GNUPLOT_ENABLE_CXX11
 	runtest("std_tie{ai,bi}", std::tie(ai, bi));
 	runtest("std_fwd{ai,bi}", std::forward_as_tuple(ai, bi));
+#endif
 
 	runtest("pair{ai,bi}", std::pair<int(&)[NX], boost::array<int, NX> >(ai, bi));
 	runtest("vvd,vvi,vvvi", std::make_pair(vvd, std::make_pair(vvi, vvvi)));
