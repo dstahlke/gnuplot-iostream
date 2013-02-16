@@ -403,7 +403,11 @@ struct BinarySender {
 
 template <typename T, typename Enable=void>
 struct BinfmtSender {
-	BOOST_STATIC_ASSERT_MSG(sizeof(T) == 0, "BinfmtSender class not specialized for this type");
+#ifdef BOOST_STATIC_ASSERT_MSG
+	BOOST_STATIC_ASSERT_MSG((sizeof(T) == 0), "BinfmtSender class not specialized for this type");
+#else
+	BOOST_STATIC_ASSERT((sizeof(T) == 0));
+#endif
 
 	// This is here to avoid further compilation errors, beyond what the assert prints.
 	static void send(std::ostream &);
@@ -1181,7 +1185,11 @@ public:
 	explicit Gnuplot(const std::string &cmd = "gnuplot") :
 		boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
 			GNUPLOT_FILENO(pout = GNUPLOT_POPEN(cmd.c_str(), "w")),
+#if BOOST_VERSION >= 104400
 			boost::iostreams::never_close_handle
+#else
+			false
+#endif
 		),
 		is_pipe(true),
 		feedback(NULL),
@@ -1194,7 +1202,11 @@ public:
 	explicit Gnuplot(FILE *fh) :
 		boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
 			GNUPLOT_FILENO(pout = fh),
+#if BOOST_VERSION >= 104400
 			boost::iostreams::never_close_handle
+#else
+			false
+#endif
 		),
 		is_pipe(false),
 		feedback(NULL),

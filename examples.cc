@@ -99,11 +99,11 @@ using xyz::Triple;
 
 namespace gnuplotio {
 	template<typename T>
-	struct FormatCodes<Triple<T> > {
+	struct BinfmtSender<Triple<T> > {
 		static void send(std::ostream &stream) {
-			FormatCodes<T>::send(stream);
-			FormatCodes<T>::send(stream);
-			FormatCodes<T>::send(stream);
+			BinfmtSender<T>::send(stream);
+			BinfmtSender<T>::send(stream);
+			BinfmtSender<T>::send(stream);
 		}
 	};
 
