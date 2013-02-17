@@ -30,6 +30,7 @@ THE SOFTWARE.
 		Static asserts for non-containers or not enough depth.
 		Write some docs.
 		Copyright notice in all files.
+		Handle std::complex as if it were std::pair.
 
 	ChangeLog:
 		send() for iterators has been removed
@@ -1277,7 +1278,7 @@ public:
 
 	template <typename T, typename ArrayMode>
 	Gnuplot &sendBinary(const T &arg, ArrayMode) {
-		generic_sender_level0(*this, arg, ModeAuto(), ModeBinary());
+		generic_sender_level0(*this, arg, ArrayMode(), ModeBinary());
 		return *this;
 	}
 
@@ -1285,9 +1286,9 @@ public:
 	std::string binfmt(const T &arg, const std::string &arr_or_rec, ArrayMode) {
 		std::ostringstream tmp;
 		tmp << " format='";
-		generic_sender_level0(tmp, arg, ModeAuto(), ModeBinfmt());
+		generic_sender_level0(tmp, arg, ArrayMode(), ModeBinfmt());
 		tmp << "' " << arr_or_rec << "=(";
-		generic_sender_level0(tmp, arg, ModeAuto(), ModeSize());
+		generic_sender_level0(tmp, arg, ArrayMode(), ModeSize());
 		tmp << ")";
 		tmp << " ";
 		return tmp.str();
@@ -1299,7 +1300,7 @@ public:
 	std::string file(const T &arg, std::string filename, ArrayMode) {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
-		generic_sender_level0(tmp_stream, arg, ModeAuto(), ModeText());
+		generic_sender_level0(tmp_stream, arg, ArrayMode(), ModeText());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
@@ -1313,7 +1314,7 @@ public:
 	std::string binaryFile(const T &arg, std::string filename, const std::string &arr_or_rec, ArrayMode) {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out | std::fstream::binary);
-		generic_sender_level0(tmp_stream, arg, ModeAuto(), ModeBinary());
+		generic_sender_level0(tmp_stream, arg, ArrayMode(), ModeBinary());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
@@ -1354,10 +1355,15 @@ public:
 	template <typename T> std::string file2d_unwrap(const T &arg, const std::string &filename="") { return file(arg, filename, Mode2DUnwrap()); }
 
 	template <typename T> std::string binaryFile         (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  ModeAuto    ()); }
-	template <typename T> std::string binaryFile1d       (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode1D      ()); }
-	template <typename T> std::string binaryFile2d       (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode2D      ()); }
-	template <typename T> std::string binaryFile1d_unwrap(const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode1DUnwrap()); }
-	template <typename T> std::string binaryFile2d_unwrap(const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  Mode2DUnwrap()); }
+
+	template <typename T> std::string binArr1d       (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode1D      ()); }
+	template <typename T> std::string binArr2d       (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode2D      ()); }
+	template <typename T> std::string binArr1d_unwrap(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode1DUnwrap()); }
+	template <typename T> std::string binArr2d_unwrap(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode2DUnwrap()); }
+	template <typename T> std::string binRec1d       (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode1D      ()); }
+	template <typename T> std::string binRec2d       (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode2D      ()); }
+	template <typename T> std::string binRec1d_unwrap(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode1DUnwrap()); }
+	template <typename T> std::string binRec2d_unwrap(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode2DUnwrap()); }
 
 #ifdef GNUPLOT_ENABLE_FEEDBACK
 	// Input variables are set to the mouse position and button.  If the gnuplot

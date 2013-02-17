@@ -107,6 +107,8 @@ namespace gnuplotio {
 		}
 	};
 
+	// FIXME - should implement BinarySender, with note that default works in some cases.
+
 	template<typename T>
 	struct TextSender<Triple<T> > {
 		static void send(std::ostream &stream, const Triple<T> &v) {

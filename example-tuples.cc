@@ -20,11 +20,29 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+// FIXME - disable by default
+#define USE_ARMA
+#define USE_BLITZ
+
 #include <vector>
 #include <cmath>
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/array.hpp>
+#include <boost/range/adaptor/transformed.hpp>
+// FIXME
+#define BOOST_RESULT_OF_USE_DECLTYPE
+// FIXME
+#include <boost/range/algorithm/copy.hpp>
+#include <boost/assign.hpp>
+
+#ifdef USE_ARMA
+#include <armadillo>
+#endif
+
+#ifdef USE_BLITZ
+#include <blitz/array.h>
+#endif
 
 #include "gnuplot-iostream.h"
 
@@ -45,35 +63,85 @@ double get_z(int step, double shift) {
 	return 0.3*std::sin(3.0*theta+2.0*M_PI*shift);
 }
 
+struct MyTransform {
+	MyTransform(double _shift) : shift(_shift) { }
+	typedef boost::tuple<double, double, double> result_type;
+	result_type operator()(int step) const {
+		return boost::make_tuple(get_x(step, shift), get_y(step, shift), get_z(step, shift));
+	}
+	double shift;
+};
+
+// This doesn't have to be a template.  It's just a template to show that such things are
+// possible.
+template <typename T>
+struct MyTriple {
+	MyTriple(T _x, T _y, T _z) : x(_x), y(_y), z(_z) { }
+
+	T x, y, z;
+};
+
+// Tells gnuplot-iostream how to print objects of class MyTriple.
+namespace gnuplotio {
+	template<typename T>
+	struct BinfmtSender<MyTriple<T> > {
+		static void send(std::ostream &stream) {
+			BinfmtSender<T>::send(stream);
+			BinfmtSender<T>::send(stream);
+			BinfmtSender<T>::send(stream);
+		}
+	};
+
+	// FIXME - should implement BinarySender, with note that default works in some cases.
+
+	// We don't use text mode in this demo.  This is just here to show how it would go.
+	template<typename T>
+	struct TextSender<MyTriple<T> > {
+		static void send(std::ostream &stream, const MyTriple<T> &v) {
+			TextSender<T>::send(stream, v.x);
+			stream << " ";
+			TextSender<T>::send(stream, v.y);
+			stream << " ";
+			TextSender<T>::send(stream, v.z);
+		}
+	};
+}
+
 int main() {
 	// -persist option makes the window not disappear when your program exits
 	Gnuplot gp("gnuplot -persist");
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
-	int num_cords = 3;
+	int num_cords = 20;
 	double shift = 0;
 
 	gp << "set zrange [-1:1]\n";
 
 	gp << "splot ";
-	for(int i=0; i<num_cords; i++) {
-		if(i) gp << ", ";
-		gp << "'-' with lines";
-	}
-	gp << "\n";
 
-	// vector of boost::tuple
+	{
+		std::vector<std::pair<std::pair<double, double>, double> > pts;
+		for(int i=0; i<num_steps; i++) {
+			pts.push_back(std::make_pair(std::make_pair(get_x(i, shift), get_y(i, shift)), get_z(i, shift)));
+		}
+		gp << gp.binRec1d(pts) << "with lines title 'vector of nested std::pair'";
+	}
+
+	gp << ", ";
+	shift += 1.0/num_cords;
+
 	{
 		std::vector<boost::tuple<double, double, double> > pts;
 		for(int i=0; i<num_steps; i++) {
 			pts.push_back(boost::make_tuple(get_x(i, shift), get_y(i, shift), get_z(i, shift)));
 		}
-		gp.send1d(pts);
+		gp << gp.binRec1d(pts) << "with lines title 'vector of boost::tuple'";
 	}
+
+	gp << ", ";
 	shift += 1.0/num_cords;
 
-	// boost::tuple of vectors
 	{
 		std::vector<double> x_pts, y_pts, z_pts;
 		for(int i=0; i<num_steps; i++) {
@@ -81,11 +149,12 @@ int main() {
 			y_pts.push_back(get_y(i, shift));
 			z_pts.push_back(get_z(i, shift));
 		}
-		gp.send1d(boost::make_tuple(x_pts, y_pts, z_pts));
+		gp << gp.binRec1d(boost::make_tuple(x_pts, y_pts, z_pts)) << "with lines title 'boost::tuple of vector'";
 	}
+
+	gp << ", ";
 	shift += 1.0/num_cords;
 
-	// vector of boost::array
 	{
 		std::vector<boost::array<double, 3> > pts(num_steps);
 		for(int i=0; i<num_steps; i++) {
@@ -93,9 +162,136 @@ int main() {
 			pts[i][1] = get_y(i, shift);
 			pts[i][2] = get_z(i, shift);
 		}
-		gp.send1d(pts);
+		gp << gp.binRec1d(pts) << "with lines title 'vector of boost::array'";
 	}
+
+	gp << ", ";
 	shift += 1.0/num_cords;
+
+	{
+		std::vector<std::vector<double> > pts(num_steps);
+		for(int i=0; i<num_steps; i++) {
+			pts[i].push_back(get_x(i, shift));
+			pts[i].push_back(get_y(i, shift));
+			pts[i].push_back(get_z(i, shift));
+		}
+		gp << gp.binRec1d(pts) << "with lines title 'vector of vector'";
+	}
+
+	gp << ", ";
+	shift += 1.0/num_cords;
+
+	{
+		std::vector<std::vector<double> > pts(3);
+		for(int i=0; i<num_steps; i++) {
+			pts[0].push_back(get_x(i, shift));
+			pts[1].push_back(get_y(i, shift));
+			pts[2].push_back(get_z(i, shift));
+		}
+		gp << gp.binRec1d_unwrap(pts) << "with lines title 'vector of vector (unwrap)'";
+	}
+
+	gp << ", ";
+	shift += 1.0/num_cords;
+
+	{
+		std::vector<MyTriple<double> > pts;
+		for(int i=0; i<num_steps; i++) {
+			pts.push_back(MyTriple<double>(get_x(i, shift), get_y(i, shift), get_z(i, shift)));
+		}
+		gp << gp.binRec1d(pts) << "with lines title 'vector of MyTriple'";
+	}
+
+#ifdef USE_ARMA
+	gp << ", ";
+	shift += 1.0/num_cords;
+
+	{
+		arma::mat pts(num_steps, 3);
+		for(int i=0; i<num_steps; i++) {
+			pts(i, 0) = get_x(i, shift);
+			pts(i, 1) = get_y(i, shift);
+			pts(i, 2) = get_z(i, shift);
+		}
+		gp << gp.binRec1d(pts) << "with lines title 'armadillo N*3'";
+	}
+
+	// FIXME - doesn't work
+//	gp << ", ";
+//	shift += 1.0/num_cords;
+//
+//	{
+//		arma::mat pts(3, num_steps);
+//		for(int i=0; i<num_steps; i++) {
+//			pts(0, i) = get_x(i, shift);
+//			pts(1, i) = get_y(i, shift);
+//			pts(2, i) = get_z(i, shift);
+//		}
+//		gp << gp.binRec1d_unwrap(pts) << "with lines title 'armadillo 3*N (unwrap)'";
+//	}
+#endif
+
+#ifdef USE_BLITZ
+	gp << ", ";
+	shift += 1.0/num_cords;
+
+	{
+		blitz::Array<blitz::TinyVector<double, 3>, 1> pts(num_steps);
+		for(int i=0; i<num_steps; i++) {
+			pts(i)[0] = get_x(i, shift);
+			pts(i)[1] = get_y(i, shift);
+			pts(i)[2] = get_z(i, shift);
+		}
+		gp << gp.binRec1d(pts) << "with lines title 'blitz::Array<blitz::TinyVector<double, 3>, 1>'";
+	}
+
+	gp << ", ";
+	shift += 1.0/num_cords;
+
+	{
+		blitz::Array<double, 2> pts(num_steps, 3);
+		for(int i=0; i<num_steps; i++) {
+			pts(i, 0) = get_x(i, shift);
+			pts(i, 1) = get_y(i, shift);
+			pts(i, 2) = get_z(i, shift);
+		}
+		gp << gp.binRec1d(pts) << "with lines title 'blitz<double>(N*3)'";
+	}
+
+	gp << ", ";
+	shift += 1.0/num_cords;
+
+	{
+		blitz::Array<double, 2> pts(3, num_steps);
+		for(int i=0; i<num_steps; i++) {
+			pts(0, i) = get_x(i, shift);
+			pts(1, i) = get_y(i, shift);
+			pts(2, i) = get_z(i, shift);
+		}
+		gp << gp.binRec1d_unwrap(pts) << "with lines title 'blitz<double>(N*3) (unwrap)'";
+	}
+#endif
+
+#if GNUPLOT_ENABLE_CXX11
+	gp << ", ";
+	shift += 1.0/num_cords;
+
+	std::vector<int> steps;
+	for(int i=0; i<num_steps; i++) {
+		steps.push_back(i);
+	}
+	// FIXME - broken
+	auto f = [&shift](int i)->boost::tuple<double,double,double> { return boost::make_tuple(get_x(i, shift), get_y(i, shift), get_z(i, shift)); };
+	auto pts = steps | boost::adaptors::transformed(f);
+	//auto pts = steps | boost::adaptors::transformed(MyTransform(shift));
+	gp << gp.binRec1d(pts) << "with lines title 'boost transform'";
+#endif
+
+	gp << std::endl;
+
+	// FIXME
+	// shift += 1.0/num_cords;
+	//assert(std::fabs(shift - 1.0) < 1e-12);
 
 	return 0;
 }
