@@ -30,11 +30,10 @@ THE SOFTWARE.
 #include <boost/tuple/tuple.hpp>
 #include <boost/array.hpp>
 #include <boost/range/adaptor/transformed.hpp>
-// FIXME
-#define BOOST_RESULT_OF_USE_DECLTYPE
-// FIXME
-#include <boost/range/algorithm/copy.hpp>
-#include <boost/assign.hpp>
+#include <boost/range/irange.hpp>
+#include <boost/bind.hpp>
+// FIXME - needed?  gcc or vc?
+//#define BOOST_RESULT_OF_USE_DECLTYPE
 
 #ifdef USE_ARMA
 #include <armadillo>
@@ -62,15 +61,6 @@ double get_z(int step, double shift) {
 	double theta = 2.0*M_PI*step/(num_steps-1);
 	return 0.3*std::sin(3.0*theta+2.0*M_PI*shift);
 }
-
-struct MyTransform {
-	MyTransform(double _shift) : shift(_shift) { }
-	typedef boost::tuple<double, double, double> result_type;
-	result_type operator()(int step) const {
-		return boost::make_tuple(get_x(step, shift), get_y(step, shift), get_z(step, shift));
-	}
-	double shift;
-};
 
 // This doesn't have to be a template.  It's just a template to show that such things are
 // possible.
@@ -126,6 +116,18 @@ int main() {
 			pts.push_back(std::make_pair(std::make_pair(get_x(i, shift), get_y(i, shift)), get_z(i, shift)));
 		}
 		gp << gp.binRec1d(pts) << "with lines title 'vector of nested std::pair'";
+	}
+
+	gp << ", ";
+	shift += 1.0/num_cords;
+
+	{
+		// complex is treated as if it were a pair
+		std::vector<std::pair<std::complex<double>, double> > pts;
+		for(int i=0; i<num_steps; i++) {
+			pts.push_back(std::make_pair(std::complex<double>(get_x(i, shift), get_y(i, shift)), get_z(i, shift)));
+		}
+		gp << gp.binRec1d(pts) << "with lines title 'vector of pair of cplx and double'";
 	}
 
 	gp << ", ";
@@ -276,15 +278,27 @@ int main() {
 	gp << ", ";
 	shift += 1.0/num_cords;
 
-	std::vector<int> steps;
-	for(int i=0; i<num_steps; i++) {
-		steps.push_back(i);
+	{
+		std::function<boost::tuple<double,double,double>(int)> f = [&shift](int i) {
+			return boost::make_tuple(get_x(i, shift), get_y(i, shift), get_z(i, shift)); };
+
+		auto pts = boost::irange(0, num_steps) | boost::adaptors::transformed(f);
+
+		gp << gp.binRec1d(pts) << "with lines title 'boost transform to tuple'";
 	}
-	// FIXME - broken
-	auto f = [&shift](int i)->boost::tuple<double,double,double> { return boost::make_tuple(get_x(i, shift), get_y(i, shift), get_z(i, shift)); };
-	auto pts = steps | boost::adaptors::transformed(f);
-	//auto pts = steps | boost::adaptors::transformed(MyTransform(shift));
-	gp << gp.binRec1d(pts) << "with lines title 'boost transform'";
+
+	gp << ", ";
+	shift += 1.0/num_cords;
+
+	{
+		auto steps = boost::irange(0, num_steps);
+
+		gp << gp.binRec1d(boost::make_tuple(
+				steps | boost::adaptors::transformed(boost::bind(get_x, _1, shift)),
+				steps | boost::adaptors::transformed(boost::bind(get_y, _1, shift)),
+				steps | boost::adaptors::transformed(boost::bind(get_z, _1, shift))
+			)) << "with lines title 'tuple of boost transform'";
+	}
 #endif
 
 	gp << std::endl;

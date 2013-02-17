@@ -30,7 +30,8 @@ THE SOFTWARE.
 		Static asserts for non-containers or not enough depth.
 		Write some docs.
 		Copyright notice in all files.
-		Handle std::complex as if it were std::pair.
+		Does vector of pair of vector work?
+		s/unwind/colmajor/
 
 	ChangeLog:
 		send() for iterators has been removed
@@ -426,6 +427,9 @@ template<> struct BinfmtSender<uint32_t> { static void send(std::ostream &stream
 template<> struct BinfmtSender< int64_t> { static void send(std::ostream &stream) { stream << "%int64";  } };
 template<> struct BinfmtSender<uint64_t> { static void send(std::ostream &stream) { stream << "%uint64"; } };
 
+/// }}}2
+
+/// {{{2 std::pair support
 template <typename T, typename U>
 struct BinfmtSender<std::pair<T, U> > {
 	static void send(std::ostream &stream) {
@@ -450,7 +454,33 @@ struct BinarySender<std::pair<T, U> > {
 		BinarySender<U>::send(stream, v.second);
 	}
 };
+/// }}}2
 
+/// {{{2 std::complex support
+template <typename T>
+struct BinfmtSender<std::complex<T> > {
+	static void send(std::ostream &stream) {
+		BinfmtSender<T>::send(stream);
+		BinfmtSender<T>::send(stream);
+	}
+};
+
+template <typename T>
+struct TextSender<std::complex<T> > {
+	static void send(std::ostream &stream, const std::complex<T> &v) {
+		TextSender<T>::send(stream, v.real());
+		stream << " ";
+		TextSender<T>::send(stream, v.imag());
+	}
+};
+
+template <typename T>
+struct BinarySender<std::complex<T> > {
+	static void send(std::ostream &stream, const std::complex<T> &v) {
+		BinarySender<T>::send(stream, v.real());
+		BinarySender<T>::send(stream, v.imag());
+	}
+};
 /// }}}2
 
 /// {{{2 boost::tuple support
