@@ -31,7 +31,7 @@ THE SOFTWARE.
 		Write some docs.
 		Copyright notice in all files.
 		Does vector of pair of vector work?
-		s/unwind/colmajor/
+		Mark legacy functions as deprecated?
 
 	ChangeLog:
 		send() for iterators has been removed
@@ -1360,40 +1360,39 @@ public:
 	Gnuplot &foobar(const T &arg) { return send(arg, ModeAuto()); }
 
 	// FIXME - there's gotta be a better way...
-	template <typename T> Gnuplot &send         (const T &arg) { return send(arg, ModeAuto    ()); }
-	template <typename T> Gnuplot &send1d       (const T &arg) { return send(arg, Mode1D      ()); }
-	template <typename T> Gnuplot &send2d       (const T &arg) { return send(arg, Mode2D      ()); }
-	template <typename T> Gnuplot &send1d_unwrap(const T &arg) { return send(arg, Mode1DUnwrap()); }
-	template <typename T> Gnuplot &send2d_unwrap(const T &arg) { return send(arg, Mode2DUnwrap()); }
+	template <typename T> Gnuplot &send           (const T &arg) { return send(arg, ModeAuto    ()); }
+	template <typename T> Gnuplot &send1d         (const T &arg) { return send(arg, Mode1D      ()); }
+	template <typename T> Gnuplot &send2d         (const T &arg) { return send(arg, Mode2D      ()); }
+	template <typename T> Gnuplot &send1d_colmajor(const T &arg) { return send(arg, Mode1DUnwrap()); }
+	template <typename T> Gnuplot &send2d_colmajor(const T &arg) { return send(arg, Mode2DUnwrap()); }
 
-	template <typename T> Gnuplot &sendBinary         (const T &arg) { return sendBinary(arg, ModeAuto    ()); }
-	template <typename T> Gnuplot &sendBinary1d       (const T &arg) { return sendBinary(arg, Mode1D      ()); }
-	template <typename T> Gnuplot &sendBinary2d       (const T &arg) { return sendBinary(arg, Mode2D      ()); }
-	template <typename T> Gnuplot &sendBinary1d_unwrap(const T &arg) { return sendBinary(arg, Mode1DUnwrap()); }
-	template <typename T> Gnuplot &sendBinary2d_unwrap(const T &arg) { return sendBinary(arg, Mode2DUnwrap()); }
+	template <typename T> Gnuplot &sendBinary           (const T &arg) { return sendBinary(arg, ModeAuto    ()); }
+	template <typename T> Gnuplot &sendBinary1d         (const T &arg) { return sendBinary(arg, Mode1D      ()); }
+	template <typename T> Gnuplot &sendBinary2d         (const T &arg) { return sendBinary(arg, Mode2D      ()); }
+	template <typename T> Gnuplot &sendBinary1d_colmajor(const T &arg) { return sendBinary(arg, Mode1DUnwrap()); }
+	template <typename T> Gnuplot &sendBinary2d_colmajor(const T &arg) { return sendBinary(arg, Mode2DUnwrap()); }
 
-	template <typename T> std::string binfmt         (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  ModeAuto    ()); }
-	template <typename T> std::string binfmt1d       (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode1D      ()); }
-	template <typename T> std::string binfmt2d       (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode2D      ()); }
-	template <typename T> std::string binfmt1d_unwrap(const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode1DUnwrap()); }
-	template <typename T> std::string binfmt2d_unwrap(const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode2DUnwrap()); }
+	template <typename T> std::string binfmt           (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  ModeAuto    ()); }
+	template <typename T> std::string binfmt1d         (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode1D      ()); }
+	template <typename T> std::string binfmt2d         (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode2D      ()); }
+	template <typename T> std::string binfmt1d_colmajor(const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode1DUnwrap()); }
+	template <typename T> std::string binfmt2d_colmajor(const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode2DUnwrap()); }
 
-	template <typename T> std::string file         (const T &arg, const std::string &filename="") { return file(arg, filename, ModeAuto    ()); }
-	template <typename T> std::string file1d       (const T &arg, const std::string &filename="") { return file(arg, filename, Mode1D      ()); }
-	template <typename T> std::string file2d       (const T &arg, const std::string &filename="") { return file(arg, filename, Mode2D      ()); }
-	template <typename T> std::string file1d_unwrap(const T &arg, const std::string &filename="") { return file(arg, filename, Mode1DUnwrap()); }
-	template <typename T> std::string file2d_unwrap(const T &arg, const std::string &filename="") { return file(arg, filename, Mode2DUnwrap()); }
+	template <typename T> std::string file           (const T &arg, const std::string &filename="") { return file(arg, filename, ModeAuto    ()); }
+	template <typename T> std::string file1d         (const T &arg, const std::string &filename="") { return file(arg, filename, Mode1D      ()); }
+	template <typename T> std::string file2d         (const T &arg, const std::string &filename="") { return file(arg, filename, Mode2D      ()); }
+	template <typename T> std::string file1d_colmajor(const T &arg, const std::string &filename="") { return file(arg, filename, Mode1DUnwrap()); }
+	template <typename T> std::string file2d_colmajor(const T &arg, const std::string &filename="") { return file(arg, filename, Mode2DUnwrap()); }
 
-	template <typename T> std::string binaryFile         (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  ModeAuto    ()); }
-
-	template <typename T> std::string binArr1d       (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode1D      ()); }
-	template <typename T> std::string binArr2d       (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode2D      ()); }
-	template <typename T> std::string binArr1d_unwrap(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode1DUnwrap()); }
-	template <typename T> std::string binArr2d_unwrap(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode2DUnwrap()); }
-	template <typename T> std::string binRec1d       (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode1D      ()); }
-	template <typename T> std::string binRec2d       (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode2D      ()); }
-	template <typename T> std::string binRec1d_unwrap(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode1DUnwrap()); }
-	template <typename T> std::string binRec2d_unwrap(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode2DUnwrap()); }
+	template <typename T> std::string binaryFile       (const T &arg, const std::string &filename="", const std::string &arr_or_rec="array") { return binaryFile(arg, filename, arr_or_rec,  ModeAuto    ()); }
+	template <typename T> std::string binArr1d         (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode1D      ()); }
+	template <typename T> std::string binArr2d         (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode2D      ()); }
+	template <typename T> std::string binArr1d_colmajor(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode1DUnwrap()); }
+	template <typename T> std::string binArr2d_colmajor(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode2DUnwrap()); }
+	template <typename T> std::string binRec1d         (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode1D      ()); }
+	template <typename T> std::string binRec2d         (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode2D      ()); }
+	template <typename T> std::string binRec1d_colmajor(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode1DUnwrap()); }
+	template <typename T> std::string binRec2d_colmajor(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode2DUnwrap()); }
 
 #ifdef GNUPLOT_ENABLE_FEEDBACK
 	// Input variables are set to the mouse position and button.  If the gnuplot

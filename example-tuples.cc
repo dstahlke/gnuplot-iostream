@@ -21,10 +21,12 @@ THE SOFTWARE.
 */
 
 // FIXME - disable by default
-#define USE_ARMA
-#define USE_BLITZ
+#define USE_ARMA 1
+#define USE_BLITZ 1
+#define USE_CXX (__cplusplus >= 201103)
 
 #include <vector>
+#include <complex>
 #include <cmath>
 
 #include <boost/tuple/tuple.hpp>
@@ -35,11 +37,11 @@ THE SOFTWARE.
 // FIXME - needed?  gcc or vc?
 //#define BOOST_RESULT_OF_USE_DECLTYPE
 
-#ifdef USE_ARMA
+#if USE_ARMA
 #include <armadillo>
 #endif
 
-#ifdef USE_BLITZ
+#if USE_BLITZ
 #include <blitz/array.h>
 #endif
 
@@ -103,7 +105,7 @@ int main() {
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
-	int num_cords = 20;
+	int num_examples = 8 + USE_ARMA + 3*USE_BLITZ + 2*USE_CXX;
 	double shift = 0;
 
 	gp << "set zrange [-1:1]\n";
@@ -119,7 +121,7 @@ int main() {
 	}
 
 	gp << ", ";
-	shift += 1.0/num_cords;
+	shift += 1.0/num_examples;
 
 	{
 		// complex is treated as if it were a pair
@@ -131,7 +133,7 @@ int main() {
 	}
 
 	gp << ", ";
-	shift += 1.0/num_cords;
+	shift += 1.0/num_examples;
 
 	{
 		std::vector<boost::tuple<double, double, double> > pts;
@@ -142,7 +144,7 @@ int main() {
 	}
 
 	gp << ", ";
-	shift += 1.0/num_cords;
+	shift += 1.0/num_examples;
 
 	{
 		std::vector<double> x_pts, y_pts, z_pts;
@@ -155,7 +157,7 @@ int main() {
 	}
 
 	gp << ", ";
-	shift += 1.0/num_cords;
+	shift += 1.0/num_examples;
 
 	{
 		std::vector<boost::array<double, 3> > pts(num_steps);
@@ -168,7 +170,7 @@ int main() {
 	}
 
 	gp << ", ";
-	shift += 1.0/num_cords;
+	shift += 1.0/num_examples;
 
 	{
 		std::vector<std::vector<double> > pts(num_steps);
@@ -181,7 +183,7 @@ int main() {
 	}
 
 	gp << ", ";
-	shift += 1.0/num_cords;
+	shift += 1.0/num_examples;
 
 	{
 		std::vector<std::vector<double> > pts(3);
@@ -190,11 +192,11 @@ int main() {
 			pts[1].push_back(get_y(i, shift));
 			pts[2].push_back(get_z(i, shift));
 		}
-		gp << gp.binRec1d_unwrap(pts) << "with lines title 'vector of vector (unwrap)'";
+		gp << gp.binRec1d_colmajor(pts) << "with lines title 'vector of vector (colmajor)'";
 	}
 
 	gp << ", ";
-	shift += 1.0/num_cords;
+	shift += 1.0/num_examples;
 
 	{
 		std::vector<MyTriple<double> > pts;
@@ -204,9 +206,39 @@ int main() {
 		gp << gp.binRec1d(pts) << "with lines title 'vector of MyTriple'";
 	}
 
-#ifdef USE_ARMA
+	// FIXME - doesn't work
+//	gp << ", ";
+//	shift += 1.0/num_examples;
+//
+//	{
+//		// FIXME - note warning against using C arrays
+//		double pts[num_steps][3];
+//		for(int i=0; i<num_steps; i++) {
+//			pts[i][0] = get_x(i, shift);
+//			pts[i][1] = get_y(i, shift);
+//			pts[i][2] = get_z(i, shift);
+//		}
+//		gp << gp.binRec1d(pts) << "with lines title 'double[N][3]'";
+//	}
+
+	// FIXME - doesn't work
+//	gp << ", ";
+//	shift += 1.0/num_examples;
+//
+//	{
+//		// FIXME - note warning against using C arrays
+//		double pts[3][num_steps];
+//		for(int i=0; i<num_steps; i++) {
+//			pts[0][i] = get_x(i, shift);
+//			pts[1][i] = get_y(i, shift);
+//			pts[2][i] = get_z(i, shift);
+//		}
+//		gp << gp.binRec1d_colmajor(pts) << "with lines title 'double[N][3] (colmajor)'";
+//	}
+
+#if USE_ARMA
 	gp << ", ";
-	shift += 1.0/num_cords;
+	shift += 1.0/num_examples;
 
 	{
 		arma::mat pts(num_steps, 3);
@@ -220,7 +252,7 @@ int main() {
 
 	// FIXME - doesn't work
 //	gp << ", ";
-//	shift += 1.0/num_cords;
+//	shift += 1.0/num_examples;
 //
 //	{
 //		arma::mat pts(3, num_steps);
@@ -229,13 +261,13 @@ int main() {
 //			pts(1, i) = get_y(i, shift);
 //			pts(2, i) = get_z(i, shift);
 //		}
-//		gp << gp.binRec1d_unwrap(pts) << "with lines title 'armadillo 3*N (unwrap)'";
+//		gp << gp.binRec1d_colmajor(pts) << "with lines title 'armadillo 3*N (colmajor)'";
 //	}
 #endif
 
-#ifdef USE_BLITZ
+#if USE_BLITZ
 	gp << ", ";
-	shift += 1.0/num_cords;
+	shift += 1.0/num_examples;
 
 	{
 		blitz::Array<blitz::TinyVector<double, 3>, 1> pts(num_steps);
@@ -248,7 +280,7 @@ int main() {
 	}
 
 	gp << ", ";
-	shift += 1.0/num_cords;
+	shift += 1.0/num_examples;
 
 	{
 		blitz::Array<double, 2> pts(num_steps, 3);
@@ -261,7 +293,7 @@ int main() {
 	}
 
 	gp << ", ";
-	shift += 1.0/num_cords;
+	shift += 1.0/num_examples;
 
 	{
 		blitz::Array<double, 2> pts(3, num_steps);
@@ -270,13 +302,13 @@ int main() {
 			pts(1, i) = get_y(i, shift);
 			pts(2, i) = get_z(i, shift);
 		}
-		gp << gp.binRec1d_unwrap(pts) << "with lines title 'blitz<double>(N*3) (unwrap)'";
+		gp << gp.binRec1d_colmajor(pts) << "with lines title 'blitz<double>(N*3) (colmajor)'";
 	}
 #endif
 
-#if GNUPLOT_ENABLE_CXX11
+#if USE_CXX
 	gp << ", ";
-	shift += 1.0/num_cords;
+	shift += 1.0/num_examples;
 
 	{
 		std::function<boost::tuple<double,double,double>(int)> f = [&shift](int i) {
@@ -288,7 +320,7 @@ int main() {
 	}
 
 	gp << ", ";
-	shift += 1.0/num_cords;
+	shift += 1.0/num_examples;
 
 	{
 		auto steps = boost::irange(0, num_steps);
@@ -303,9 +335,9 @@ int main() {
 
 	gp << std::endl;
 
-	// FIXME
-	// shift += 1.0/num_cords;
-	//assert(std::fabs(shift - 1.0) < 1e-12);
+	shift += 1.0/num_examples;
+	//std::cout << shift << std::endl;
+	assert(std::fabs(shift - 1.0) < 1e-12);
 
 	return 0;
 }
