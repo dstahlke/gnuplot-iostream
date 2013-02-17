@@ -28,7 +28,6 @@ THE SOFTWARE.
 		Verify that nested containers have consistent lengths between slices (at least along
 		the column dimension, sometimes it might be okay for blocks to be different lengths).
 		Static asserts for non-containers or not enough depth.
-		Have version numbers.
 		Write some docs.
 		Copyright notice in all files.
 
@@ -40,6 +39,8 @@ THE SOFTWARE.
 #define GNUPLOT_IOSTREAM_H
 
 /// {{{1 Includes and defines
+
+#define GNUPLOT_IOSTREAM_VERSION 2
 
 #ifndef GNUPLOT_ENABLE_CXX11
 #define GNUPLOT_ENABLE_CXX11 (__cplusplus >= 201103)

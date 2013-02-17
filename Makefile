@@ -3,7 +3,7 @@ CXXFLAGS+=-Wall -Wextra -I/usr/lib64/blitz/include -O0 -g
 #CXXFLAGS+=-Weffc++
 LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 
-EVERYTHING=examples examples-blitz examples-interactive tests_v3
+EVERYTHING=examples examples-blitz examples-interactive tests_v3 example-tuples
 
 all: examples
 	@echo "Now type 'make blitz' if you have blitz installed, and 'make interactive' if you system has PTY support."

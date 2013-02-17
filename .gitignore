@@ -3,6 +3,7 @@ examples
 examples-blitz
 examples-interactive
 tests_v3
+example-tuples
 *.o
 
 # cmake stuff
