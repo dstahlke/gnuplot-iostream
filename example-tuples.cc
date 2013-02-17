@@ -302,7 +302,7 @@ int main() {
 			pts(1, i) = get_y(i, shift);
 			pts(2, i) = get_z(i, shift);
 		}
-		gp << gp.binRec1d_colmajor(pts) << "with lines title 'blitz<double>(N*3) (colmajor)'";
+		gp << gp.binRec1d_colmajor(pts) << "with lines title 'blitz<double>(3*N) (colmajor)'";
 	}
 #endif
 

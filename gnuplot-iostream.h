@@ -32,6 +32,10 @@ THE SOFTWARE.
 		Copyright notice in all files.
 		Does vector of pair of vector work?
 		Mark legacy functions as deprecated?
+		Get rid of cmake stuff
+
+	Docs:
+		Table of compiler support (with C++11)
 
 	ChangeLog:
 		send() for iterators has been removed
@@ -1113,9 +1117,11 @@ print_block(std::ostream &stream, T &arg, PrintMode) {
 template <size_t Depth, typename T, typename PrintMode>
 typename boost::enable_if_c<(Depth>1) && PrintMode::is_size>::type
 print_block(std::ostream &stream, T &arg, PrintMode) {
-	stream << get_range_size(arg) << ",";
+	// It seems that size for two dimensional arrays needs the fastest varying index first,
+	// contrary to intuition.  The gnuplot documentation is not too clear on this point.
 	typename T::subiter_type sub = arg.deref_subiter();
 	print_block<Depth-1>(stream, sub, PrintMode());
+	stream << "," << get_range_size(arg);
 }
 
 template <size_t Depth, typename T, typename PrintMode>
