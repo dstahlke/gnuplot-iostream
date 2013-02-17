@@ -99,7 +99,7 @@ int main() {
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
-	int num_examples = 5 + USE_BLITZ*3;
+	int num_examples = 5 + USE_BLITZ*3 + USE_ARMA;
 	int num_v_each = 50 / num_examples + 1;
 
 	num_v_total = (num_v_each-1) * num_examples + 1;
@@ -197,6 +197,7 @@ int main() {
 	gp << ", ";
 	shift += num_v_each-1;
 
+	// FIXME - slice is third index, not first
 	{
 		arma::cube pts(num_u, num_v_each, 3);
 		for(int u=0; u<num_u; u++) {
@@ -206,7 +207,7 @@ int main() {
 				pts(u, v, 2) = get_point(u, v+shift).z;
 			}
 		}
-		gp << gp.binRec2d(pts) << "with lines title 'arma::cube(U*V*3)'";
+		gp << gp.file2d(pts, "zz") << "with lines title 'arma::cube(U*V*3)'";
 	}
 
 	// FIXME

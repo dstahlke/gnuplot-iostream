@@ -1615,6 +1615,75 @@ namespace gnuplotio {
 
 // FIXME - handle Row, Cube, Field
 
+// FIXME - armadillo puts the slice index last, contrary to (my) intuition.  So a decision has
+// to be made about which should be the fastest varying index.
+template <typename T>
+class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
+	class ArmaCubeRange {
+		class ArmaSliceRange {
+		public:
+			ArmaSliceRange() : p(NULL), slice(0), it(0) { }
+			explicit ArmaSliceRange(const arma::Cube<T> *_p, size_t _slice) : p(_p), slice(_slice), it(0) { }
+
+			typedef T value_type;
+			typedef IteratorRange<typename arma::Mat<T>::const_row_iterator, T> subiter_type;
+			static const bool is_container = true;
+
+			bool is_end() const { return it == p->n_rows; }
+
+			void inc() { ++it; }
+
+			value_type deref() const {
+				throw std::logic_error("can't call deref on an armadillo matrix row");
+			}
+
+			subiter_type deref_subiter() const {
+				return subiter_type(p->slice(slice).begin_row(it), p->slice(slice).end_row(it));
+			}
+
+		private:
+			const arma::Cube<T> *p;
+			size_t slice;
+			size_t it;
+		};
+
+	public:
+		ArmaCubeRange() : p(NULL), it(0) { }
+		explicit ArmaCubeRange(const arma::Cube<T> *_p) : p(_p), it(0) { }
+
+		typedef T value_type;
+		typedef ArmaSliceRange subiter_type;
+		static const bool is_container = true;
+
+		bool is_end() const { return it == p->n_slices; }
+
+		void inc() { ++it; }
+
+		value_type deref() const {
+			throw std::logic_error("can't call deref on an armadillo cube slice");
+		}
+
+		subiter_type deref_subiter() const {
+			return subiter_type(p, it);
+		}
+
+	private:
+		const arma::Cube<T> *p;
+		size_t it;
+	};
+
+public:
+	static const bool allow_colwrap = false;
+	static const size_t depth = ArrayTraits<T>::depth + 3;
+
+	typedef ArmaCubeRange range_type;
+
+	static range_type get_range(const arma::Cube<T> &arg) {
+		//std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;
+		return range_type(&arg);
+	}
+};
+
 template <typename T>
 class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
 	class ArmaMatRange {
@@ -1631,7 +1700,7 @@ class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
 		void inc() { ++it; }
 
 		value_type deref() const {
-			throw std::logic_error("can't call deref on an armadillo slice");
+			throw std::logic_error("can't call deref on an armadillo matrix row");
 		}
 
 		subiter_type deref_subiter() const {
@@ -1642,6 +1711,7 @@ class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
 		const arma::Mat<T> *p;
 		size_t it;
 	};
+
 public:
 	static const bool allow_colwrap = false;
 	static const size_t depth = ArrayTraits<T>::depth + 2;
