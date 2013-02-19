@@ -99,7 +99,7 @@ int main() {
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
-	int num_examples = 5 + USE_BLITZ*3 + USE_ARMA;
+	int num_examples = 5 + USE_BLITZ*3 + USE_ARMA*2;
 	int num_v_each = 50 / num_examples + 1;
 
 	num_v_total = (num_v_each-1) * num_examples + 1;
@@ -197,7 +197,6 @@ int main() {
 	gp << ", ";
 	shift += num_v_each-1;
 
-	// FIXME - slice is third index, not first
 	{
 		arma::cube pts(num_u, num_v_each, 3);
 		for(int u=0; u<num_u; u++) {
@@ -210,21 +209,20 @@ int main() {
 		gp << gp.file2d(pts, "zz") << "with lines title 'arma::cube(U*V*3)'";
 	}
 
-	// FIXME
-//	gp << ", ";
-//	shift += num_v_each-1;
-//
-//	{
-//		arma::cube pts(3, num_u, num_v_each);
-//		for(int u=0; u<num_u; u++) {
-//			for(int v=0; v<num_v_each; v++) {
-//				pts(0, u, v) = get_point(u, v+shift).x;
-//				pts(1, u, v) = get_point(u, v+shift).y;
-//				pts(2, u, v) = get_point(u, v+shift).z;
-//			}
-//		}
-//		gp << gp.binRec2d_colmajor(pts) << "with lines title 'arma::cube(3*U*V) (colmajor)'";
-//	}
+	gp << ", ";
+	shift += num_v_each-1;
+
+	{
+		arma::cube pts(3, num_u, num_v_each);
+		for(int u=0; u<num_u; u++) {
+			for(int v=0; v<num_v_each; v++) {
+				pts(0, u, v) = get_point(u, v+shift).x;
+				pts(1, u, v) = get_point(u, v+shift).y;
+				pts(2, u, v) = get_point(u, v+shift).z;
+			}
+		}
+		gp << gp.binRec2d_colmajor(pts) << "with lines title 'arma::cube(3*U*V) (colmajor)'";
+	}
 #endif
 
 #if USE_BLITZ

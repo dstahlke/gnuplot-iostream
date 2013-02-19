@@ -105,7 +105,7 @@ int main() {
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
-	int num_examples = 8 + USE_ARMA + 3*USE_BLITZ + 2*USE_CXX;
+	int num_examples = 8 + 2*USE_ARMA + 3*USE_BLITZ + 2*USE_CXX;
 	double shift = 0;
 
 	gp << "set zrange [-1:1]\n";
@@ -250,7 +250,6 @@ int main() {
 		gp << gp.binRec1d(pts) << "with lines title 'armadillo N*3'";
 	}
 
-	// FIXME - doesn't work
 	gp << ", ";
 	shift += 1.0/num_examples;
 

@@ -1613,70 +1613,95 @@ public:
 #define GNUPLOT_ARMADILLO_SUPPORT_LOADED
 namespace gnuplotio {
 
-// FIXME - handle Row, Cube, Field
+// FIXME - handle Row, Field
 
-// FIXME - armadillo puts the slice index last, contrary to (my) intuition.  So a decision has
-// to be made about which should be the fastest varying index.
 template <typename T>
 class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
-	class ArmaCubeRange {
-		class ArmaSliceRange {
-		public:
-			ArmaSliceRange() : p(NULL), slice(0), it(0) { }
-			explicit ArmaSliceRange(const arma::Cube<T> *_p, size_t _slice) : p(_p), slice(_slice), it(0) { }
-
-			typedef T value_type;
-			typedef IteratorRange<typename arma::Mat<T>::const_row_iterator, T> subiter_type;
-			static const bool is_container = true;
-
-			bool is_end() const { return it == p->n_rows; }
-
-			void inc() { ++it; }
-
-			value_type deref() const {
-				throw std::logic_error("can't call deref on an armadillo matrix row");
-			}
-
-			subiter_type deref_subiter() const {
-				return subiter_type(p->slice(slice).begin_row(it), p->slice(slice).end_row(it));
-			}
-
-		private:
-			const arma::Cube<T> *p;
-			size_t slice;
-			size_t it;
-		};
-
+	class SliceRange {
 	public:
-		ArmaCubeRange() : p(NULL), it(0) { }
-		explicit ArmaCubeRange(const arma::Cube<T> *_p) : p(_p), it(0) { }
+		SliceRange() : p(NULL), col(0), slice(0) { }
+		explicit SliceRange(const arma::Cube<T> *_p, size_t _row, size_t _col) :
+			p(_p), row(_row), col(_col), slice(0) { }
 
 		typedef T value_type;
-		typedef ArmaSliceRange subiter_type;
-		static const bool is_container = true;
+		typedef Error_WasNotContainer subiter_type;
+		static const bool is_container = false;
 
-		bool is_end() const { return it == p->n_slices; }
+		bool is_end() const { return slice == p->n_slices; }
 
-		void inc() { ++it; }
+		void inc() { ++slice; }
 
 		value_type deref() const {
-			throw std::logic_error("can't call deref on an armadillo cube slice");
+			return (*p)(row, col, slice);
 		}
 
 		subiter_type deref_subiter() const {
-			return subiter_type(p, it);
+			throw std::invalid_argument("argument was not a container");
 		}
 
 	private:
 		const arma::Cube<T> *p;
-		size_t it;
+		size_t row, col, slice;
+	};
+
+	class ColRange {
+	public:
+		ColRange() : p(NULL), row(0), col(0) { }
+		explicit ColRange(const arma::Cube<T> *_p, size_t _row) :
+			p(_p), row(_row), col(0) { }
+
+		typedef T value_type;
+		typedef SliceRange subiter_type;
+		static const bool is_container = true;
+
+		bool is_end() const { return col == p->n_cols; }
+
+		void inc() { ++col; }
+
+		value_type deref() const {
+			throw std::logic_error("can't call deref on an armadillo cube col");
+		}
+
+		subiter_type deref_subiter() const {
+			return subiter_type(p, row, col);
+		}
+
+	private:
+		const arma::Cube<T> *p;
+		size_t row, col;
+	};
+
+	class RowRange {
+	public:
+		RowRange() : p(NULL), row(0) { }
+		explicit RowRange(const arma::Cube<T> *_p) : p(_p), row(0) { }
+
+		typedef T value_type;
+		typedef ColRange subiter_type;
+		static const bool is_container = true;
+
+		bool is_end() const { return row == p->n_rows; }
+
+		void inc() { ++row; }
+
+		value_type deref() const {
+			throw std::logic_error("can't call deref on an armadillo cube row");
+		}
+
+		subiter_type deref_subiter() const {
+			return subiter_type(p, row);
+		}
+
+	private:
+		const arma::Cube<T> *p;
+		size_t row;
 	};
 
 public:
 	static const bool allow_colwrap = false;
 	static const size_t depth = ArrayTraits<T>::depth + 3;
 
-	typedef ArmaCubeRange range_type;
+	typedef RowRange range_type;
 
 	static range_type get_range(const arma::Cube<T> &arg) {
 		//std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;
@@ -1701,7 +1726,7 @@ class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
 		void inc() { ++col; }
 
 		value_type deref() const {
-			return (*p).at(row, col);
+			return (*p)(row, col);
 		}
 
 		subiter_type deref_subiter() const {
