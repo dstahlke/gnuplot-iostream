@@ -1686,37 +1686,64 @@ public:
 
 template <typename T>
 class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
-	class ArmaMatRange {
+	class ColRange {
 	public:
-		ArmaMatRange() : p(NULL), it(0) { }
-		explicit ArmaMatRange(const arma::Mat<T> *_p) : p(_p), it(0) { }
+		ColRange() : p(NULL), row(0), col(0) { }
+		explicit ColRange(const arma::Mat<T> *_p, size_t _row) :
+			p(_p), row(_row), col(0) { }
 
 		typedef T value_type;
-		typedef IteratorRange<typename arma::Mat<T>::const_row_iterator, T> subiter_type;
+		typedef Error_WasNotContainer subiter_type;
+		static const bool is_container = false;
+
+		bool is_end() const { return col == p->n_cols; }
+
+		void inc() { ++col; }
+
+		value_type deref() const {
+			return (*p).at(row, col);
+		}
+
+		subiter_type deref_subiter() const {
+			throw std::invalid_argument("argument was not a container");
+		}
+
+	private:
+		const arma::Mat<T> *p;
+		size_t row, col;
+	};
+
+	class RowRange {
+	public:
+		RowRange() : p(NULL), row(0) { }
+		explicit RowRange(const arma::Mat<T> *_p) : p(_p), row(0) { }
+
+		typedef T value_type;
+		typedef ColRange subiter_type;
 		static const bool is_container = true;
 
-		bool is_end() const { return it == p->n_rows; }
+		bool is_end() const { return row == p->n_rows; }
 
-		void inc() { ++it; }
+		void inc() { ++row; }
 
 		value_type deref() const {
 			throw std::logic_error("can't call deref on an armadillo matrix row");
 		}
 
 		subiter_type deref_subiter() const {
-			return subiter_type(p->begin_row(it), p->end_row(it));
+			return subiter_type(p, row);
 		}
 
 	private:
 		const arma::Mat<T> *p;
-		size_t it;
+		size_t row;
 	};
 
 public:
 	static const bool allow_colwrap = false;
 	static const size_t depth = ArrayTraits<T>::depth + 2;
 
-	typedef ArmaMatRange range_type;
+	typedef RowRange range_type;
 
 	static range_type get_range(const arma::Mat<T> &arg) {
 		//std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;

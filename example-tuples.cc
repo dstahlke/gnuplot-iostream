@@ -251,18 +251,18 @@ int main() {
 	}
 
 	// FIXME - doesn't work
-//	gp << ", ";
-//	shift += 1.0/num_examples;
-//
-//	{
-//		arma::mat pts(3, num_steps);
-//		for(int i=0; i<num_steps; i++) {
-//			pts(0, i) = get_x(i, shift);
-//			pts(1, i) = get_y(i, shift);
-//			pts(2, i) = get_z(i, shift);
-//		}
-//		gp << gp.binRec1d_colmajor(pts) << "with lines title 'armadillo 3*N (colmajor)'";
-//	}
+	gp << ", ";
+	shift += 1.0/num_examples;
+
+	{
+		arma::mat pts(3, num_steps);
+		for(int i=0; i<num_steps; i++) {
+			pts(0, i) = get_x(i, shift);
+			pts(1, i) = get_y(i, shift);
+			pts(2, i) = get_z(i, shift);
+		}
+		gp << gp.binRec1d_colmajor(pts) << "with lines title 'armadillo 3*N (colmajor)'";
+	}
 #endif
 
 #if USE_BLITZ
