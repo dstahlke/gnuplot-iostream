@@ -1613,7 +1613,9 @@ public:
 #define GNUPLOT_ARMADILLO_SUPPORT_LOADED
 namespace gnuplotio {
 
-// FIXME - handle Row, Field
+// FIXME - handle arma::Row
+
+/// {{{3 Cube
 
 template <typename T>
 class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
@@ -1709,6 +1711,81 @@ public:
 	}
 };
 
+/// }}}3
+
+/// {{{3 Field
+
+template <typename T>
+class ArrayTraits<arma::field<T> > : public ArrayTraitsDefaults<T> {
+	class ColRange {
+	public:
+		ColRange() : p(NULL), row(0), col(0) { }
+		explicit ColRange(const arma::field<T> *_p, size_t _row) :
+			p(_p), row(_row), col(0) { }
+
+		typedef T value_type;
+		typedef Error_WasNotContainer subiter_type;
+		static const bool is_container = false;
+
+		bool is_end() const { return col == p->n_cols; }
+
+		void inc() { ++col; }
+
+		value_type deref() const {
+			return (*p)(row, col);
+		}
+
+		subiter_type deref_subiter() const {
+			throw std::invalid_argument("argument was not a container");
+		}
+
+	private:
+		const arma::field<T> *p;
+		size_t row, col;
+	};
+
+	class RowRange {
+	public:
+		RowRange() : p(NULL), row(0) { }
+		explicit RowRange(const arma::field<T> *_p) : p(_p), row(0) { }
+
+		typedef T value_type;
+		typedef ColRange subiter_type;
+		static const bool is_container = true;
+
+		bool is_end() const { return row == p->n_rows; }
+
+		void inc() { ++row; }
+
+		value_type deref() const {
+			throw std::logic_error("can't call deref on an armadillo matrix row");
+		}
+
+		subiter_type deref_subiter() const {
+			return subiter_type(p, row);
+		}
+
+	private:
+		const arma::field<T> *p;
+		size_t row;
+	};
+
+public:
+	static const bool allow_colwrap = false;
+	static const size_t depth = ArrayTraits<T>::depth + 2;
+
+	typedef RowRange range_type;
+
+	static range_type get_range(const arma::field<T> &arg) {
+		//std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;
+		return range_type(&arg);
+	}
+};
+
+/// }}}3
+
+/// {{{3 Mat
+
 template <typename T>
 class ArrayTraits<arma::Mat<T> > : public ArrayTraitsDefaults<T> {
 	class ColRange {
@@ -1776,6 +1853,10 @@ public:
 	}
 };
 
+/// }}}3
+
+/// {{{3 Col
+
 template <typename T>
 class ArrayTraits<arma::Col<T> > : public ArrayTraitsDefaults<T> {
 public:
@@ -1788,6 +1869,8 @@ public:
 		return range_type(arg.begin(), arg.end());
 	}
 };
+
+/// }}}3
 
 } // namespace gnuplotio
 #endif // GNUPLOT_ARMADILLO_SUPPORT_LOADED
