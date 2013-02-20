@@ -1613,8 +1613,6 @@ public:
 #define GNUPLOT_ARMADILLO_SUPPORT_LOADED
 namespace gnuplotio {
 
-// FIXME - handle arma::Row
-
 /// {{{3 Cube
 
 template <typename T>
@@ -1850,6 +1848,23 @@ public:
 	static range_type get_range(const arma::Mat<T> &arg) {
 		//std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;
 		return range_type(&arg);
+	}
+};
+
+/// }}}3
+
+/// {{{3 Row
+
+template <typename T>
+class ArrayTraits<arma::Row<T> > : public ArrayTraitsDefaults<T> {
+public:
+	static const bool allow_colwrap = false;
+
+	typedef IteratorRange<typename arma::Row<T>::const_iterator, T> range_type;
+
+	static range_type get_range(const arma::Row<T> &arg) {
+		//std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;
+		return range_type(arg.begin(), arg.end());
 	}
 };
 

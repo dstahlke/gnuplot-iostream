@@ -105,7 +105,7 @@ int main() {
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
-	int num_examples = 8 + 3*USE_ARMA + 3*USE_BLITZ + 2*USE_CXX;
+	int num_examples = 8 + 4*USE_ARMA + 3*USE_BLITZ + 2*USE_CXX;
 	double shift = 0;
 
 	gp << "set zrange [-1:1]\n";
@@ -261,6 +261,22 @@ int main() {
 			pts(2, i) = get_z(i, shift);
 		}
 		gp << gp.binRec1d_colmajor(pts) << "with lines title 'armadillo 3*N (colmajor)'";
+	}
+
+	gp << ", ";
+	shift += 1.0/num_examples;
+
+	{
+		arma::Row<double> x_pts(num_steps);
+		arma::Col<double> y_pts(num_steps);
+		arma::Col<double> z_pts(num_steps);
+		for(int i=0; i<num_steps; i++) {
+			x_pts(i) = get_x(i, shift);
+			y_pts(i) = get_y(i, shift);
+			z_pts(i) = get_z(i, shift);
+		}
+		gp << gp.binRec1d(boost::make_tuple(x_pts, y_pts, z_pts))
+			<< "with lines title 'boost tuple of arma Row,Col,Col'";
 	}
 
 	gp << ", ";

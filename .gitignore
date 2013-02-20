@@ -2,8 +2,9 @@
 examples
 examples-blitz
 examples-interactive
-tests_v3
 example-tuples
+example-uv
+tests_v3
 *.o
 
 # cmake stuff
