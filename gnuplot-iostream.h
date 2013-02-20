@@ -164,6 +164,8 @@ template<typename T> struct has_attrib_n_cols {
 	typedef boost::mpl::bool_<value> type;
 };
 
+// FIXME - rename, since it matches other arma datatypes
+// FIXME - make more selective
 template <typename T>
 struct is_armadillo_mat {
 	typedef boost::mpl::and_<
