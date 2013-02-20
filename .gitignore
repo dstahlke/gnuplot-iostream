@@ -16,3 +16,4 @@ cmake_install.cmake
 # output of example scripts and unit tests
 my_graph_*.png
 unittest-output/
+unittest-output-good/
