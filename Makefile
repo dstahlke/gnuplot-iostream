@@ -32,6 +32,11 @@ example-tuples: example-tuples.o
 example-uv: example-uv.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
+test-asserts: test-assert-depth.error.txt
+
+%.error.txt: %.cc
+	! $(CXX) $(CXXFLAGS) -c $< -o $<.o 2> $@
+
 ######################
 # FIXME - remove all mentions of tests_v3 from makefile
 tests_v3: tests_v3.o
@@ -50,6 +55,7 @@ stup_to_pair: stup_to_pair.o
 
 clean:
 	rm -f *.o
+	rm -f *.error.txt
 	rm -f examples examples-blitz examples-interactive tests_v3 tests_v4
 	# Windows compilation
 	rm -f *.exe *.obj

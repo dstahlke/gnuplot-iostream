@@ -5,6 +5,7 @@ examples-interactive
 example-tuples
 example-uv
 tests_v3
+*.error.txt
 *.o
 
 # cmake stuff

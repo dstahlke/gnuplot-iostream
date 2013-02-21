@@ -52,7 +52,7 @@ THE SOFTWARE.
 #endif
 
 // C system includes
-#include <stdio.h>
+#include <cstdio>
 #ifdef GNUPLOT_ENABLE_PTY
 #	include <termios.h>
 #	include <unistd.h>
@@ -68,6 +68,7 @@ THE SOFTWARE.
 #include <utility>
 #include <iomanip>
 #include <vector>
+#include <complex>
 #if GNUPLOT_ENABLE_CXX11
 #	include <tuple>
 #endif
@@ -689,6 +690,7 @@ public:
 
 	static range_type get_range(const T &) {
 		MY_STATIC_ASSERT_MSG((sizeof(T)==0), "argument was not a container");
+		throw std::logic_error("static assert should have been triggered by this point");
 	}
 };
 
@@ -1544,6 +1546,7 @@ public:
 
 	value_type deref() const {
 		MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "cannot deref a blitz slice");
+		throw std::logic_error("static assert should have been triggered by this point");
 	}
 
 	subiter_type deref_subiter() const {
@@ -1583,6 +1586,7 @@ public:
 
 	subiter_type deref_subiter() const {
 		MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "argument was not a container");
+		throw std::logic_error("static assert should have been triggered by this point");
 	}
 
 private:
@@ -1649,6 +1653,7 @@ class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
 
 		subiter_type deref_subiter() const {
 			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "argument was not a container");
+			throw std::logic_error("static assert should have been triggered by this point");
 		}
 
 	private:
@@ -1672,6 +1677,7 @@ class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
 
 		value_type deref() const {
 			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "can't call deref on an armadillo cube col");
+			throw std::logic_error("static assert should have been triggered by this point");
 		}
 
 		subiter_type deref_subiter() const {
@@ -1698,6 +1704,7 @@ class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
 
 		value_type deref() const {
 			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "can't call deref on an armadillo cube row");
+			throw std::logic_error("static assert should have been triggered by this point");
 		}
 
 		subiter_type deref_subiter() const {
@@ -1747,6 +1754,7 @@ class ArrayTraits_ArmaMatOrField : public ArrayTraitsDefaults<T> {
 
 		subiter_type deref_subiter() const {
 			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "argument was not a container");
+			throw std::logic_error("static assert should have been triggered by this point");
 		}
 
 	private:
@@ -1769,6 +1777,7 @@ class ArrayTraits_ArmaMatOrField : public ArrayTraitsDefaults<T> {
 
 		value_type deref() const {
 			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "can't call deref on an armadillo matrix row");
+			throw std::logic_error("static assert should have been triggered by this point");
 		}
 
 		subiter_type deref_subiter() const {
