@@ -672,6 +672,10 @@ struct Error_WasNotContainer {
 	typedef void subiter_type;
 };
 
+// Error messages involving this stem from calling deref instead of deref_subiter for a nested
+// container.
+struct Error_InappropriateDeref { };
+
 // The unspecialized version of this class gives traits for things that are *not* arrays.
 template <typename T, typename Enable=void>
 class ArrayTraits {
@@ -712,9 +716,10 @@ public:
 	IteratorRange() { }
 	IteratorRange(const TI &_it, const TI &_end) : it(_it), end(_end) { }
 
-	typedef TV value_type;
-	typedef typename ArrayTraits<TV>::range_type subiter_type;
 	static const bool is_container = ArrayTraits<TV>::is_container;
+	typedef typename boost::mpl::if_c<is_container,
+			Error_InappropriateDeref, TV>::type value_type;
+	typedef typename ArrayTraits<TV>::range_type subiter_type;
 
 	bool is_end() const { return it == end; }
 

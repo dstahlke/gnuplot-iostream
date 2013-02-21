@@ -105,7 +105,7 @@ int main() {
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
-	int num_examples = 8 + 4*USE_ARMA + 3*USE_BLITZ + 2*USE_CXX;
+	int num_examples = 10 + 4*USE_ARMA + 3*USE_BLITZ + 2*USE_CXX;
 	double shift = 0;
 
 	gp << "set zrange [-1:1]\n";
@@ -206,35 +206,33 @@ int main() {
 		gp << gp.binRec1d(pts) << "with lines title 'vector of MyTriple'";
 	}
 
-	// FIXME - doesn't work
-//	gp << ", ";
-//	shift += 1.0/num_examples;
-//
-//	{
-//		// FIXME - note warning against using C arrays
-//		double pts[num_steps][3];
-//		for(int i=0; i<num_steps; i++) {
-//			pts[i][0] = get_x(i, shift);
-//			pts[i][1] = get_y(i, shift);
-//			pts[i][2] = get_z(i, shift);
-//		}
-//		gp << gp.binRec1d(pts) << "with lines title 'double[N][3]'";
-//	}
+	gp << ", ";
+	shift += 1.0/num_examples;
 
-	// FIXME - doesn't work
-//	gp << ", ";
-//	shift += 1.0/num_examples;
-//
-//	{
-//		// FIXME - note warning against using C arrays
-//		double pts[3][num_steps];
-//		for(int i=0; i<num_steps; i++) {
-//			pts[0][i] = get_x(i, shift);
-//			pts[1][i] = get_y(i, shift);
-//			pts[2][i] = get_z(i, shift);
-//		}
-//		gp << gp.binRec1d_colmajor(pts) << "with lines title 'double[N][3] (colmajor)'";
-//	}
+	{
+		// FIXME - note warning against using C arrays
+		double pts[num_steps][3];
+		for(int i=0; i<num_steps; i++) {
+			pts[i][0] = get_x(i, shift);
+			pts[i][1] = get_y(i, shift);
+			pts[i][2] = get_z(i, shift);
+		}
+		gp << gp.binRec1d(pts) << "with lines title 'double[N][3]'";
+	}
+
+	gp << ", ";
+	shift += 1.0/num_examples;
+
+	{
+		// FIXME - note warning against using C arrays
+		double pts[3][num_steps];
+		for(int i=0; i<num_steps; i++) {
+			pts[0][i] = get_x(i, shift);
+			pts[1][i] = get_y(i, shift);
+			pts[2][i] = get_z(i, shift);
+		}
+		gp << gp.binRec1d_colmajor(pts) << "with lines title 'double[N][3] (colmajor)'";
+	}
 
 #if USE_ARMA
 	gp << ", ";
