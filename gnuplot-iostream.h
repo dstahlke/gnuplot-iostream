@@ -49,15 +49,15 @@ THE SOFTWARE.
 #define GNUPLOT_IOSTREAM_VERSION 2
 
 #ifndef GNUPLOT_ENABLE_CXX11
-#define GNUPLOT_ENABLE_CXX11 (__cplusplus >= 201103)
+#	define GNUPLOT_ENABLE_CXX11 (__cplusplus >= 201103)
 #endif
 
 // C system includes
 #include <stdio.h>
 #ifdef GNUPLOT_ENABLE_PTY
-#include <termios.h>
-#include <unistd.h>
-#include <pty.h>
+#	include <termios.h>
+#	include <unistd.h>
+#	include <pty.h>
 #endif // GNUPLOT_ENABLE_PTY
 
 // C++ system includes
@@ -70,7 +70,7 @@ THE SOFTWARE.
 #include <iomanip>
 #include <vector>
 #if GNUPLOT_ENABLE_CXX11
-#include <tuple>
+#	include <tuple>
 #endif
 
 #include <boost/iostreams/device/file_descriptor.hpp>
@@ -82,27 +82,33 @@ THE SOFTWARE.
 //#include <boost/type_traits.hpp>
 // This is the version of boost which has v3 of the filesystem libraries by default.
 #if BOOST_VERSION >= 104600
-#define GNUPLOT_USE_TMPFILE
-#include <boost/filesystem.hpp>
+#	define GNUPLOT_USE_TMPFILE
+#	include <boost/filesystem.hpp>
 #endif // BOOST_VERSION
 
 // Note: this is here for reverse compatibility.  The new way to enable blitz support is to
 // just include the gnuplot-iostream.h header after you include the blitz header (likewise for
 // armadillo).
 #ifdef GNUPLOT_ENABLE_BLITZ
-#include <blitz/array.h>
+#	include <blitz/array.h>
+#endif
+
+#ifdef BOOST_STATIC_ASSERT_MSG
+#	define MY_STATIC_ASSERT_MSG(cond, msg) BOOST_STATIC_ASSERT_MSG((cond), msg)
+#else
+#	define MY_STATIC_ASSERT_MSG(cond, msg) BOOST_STATIC_ASSERT((cond))
 #endif
 
 // Patch for Windows by Damien Loison
 #ifdef _WIN32
-#include <windows.h>
-#define GNUPLOT_PCLOSE _pclose
-#define GNUPLOT_POPEN  _popen
-#define GNUPLOT_FILENO _fileno
+#	include <windows.h>
+#	define GNUPLOT_PCLOSE _pclose
+#	define GNUPLOT_POPEN  _popen
+#	define GNUPLOT_FILENO _fileno
 #else
-#define GNUPLOT_PCLOSE pclose
-#define GNUPLOT_POPEN  popen
-#define GNUPLOT_FILENO fileno
+#	define GNUPLOT_PCLOSE pclose
+#	define GNUPLOT_POPEN  popen
+#	define GNUPLOT_FILENO fileno
 #endif
 
 /// }}}1
@@ -412,11 +418,7 @@ struct BinarySender {
 
 template <typename T, typename Enable=void>
 struct BinfmtSender {
-#ifdef BOOST_STATIC_ASSERT_MSG
-	BOOST_STATIC_ASSERT_MSG((sizeof(T) == 0), "BinfmtSender class not specialized for this type");
-#else
-	BOOST_STATIC_ASSERT((sizeof(T) == 0));
-#endif
+	MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "BinfmtSender class not specialized for this type");
 
 	// This is here to avoid further compilation errors, beyond what the assert prints.
 	static void send(std::ostream &);
@@ -726,10 +728,12 @@ public:
 	void inc() { ++it; }
 
 	value_type deref() const {
+		MY_STATIC_ASSERT_MSG((!is_container), "deref called on nested container");
 		return *it;
 	}
 
 	subiter_type deref_subiter() const {
+		MY_STATIC_ASSERT_MSG((is_container), "deref_iter called on non-nested container");
 		return ArrayTraits<TV>::get_range(*it);
 	}
 
