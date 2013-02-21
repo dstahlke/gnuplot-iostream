@@ -689,7 +689,7 @@ public:
 	static const size_t depth = 0;
 
 	static range_type get_range(const T &) {
-		throw std::invalid_argument("argument was not a container");
+		MY_STATIC_ASSERT_MSG((sizeof(T)==0), "argument was not a container");
 	}
 };
 
@@ -728,12 +728,14 @@ public:
 	void inc() { ++it; }
 
 	value_type deref() const {
-		MY_STATIC_ASSERT_MSG((!is_container), "deref called on nested container");
+		MY_STATIC_ASSERT_MSG((sizeof(TV) && !is_container),
+			"deref called on nested container");
 		return *it;
 	}
 
 	subiter_type deref_subiter() const {
-		MY_STATIC_ASSERT_MSG((is_container), "deref_iter called on non-nested container");
+		MY_STATIC_ASSERT_MSG(sizeof(TV) && (is_container),
+			"deref_iter called on non-nested container");
 		return ArrayTraits<TV>::get_range(*it);
 	}
 
@@ -1542,7 +1544,7 @@ public:
 	}
 
 	value_type deref() const {
-		throw std::logic_error("cannot deref a blitz slice");
+		MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "cannot deref a blitz slice");
 	}
 
 	subiter_type deref_subiter() const {
@@ -1581,7 +1583,7 @@ public:
 	}
 
 	subiter_type deref_subiter() const {
-		throw std::invalid_argument("argument was not a container");
+		MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "argument was not a container");
 	}
 
 private:
@@ -1647,7 +1649,7 @@ class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
 		}
 
 		subiter_type deref_subiter() const {
-			throw std::invalid_argument("argument was not a container");
+			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "argument was not a container");
 		}
 
 	private:
@@ -1670,7 +1672,7 @@ class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
 		void inc() { ++col; }
 
 		value_type deref() const {
-			throw std::logic_error("can't call deref on an armadillo cube col");
+			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "can't call deref on an armadillo cube col");
 		}
 
 		subiter_type deref_subiter() const {
@@ -1696,7 +1698,7 @@ class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
 		void inc() { ++row; }
 
 		value_type deref() const {
-			throw std::logic_error("can't call deref on an armadillo cube row");
+			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "can't call deref on an armadillo cube row");
 		}
 
 		subiter_type deref_subiter() const {
@@ -1745,7 +1747,7 @@ class ArrayTraits_ArmaMatOrField : public ArrayTraitsDefaults<T> {
 		}
 
 		subiter_type deref_subiter() const {
-			throw std::invalid_argument("argument was not a container");
+			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "argument was not a container");
 		}
 
 	private:
@@ -1767,7 +1769,7 @@ class ArrayTraits_ArmaMatOrField : public ArrayTraitsDefaults<T> {
 		void inc() { ++row; }
 
 		value_type deref() const {
-			throw std::logic_error("can't call deref on an armadillo matrix row");
+			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "can't call deref on an armadillo matrix row");
 		}
 
 		subiter_type deref_subiter() const {
