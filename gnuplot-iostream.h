@@ -27,7 +27,6 @@ THE SOFTWARE.
 		What version of boost is currently required?
 		Verify that nested containers have consistent lengths between slices (at least along
 		the column dimension, sometimes it might be okay for blocks to be different lengths).
-		Static asserts for non-containers or not enough depth.
 		Write some docs.
 		Copyright notice in all files.
 		Does vector of pair of vector work?
@@ -1145,12 +1144,14 @@ void generic_sender_level2(std::ostream &stream, T &arg, PrintMode) {
 
 template <size_t Depth, typename T, typename PrintMode>
 void generic_sender_level1(std::ostream &stream, const T &arg, ColunwrapNo, PrintMode) {
+	MY_STATIC_ASSERT_MSG(ArrayTraits<T>::depth >= Depth, "container not deep enough");
 	typename ArrayTraits<T>::range_type range = ArrayTraits<T>::get_range(arg);
 	generic_sender_level2<Depth>(stream, range, PrintMode());
 }
 
 template <size_t Depth, typename T, typename PrintMode>
 void generic_sender_level1(std::ostream &stream, const T &arg, ColunwrapYes, PrintMode) {
+	MY_STATIC_ASSERT_MSG(ArrayTraits<T>::depth >= Depth+1, "container not deep enough");
 	VecOfRange<typename ArrayTraits<T>::range_type::subiter_type> cols = get_columns_range(arg);
 	generic_sender_level2<Depth>(stream, cols, PrintMode());
 }

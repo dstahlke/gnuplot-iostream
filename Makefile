@@ -32,9 +32,9 @@ example-tuples: example-tuples.o
 example-uv: example-uv.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-test-asserts: test-assert-depth.error.txt
+test-asserts: test-assert-depth.error.txt test-assert-depth-colmajor.error.txt
 
-%.error.txt: %.cc
+%.error.txt: %.cc gnuplot-iostream.h
 	! $(CXX) $(CXXFLAGS) -c $< -o $<.o 2> $@
 
 ######################
@@ -43,12 +43,6 @@ tests_v3: tests_v3.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 tests_v4: tests_v4.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
-
-btup_to_pair: btup_to_pair.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
-
-stup_to_pair: stup_to_pair.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 # FIXME - end of experimental stuff
 ######################
