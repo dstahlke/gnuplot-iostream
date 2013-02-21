@@ -47,6 +47,10 @@ THE SOFTWARE.
 
 #include "gnuplot-iostream.h"
 
+#ifndef M_PI
+#	define M_PI 3.14159265358979323846
+#endif
+
 const int num_steps = 100;
 
 double get_x(int step, double shift) {
