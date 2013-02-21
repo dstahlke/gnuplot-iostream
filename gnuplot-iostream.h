@@ -1298,7 +1298,7 @@ public:
 			}
 		}
 
-		if(feedback) delete(feedback);
+		delete feedback;
 	}
 
 	void clearTmpfiles() {
