@@ -32,7 +32,6 @@ THE SOFTWARE.
 		Copyright notice in all files.
 		Does vector of pair of vector work?
 		Mark legacy functions as deprecated?
-		Get rid of cmake stuff
 
 	Docs:
 		Table of compiler support (with C++11)

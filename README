@@ -33,8 +33,6 @@ See the examples source code for usage information.
 To build examples just type 'make'.
 To build examples that require optional libraries, type 'make blitz' and 'make interactive'.
 
-Or, if you would prefer to use cmake, just type 'cmake .; make'.
-
 Of course, look at 'examples*.cc' to see how to use this library!
 
 
