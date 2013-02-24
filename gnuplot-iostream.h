@@ -30,6 +30,7 @@ THE SOFTWARE.
 		Unit tests via makefile
 		Update README and create changelog
 		Test that needless copies are not made of arguments
+		Test noncopyable containers
 
 	TODO later:
 		What version of boost is currently required?
@@ -40,6 +41,7 @@ THE SOFTWARE.
 	Docs:
 		Docs for new send methods
 		Table of compiler support (with C++11)
+		Note about using tie to avoid copying containers
 
 	ChangeLog:
 		send() for iterators has been removed
@@ -104,13 +106,14 @@ THE SOFTWARE.
 #	define MY_STATIC_ASSERT_MSG(cond, msg) BOOST_STATIC_ASSERT((cond))
 #endif
 
-#ifdef __GNUC__
-#	define GNUPLOT_DEPRECATE(msg) __attribute__ ((deprecated(msg)))
-#elif defined(_MSC_VER)
-#	define GNUPLOT_DEPRECATE(msg) __declspec(deprecated(msg))
-#else
-#	define GNUPLOT_DEPRECATE(msg)
-#endif
+// Okay... no harm in allowing people to use the old methods I guess.
+//#ifdef __GNUC__
+//#	define GNUPLOT_DEPRECATE(msg) __attribute__ ((deprecated(msg)))
+//#elif defined(_MSC_VER)
+//#	define GNUPLOT_DEPRECATE(msg) __declspec(deprecated(msg))
+//#else
+//#	define GNUPLOT_DEPRECATE(msg)
+//#endif
 
 // Patch for Windows by Damien Loison
 #ifdef _WIN32
