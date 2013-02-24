@@ -24,6 +24,11 @@ THE SOFTWARE.
 #include <vector>
 #include <math.h>
 
+#include "gnuplot-iostream.h"
+
+// Yes, I'm including a *.cc file.  It contains main().
+#include "examples-framework.cc"
+
 // http://stackoverflow.com/a/1658429
 #ifdef _WIN32
 	#include <windows.h>
@@ -36,11 +41,6 @@ THE SOFTWARE.
 		::usleep(millis * 1000);
 	}
 #endif
-
-#include "gnuplot-iostream.h"
-
-// Yes, I'm including a *.cc file.  It contains main().
-#include "examples-framework.cc"
 
 void demo_basic() {
 	// -persist option makes the window not disappear when your program exits
@@ -213,7 +213,7 @@ void demo_vectors() {
 	// -persist option makes the window not disappear when your program exits
 	Gnuplot gp("gnuplot -persist");
 
-	std::vector<std::vector<float> > vecs(4);
+	std::vector<std::vector<double> > vecs(4);
 	for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
 		double theta = alpha*2.0*3.14159;
 		vecs[0].push_back( cos(theta));
@@ -290,12 +290,12 @@ void demo_animation() {
 	gp << "set yrange [-1:1]\n";
 
 	const int N = 1000;
-	std::vector<float> pts(N);
+	std::vector<double> pts(N);
 
-	float theta = 0;
+	double theta = 0;
 	while(1) {
 		for(int i=0; i<N; i++) {
-			float alpha = (float(i)/N-0.5) * 10;
+			double alpha = (double(i)/N-0.5) * 10;
 			pts[i] = sin(alpha*8.0 + theta) * exp(-alpha*alpha/2.0);
 		}
 

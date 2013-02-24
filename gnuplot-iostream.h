@@ -269,7 +269,7 @@ public:
 		// it is never good to throw exceptions from a destructor
 		try {
 			remove(file);
-		} catch(const std::exception &e) {
+		} catch(const std::exception &) {
 			std::cerr << "Failed to remove temporary file " << file << std::endl;
 		}
 	}
