@@ -26,11 +26,14 @@ THE SOFTWARE.
 	FIXME/TODO:
 		What version of boost is currently required?
 		Verify that nested containers have consistent lengths between slices (at least along
-		the column dimension, sometimes it might be okay for blocks to be different lengths).
-		Write some docs.
+		  the column dimension, sometimes it might be okay for blocks to be different lengths).
 		Copyright notice in all files.
+		On windows, "-persist" doesn't work properly.  Using pgnuplot helps, but temporary
+		  files disappear before gnuplot tries to read them.
+		Callbacks via 'bind' function (needs pty reader thread)
 
 	Docs:
+		Docs for new send methods
 		Table of compiler support (with C++11)
 
 	ChangeLog:

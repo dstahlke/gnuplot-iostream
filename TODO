@@ -1,3 +1,0 @@
-better readme file
-callbacks via 'bind' function (needs pty reader thread)
-maybe use send1d, send2d, send3d functions to avoid ambiguity for multidimensional data vs. iterator pairs
