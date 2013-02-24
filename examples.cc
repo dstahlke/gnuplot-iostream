@@ -256,7 +256,7 @@ void demo_inline_binary() {
 
 	std::vector<std::vector<double> > vecs = get_trefoil();
 
-	gp << "splot '-' binary" << gp.binfmt1d_unwrap(vecs, "record") << "with lines notitle\n";
+	gp << "splot '-' binary" << gp.binfmt(vecs, "record") << "with lines notitle\n";
 	gp.sendBinary(vecs);
 }
 
@@ -279,7 +279,7 @@ void demo_external_binary() {
 	std::vector<std::vector<double> > vecs = get_trefoil();
 
 	std::cout << "Creating external_binary.dat" << std::endl;
-	gp << "splot" << gp.binaryFile1d_unwrap(vecs, "external_binary.dat", "record") << "with lines notitle\n";
+	gp << "splot" << gp.binaryFile(vecs, "external_binary.dat", "record") << "with lines notitle\n";
 }
 
 void demo_animation() {
