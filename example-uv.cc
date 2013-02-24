@@ -114,7 +114,7 @@ int main() {
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
-	int num_examples = 6 + USE_BLITZ*3 + USE_ARMA*3;
+	int num_examples = 7 + USE_BLITZ*3 + USE_ARMA*3;
 	int num_v_each = 50 / num_examples + 1;
 
 	num_v_total = (num_v_each-1) * num_examples + 1;
@@ -197,6 +197,26 @@ int main() {
 		}
 		gp << gp.binRec2d(pts) <<
 			"with lines title 'vec of boost::tuple of vec'";
+	}
+
+	gp << ", ";
+	shift += num_v_each-1;
+
+	{
+		std::vector<std::vector<double> > x_pts(num_u);
+		std::vector<std::vector<std::pair<double, double> > > yz_pts(num_u);
+		for(int u=0; u<num_u; u++) {
+			x_pts[u].resize(num_v_each);
+			yz_pts[u].resize(num_v_each);
+			for(int v=0; v<num_v_each; v++) {
+				x_pts [u][v] = get_point(u, v+shift).x;
+				yz_pts[u][v] = std::make_pair(
+					get_point(u, v+shift).y,
+					get_point(u, v+shift).z);
+			}
+		}
+		gp << gp.binRec2d(std::make_pair(x_pts, yz_pts)) <<
+			"with lines title 'pair(vec(vec(dbl)),vec(vec(pair(dbl,dbl))))'";
 	}
 
 	gp << ", ";

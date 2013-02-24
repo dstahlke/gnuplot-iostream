@@ -115,7 +115,7 @@ int main() {
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
-	int num_examples = 10 + 4*USE_ARMA + 3*USE_BLITZ + 2*USE_CXX;
+	int num_examples = 11 + 4*USE_ARMA + 3*USE_BLITZ + 3*USE_CXX;
 	double shift = 0;
 
 	gp << "set zrange [-1:1]\n";
@@ -244,6 +244,23 @@ int main() {
 		gp << gp.binRec1d_colmajor(pts) << "with lines title 'double[N][3] (colmajor)'";
 	}
 
+	gp << ", ";
+	shift += 1.0/num_examples;
+
+	{
+		// FIXME - note warning against using C arrays
+		double x_pts[num_steps];
+		double y_pts[num_steps];
+		double z_pts[num_steps];
+		for(int i=0; i<num_steps; i++) {
+			x_pts[i] = get_x(i, shift);
+			y_pts[i] = get_y(i, shift);
+			z_pts[i] = get_z(i, shift);
+		}
+		gp << gp.binRec1d(boost::make_tuple(x_pts, y_pts, z_pts)) <<
+			"with lines title 'boost::tuple of double[N]'";
+	}
+
 #if USE_ARMA
 	gp << ", ";
 	shift += 1.0/num_examples;
@@ -368,6 +385,25 @@ int main() {
 				steps | boost::adaptors::transformed(boost::bind(get_y, _1, shift)),
 				steps | boost::adaptors::transformed(boost::bind(get_z, _1, shift))
 			)) << "with lines title 'tuple of boost transform'";
+	}
+
+	gp << ", ";
+	shift += 1.0/num_examples;
+
+	{
+		// FIXME - note warning against using C arrays
+		double x_pts[num_steps];
+		double y_pts[num_steps];
+		double z_pts[num_steps];
+		for(int i=0; i<num_steps; i++) {
+			x_pts[i] = get_x(i, shift);
+			y_pts[i] = get_y(i, shift);
+			z_pts[i] = get_z(i, shift);
+		}
+		// Note: std::make_tuple doesn't work here since it makes the arrays decay to pointers
+		// (and so they forget their sizes).
+		gp << gp.binRec1d(std::tie(x_pts, y_pts, z_pts)) <<
+			"with lines title 'std::tie of double[N]'";
 	}
 #endif
 
