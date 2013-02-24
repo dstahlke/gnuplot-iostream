@@ -34,8 +34,6 @@ THE SOFTWARE.
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/bind.hpp>
-// FIXME - needed?  gcc or vc?
-//#define BOOST_RESULT_OF_USE_DECLTYPE
 
 #if USE_ARMA
 #include <armadillo>

@@ -34,8 +34,6 @@ THE SOFTWARE.
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/bind.hpp>
-// FIXME - needed?  gcc or vc?
-//#define BOOST_RESULT_OF_USE_DECLTYPE
 
 #if USE_ARMA
 #include <armadillo>
@@ -103,7 +101,7 @@ int main() {
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
-	int num_examples = 5 + USE_BLITZ*3 + USE_ARMA*3;
+	int num_examples = 6 + USE_BLITZ*3 + USE_ARMA*3;
 	int num_v_each = 50 / num_examples + 1;
 
 	num_v_total = (num_v_each-1) * num_examples + 1;
@@ -122,7 +120,7 @@ int main() {
 				pts[u][v] = get_point(u, v+shift);
 			}
 		}
-		gp << gp.binRec2d(pts) << "with lines title 'vector of MyTriple'";
+		gp << gp.binRec2d(pts) << "with lines title 'vec of vec of MyTriple'";
 	}
 
 	gp << ", ";
@@ -140,7 +138,7 @@ int main() {
 				);
 			}
 		}
-		gp << gp.binRec2d(pts) << "with lines title 'vector of MyTriple'";
+		gp << gp.binRec2d(pts) << "with lines title 'vec of vec of boost::tuple'";
 	}
 
 	gp << ", ";
@@ -160,7 +158,32 @@ int main() {
 				z_pts[u][v] = get_point(u, v+shift).z;
 			}
 		}
-		gp << gp.binRec2d(boost::make_tuple(x_pts, y_pts, z_pts)) << "with lines title 'boost tuple of vector'";
+		gp << gp.binRec2d(boost::make_tuple(x_pts, y_pts, z_pts)) <<
+			"with lines title 'boost::tuple of vec of vec'";
+	}
+
+	gp << ", ";
+	shift += num_v_each-1;
+
+	{
+		std::vector<boost::tuple<
+				std::vector<double>,
+				std::vector<double>,
+				std::vector<double>
+			> > pts;
+		for(int u=0; u<num_u; u++) {
+			std::vector<double> x_pts(num_v_each);
+			std::vector<double> y_pts(num_v_each);
+			std::vector<double> z_pts(num_v_each);
+			for(int v=0; v<num_v_each; v++) {
+				x_pts[v] = get_point(u, v+shift).x;
+				y_pts[v] = get_point(u, v+shift).y;
+				z_pts[v] = get_point(u, v+shift).z;
+			}
+			pts.push_back(boost::make_tuple(x_pts, y_pts, z_pts));
+		}
+		gp << gp.binRec2d(pts) <<
+			"with lines title 'vec of boost::tuple of vec'";
 	}
 
 	gp << ", ";
