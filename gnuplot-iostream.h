@@ -23,11 +23,14 @@ THE SOFTWARE.
 */
 
 /*
-	FIXME/TODO:
-		What version of boost is currently required?
-		Verify that nested containers have consistent lengths between slices (at least along
-		  the column dimension, sometimes it might be okay for blocks to be different lengths).
+	Before release:
 		Copyright notice in all files.
+		Port over legacy examples
+		Docs
+		Unit tests via makefile
+
+	TODO later:
+		What version of boost is currently required?
 		On windows, "-persist" doesn't work properly.  Using pgnuplot helps, but temporary
 		  files disappear before gnuplot tries to read them.
 		Callbacks via 'bind' function (needs pty reader thread)

@@ -1,30 +1,11 @@
 CXXFLAGS+=-Wall -Wextra -I/usr/lib64/blitz/include -O0 -g
-# FIXME - bring this back?
-#CXXFLAGS+=-Weffc++
 LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 
-EVERYTHING=examples examples-blitz examples-interactive tests_v3 example-tuples example-uv
-
-all: examples
-	@echo "Now type 'make blitz' if you have blitz installed, and 'make interactive' if you system has PTY support."
-
-blitz: examples-blitz
-
-interactive: examples-interactive
-
-everything: $(EVERYTHING)
+# FIXME
+all: example-tuples example-uv
 
 %.o: %.cc gnuplot-iostream.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-examples: examples.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
-
-examples-blitz: examples-blitz.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
-
-examples-interactive: examples-interactive.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
 
 example-tuples: example-tuples.o
 	$(CXX) -o $@ $^ $(LDFLAGS)

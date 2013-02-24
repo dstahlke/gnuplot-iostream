@@ -1,0 +1,2 @@
+These are examples that use the old send() function rather than send1d() and send2d().  They
+are here just so I can make sure they still compile.
