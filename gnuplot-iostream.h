@@ -28,6 +28,7 @@ THE SOFTWARE.
 		Port over legacy examples
 		Docs
 		Unit tests via makefile
+		Update README and create changelog
 
 	TODO later:
 		What version of boost is currently required?

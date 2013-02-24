@@ -1,6 +1,7 @@
 # compiled stuff
 example-tuples
 example-uv
+example-interactive
 tests_v3
 *.error.txt
 *.o
