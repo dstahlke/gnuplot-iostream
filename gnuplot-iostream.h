@@ -29,6 +29,7 @@ THE SOFTWARE.
 		Docs
 		Unit tests via makefile
 		Update README and create changelog
+		Test that needless copies are not made of arguments
 
 	TODO later:
 		What version of boost is currently required?
