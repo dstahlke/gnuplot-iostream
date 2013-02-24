@@ -49,50 +49,63 @@ THE SOFTWARE.
 #	define M_PI 3.14159265358979323846
 #endif
 
+// The number of axial points of the torus.
 const int num_u = 10;
+// The total number of longitudinal points of the torus.  This is set at the beginning of
+// main().
 int num_v_total;
 
+// This doesn't have to be a template.  It's just a template to show that such things are
+// possible.
+template <typename T>
 struct MyTriple {
-	MyTriple() { }
-	MyTriple(double _x, double _y, double _z) : x(_x), y(_y), z(_z) { }
+	MyTriple() : x(0), y(0), z(0) { }
+	MyTriple(T _x, T _y, T _z) : x(_x), y(_y), z(_z) { }
 
-	double x, y, z;
+	T x, y, z;
 };
 
 // Tells gnuplot-iostream how to print objects of class MyTriple.
 namespace gnuplotio {
-	template <>
-	struct BinfmtSender<MyTriple> {
+	template<typename T>
+	struct BinfmtSender<MyTriple<T> > {
 		static void send(std::ostream &stream) {
-			BinfmtSender<double>::send(stream);
-			BinfmtSender<double>::send(stream);
-			BinfmtSender<double>::send(stream);
+			BinfmtSender<T>::send(stream);
+			BinfmtSender<T>::send(stream);
+			BinfmtSender<T>::send(stream);
 		}
 	};
 
-	// FIXME - should implement BinarySender, with note that default works in some cases.
+	template <typename T>
+	struct BinarySender<MyTriple<T> > {
+		static void send(std::ostream &stream, const MyTriple<T> &v) {
+			BinarySender<T>::send(stream, v.x);
+			BinarySender<T>::send(stream, v.y);
+			BinarySender<T>::send(stream, v.z);
+		}
+	};
 
 	// We don't use text mode in this demo.  This is just here to show how it would go.
-	template <>
-	struct TextSender<MyTriple> {
-		static void send(std::ostream &stream, const MyTriple &v) {
-			TextSender<double>::send(stream, v.x);
+	template<typename T>
+	struct TextSender<MyTriple<T> > {
+		static void send(std::ostream &stream, const MyTriple<T> &v) {
+			TextSender<T>::send(stream, v.x);
 			stream << " ";
-			TextSender<double>::send(stream, v.y);
+			TextSender<T>::send(stream, v.y);
 			stream << " ";
-			TextSender<double>::send(stream, v.z);
+			TextSender<T>::send(stream, v.z);
 		}
 	};
 }
 
-MyTriple get_point(int u, int v) {
+MyTriple<double> get_point(int u, int v) {
 	double a = 2.0*M_PI*u/(num_u-1);
 	double b = 2.0*M_PI*v/(num_v_total-1);
 	double z = 0.3*std::cos(a);
 	double r = 1 + 0.3*std::sin(a);
 	double x = r * std::cos(b);
 	double y = r * std::sin(b);
-	return MyTriple(x, y, z);
+	return MyTriple<double>(x, y, z);
 }
 
 int main() {
@@ -113,7 +126,7 @@ int main() {
 	gp << "splot ";
 
 	{
-		std::vector<std::vector<MyTriple> > pts(num_u);
+		std::vector<std::vector<MyTriple<double> > > pts(num_u);
 		for(int u=0; u<num_u; u++) {
 			pts[u].resize(num_v_each);
 			for(int v=0; v<num_v_each; v++) {
@@ -255,7 +268,7 @@ int main() {
 	shift += num_v_each-1;
 
 	{
-		arma::field<MyTriple> pts(num_u, num_v_each);
+		arma::field<MyTriple<double> > pts(num_u, num_v_each);
 		for(int u=0; u<num_u; u++) {
 			for(int v=0; v<num_v_each; v++) {
 				pts(u, v) = get_point(u, v+shift);

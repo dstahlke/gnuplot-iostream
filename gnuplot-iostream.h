@@ -410,6 +410,15 @@ struct TextSender {
 
 template <typename T, typename Enable=void>
 struct BinarySender {
+	MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "BinarySender class not specialized for this type");
+
+	// This is here to avoid further compilation errors, beyond what the assert prints.
+	static void send(std::ostream &stream, const T &v);
+};
+
+// This is a BinarySender implementation that just sends directly from memory.
+template <typename T>
+struct FlatBinarySender {
 	static void send(std::ostream &stream, const T &v) {
 		stream.write(reinterpret_cast<const char *>(&v), sizeof(T));
 	}
@@ -434,23 +443,34 @@ template<> struct BinfmtSender<uint32_t> { static void send(std::ostream &stream
 template<> struct BinfmtSender< int64_t> { static void send(std::ostream &stream) { stream << "%int64";  } };
 template<> struct BinfmtSender<uint64_t> { static void send(std::ostream &stream) { stream << "%uint64"; } };
 
+template<> struct BinarySender<   float> : public FlatBinarySender<   float> { };
+template<> struct BinarySender<  double> : public FlatBinarySender<  double> { };
+template<> struct BinarySender<  int8_t> : public FlatBinarySender<  int8_t> { };
+template<> struct BinarySender< uint8_t> : public FlatBinarySender< uint8_t> { };
+template<> struct BinarySender< int16_t> : public FlatBinarySender< int16_t> { };
+template<> struct BinarySender<uint16_t> : public FlatBinarySender<uint16_t> { };
+template<> struct BinarySender< int32_t> : public FlatBinarySender< int32_t> { };
+template<> struct BinarySender<uint32_t> : public FlatBinarySender<uint32_t> { };
+template<> struct BinarySender< int64_t> : public FlatBinarySender< int64_t> { };
+template<> struct BinarySender<uint64_t> : public FlatBinarySender<uint64_t> { };
+
 /// }}}2
 
 /// {{{2 std::pair support
-template <typename T, typename U>
-struct BinfmtSender<std::pair<T, U> > {
-	static void send(std::ostream &stream) {
-		BinfmtSender<T>::send(stream);
-		BinfmtSender<U>::send(stream);
-	}
-};
-
 template <typename T, typename U>
 struct TextSender<std::pair<T, U> > {
 	static void send(std::ostream &stream, const std::pair<T, U> &v) {
 		TextSender<T>::send(stream, v.first);
 		stream << " ";
 		TextSender<U>::send(stream, v.second);
+	}
+};
+
+template <typename T, typename U>
+struct BinfmtSender<std::pair<T, U> > {
+	static void send(std::ostream &stream) {
+		BinfmtSender<T>::send(stream);
+		BinfmtSender<U>::send(stream);
 	}
 };
 
@@ -465,19 +485,19 @@ struct BinarySender<std::pair<T, U> > {
 
 /// {{{2 std::complex support
 template <typename T>
-struct BinfmtSender<std::complex<T> > {
-	static void send(std::ostream &stream) {
-		BinfmtSender<T>::send(stream);
-		BinfmtSender<T>::send(stream);
-	}
-};
-
-template <typename T>
 struct TextSender<std::complex<T> > {
 	static void send(std::ostream &stream, const std::complex<T> &v) {
 		TextSender<T>::send(stream, v.real());
 		stream << " ";
 		TextSender<T>::send(stream, v.imag());
+	}
+};
+
+template <typename T>
+struct BinfmtSender<std::complex<T> > {
+	static void send(std::ostream &stream) {
+		BinfmtSender<T>::send(stream);
+		BinfmtSender<T>::send(stream);
 	}
 };
 
@@ -491,36 +511,6 @@ struct BinarySender<std::complex<T> > {
 /// }}}2
 
 /// {{{2 boost::tuple support
-
-template <typename T>
-struct BinfmtSender<T,
-	typename boost::enable_if<
-		boost::mpl::and_<
-			is_boost_tuple<T>,
-			boost::mpl::not_<is_boost_tuple_nulltype<typename T::tail_type> >
-		>
-	>::type
-> {
-	static void send(std::ostream &stream) {
-		BinfmtSender<typename T::head_type>::send(stream);
-		stream << " ";
-		BinfmtSender<typename T::tail_type>::send(stream);
-	}
-};
-
-template <typename T>
-struct BinfmtSender<T,
-	typename boost::enable_if<
-		boost::mpl::and_<
-			is_boost_tuple<T>,
-			is_boost_tuple_nulltype<typename T::tail_type>
-		>
-	>::type
-> {
-	static void send(std::ostream &stream) {
-		BinfmtSender<typename T::head_type>::send(stream);
-	}
-};
 
 template <typename T>
 struct TextSender<T,
@@ -549,6 +539,36 @@ struct TextSender<T,
 > {
 	static void send(std::ostream &stream, const T &v) {
 		TextSender<typename T::head_type>::send(stream, v.get_head());
+	}
+};
+
+template <typename T>
+struct BinfmtSender<T,
+	typename boost::enable_if<
+		boost::mpl::and_<
+			is_boost_tuple<T>,
+			boost::mpl::not_<is_boost_tuple_nulltype<typename T::tail_type> >
+		>
+	>::type
+> {
+	static void send(std::ostream &stream) {
+		BinfmtSender<typename T::head_type>::send(stream);
+		stream << " ";
+		BinfmtSender<typename T::tail_type>::send(stream);
+	}
+};
+
+template <typename T>
+struct BinfmtSender<T,
+	typename boost::enable_if<
+		boost::mpl::and_<
+			is_boost_tuple<T>,
+			is_boost_tuple_nulltype<typename T::tail_type>
+		>
+	>::type
+> {
+	static void send(std::ostream &stream) {
+		BinfmtSender<typename T::head_type>::send(stream);
 	}
 };
 

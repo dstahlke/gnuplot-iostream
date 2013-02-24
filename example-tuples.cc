@@ -70,6 +70,7 @@ double get_z(int step, double shift) {
 // possible.
 template <typename T>
 struct MyTriple {
+	MyTriple() : x(0), y(0), z(0) { }
 	MyTriple(T _x, T _y, T _z) : x(_x), y(_y), z(_z) { }
 
 	T x, y, z;
@@ -86,7 +87,14 @@ namespace gnuplotio {
 		}
 	};
 
-	// FIXME - should implement BinarySender, with note that default works in some cases.
+	template <typename T>
+	struct BinarySender<MyTriple<T> > {
+		static void send(std::ostream &stream, const MyTriple<T> &v) {
+			BinarySender<T>::send(stream, v.x);
+			BinarySender<T>::send(stream, v.y);
+			BinarySender<T>::send(stream, v.z);
+		}
+	};
 
 	// We don't use text mode in this demo.  This is just here to show how it would go.
 	template<typename T>
