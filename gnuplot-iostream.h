@@ -107,6 +107,7 @@ THE SOFTWARE.
 #endif
 
 // Okay... no harm in allowing people to use the old methods I guess.
+#define GNUPLOT_DEPRECATE(msg)
 //#ifdef __GNUC__
 //#	define GNUPLOT_DEPRECATE(msg) __attribute__ ((deprecated(msg)))
 //#elif defined(_MSC_VER)
