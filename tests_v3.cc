@@ -197,9 +197,9 @@ int main() {
 	Gnuplot gp("cat");
 	gp << "### foobar ###" << std::endl;
 	gp.send(blitz2d, gnuplotio::ModeAuto());
-	gp << "### foobar ###" << std::endl;
-	gp.foobar(blitz2d);
-	gp << "### foobar ###" << std::endl;
-	gp.foobar<gnuplotio::Mode1D>(blitz2d);
+	//gp << "### foobar ###" << std::endl;
+	//gp.foobar(blitz2d);
+	//gp << "### foobar ###" << std::endl;
+	//gp.foobar<gnuplotio::Mode1D>(blitz2d);
 #endif
 }

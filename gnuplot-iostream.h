@@ -742,7 +742,8 @@ public:
 };
 
 // This handles reference types, such as are given with boost::tie.
-// FIXME - I need to understand this better
+// It also allows for instance "ArrayTraits<T[N]>" to match "ArrayTraits<T (&) [N]>".
+// I think this is okay to do...
 template <typename T>
 class ArrayTraits<T&> : public ArrayTraits<T> { };
 
