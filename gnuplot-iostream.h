@@ -743,9 +743,16 @@ public:
 
 // This handles reference types, such as are given with boost::tie.
 // It also allows for instance "ArrayTraits<T[N]>" to match "ArrayTraits<T (&) [N]>".
-// I think this is okay to do...
+// I think this is okay to do... The alternative is to use remove_reference all over the place.
 template <typename T>
 class ArrayTraits<T&> : public ArrayTraits<T> { };
+
+// FIXME - is this okay?
+// It supports gp.send1d(std::forward_as_tuple(x, std::move(y)));
+#if GNUPLOT_ENABLE_CXX11
+template <typename T>
+class ArrayTraits<T&&> : public ArrayTraits<T> { };
+#endif
 
 /// }}}3
 
