@@ -29,8 +29,9 @@ THE SOFTWARE.
 		Docs
 		Unit tests via makefile
 		Update README and create changelog
-		Test that needless copies are not made of arguments
 		Test noncopyable containers
+		Test noncopyable iterators
+		Consistency regarding arr_or_rec as arg or in function name
 
 	TODO later:
 		What version of boost is currently required?
@@ -106,15 +107,18 @@ THE SOFTWARE.
 #	define MY_STATIC_ASSERT_MSG(cond, msg) BOOST_STATIC_ASSERT((cond))
 #endif
 
-// Okay... no harm in allowing people to use the old methods I guess.
-#define GNUPLOT_DEPRECATE(msg)
-//#ifdef __GNUC__
-//#	define GNUPLOT_DEPRECATE(msg) __attribute__ ((deprecated(msg)))
-//#elif defined(_MSC_VER)
-//#	define GNUPLOT_DEPRECATE(msg) __declspec(deprecated(msg))
-//#else
-//#	define GNUPLOT_DEPRECATE(msg)
-//#endif
+// If this is defined, warn about use of deprecated functions.
+#ifdef GNUPLOT_DEPRECATE_WARN
+#	ifdef __GNUC__
+#		define GNUPLOT_DEPRECATE(msg) __attribute__ ((deprecated(msg)))
+#	elif defined(_MSC_VER)
+#		define GNUPLOT_DEPRECATE(msg) __declspec(deprecated(msg))
+#	else
+#		define GNUPLOT_DEPRECATE(msg)
+#	endif
+#else
+#	define GNUPLOT_DEPRECATE(msg)
+#endif
 
 // Patch for Windows by Damien Loison
 #ifdef _WIN32
@@ -1453,10 +1457,10 @@ public:
 	template <typename T> Gnuplot &sendBinary1d_colmajor(const T &arg) { return sendBinary(arg, Mode1DUnwrap()); }
 	template <typename T> Gnuplot &sendBinary2d_colmajor(const T &arg) { return sendBinary(arg, Mode2DUnwrap()); }
 
-	template <typename T> std::string binfmt1d         (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode1D      ()); }
-	template <typename T> std::string binfmt2d         (const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode2D      ()); }
-	template <typename T> std::string binfmt1d_colmajor(const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode1DUnwrap()); }
-	template <typename T> std::string binfmt2d_colmajor(const T &arg, const std::string &arr_or_rec="array") { return binfmt(arg, arr_or_rec,  Mode2DUnwrap()); }
+	template <typename T> std::string binfmt1d         (const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode1D      ()); }
+	template <typename T> std::string binfmt2d         (const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode2D      ()); }
+	template <typename T> std::string binfmt1d_colmajor(const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode1DUnwrap()); }
+	template <typename T> std::string binfmt2d_colmajor(const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode2DUnwrap()); }
 
 	template <typename T> std::string file1d         (const T &arg, const std::string &filename="") { return file(arg, filename, Mode1D      ()); }
 	template <typename T> std::string file2d         (const T &arg, const std::string &filename="") { return file(arg, filename, Mode2D      ()); }

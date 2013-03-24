@@ -2,6 +2,7 @@
 example-tuples
 example-uv
 example-interactive
+example-misc
 tests_v[34]
 *.error.txt
 *.o

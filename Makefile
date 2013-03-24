@@ -1,13 +1,15 @@
 CXXFLAGS+=-Wall -Wextra -I/usr/lib64/blitz/include -O0 -g
 LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 
-ALL_BINARIES=example-tuples example-uv example-interactive
+ALL_EXAMPLES=example-misc example-tuples example-uv example-interactive
 
-# FIXME - some require various libraries
-all: $(ALL_BINARIES)
+all: $(ALL_EXAMPLES)
 
 %.o: %.cc gnuplot-iostream.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+example-misc: example-misc.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 example-tuples: example-tuples.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
