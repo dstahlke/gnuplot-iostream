@@ -2,6 +2,7 @@ CXXFLAGS+=-Wall -Wextra -I/usr/lib64/blitz/include -O0 -g
 LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 
 ALL_EXAMPLES=example-misc example-tuples example-uv example-interactive
+TEST_BINARIES=test-noncopyable test-outputs
 
 all: $(ALL_EXAMPLES)
 
@@ -23,7 +24,11 @@ example-interactive: example-interactive.o
 test-asserts: test-assert-depth.error.txt test-assert-depth-colmajor.error.txt
 
 %.error.txt: %.cc gnuplot-iostream.h
+	# These are programs that are supposed to *not* compile.
+	# The "!" causes "make" to throw an error if the compile succeeds.
 	! $(CXX) $(CXXFLAGS) -c $< -o $<.o 2> $@
+
+test: $(TEST_BINARIES) test-asserts
 
 ######################
 # FIXME - remove all mentions of tests_v3 from makefile

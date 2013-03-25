@@ -25,7 +25,6 @@ THE SOFTWARE.
 /*
 	Before release:
 		Copyright notice in all files.
-		Port over legacy examples
 		Docs
 		Unit tests via makefile
 		Update README and create changelog
@@ -1075,11 +1074,11 @@ struct ModeSize   { static const bool is_text = 0; static const bool is_binfmt =
 struct ColunwrapNo  { };
 struct ColunwrapYes { };
 
-struct Mode1D { };
-struct Mode2D { };
-struct Mode1DUnwrap { };
-struct Mode2DUnwrap { };
-struct ModeAuto { };
+struct Mode1D       { static std::string class_name() { return "Mode1D"      ; } };
+struct Mode2D       { static std::string class_name() { return "Mode2D"      ; } };
+struct Mode1DUnwrap { static std::string class_name() { return "Mode1DUnwrap"; } };
+struct Mode2DUnwrap { static std::string class_name() { return "Mode2DUnwrap"; } };
+struct ModeAuto     { static std::string class_name() { return "ModeAuto"    ; } };
 
 template <typename T>
 size_t get_range_size(const T &arg) {

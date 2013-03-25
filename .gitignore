@@ -4,6 +4,7 @@ example-uv
 example-interactive
 example-misc
 tests_v[34]
+test-noncopyable
 *.error.txt
 *.o
 
