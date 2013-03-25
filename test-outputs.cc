@@ -1,7 +1,3 @@
-#define DO_ARMA 1
-#define DO_BLITZ 1
-//#define GNUPLOT_ENABLE_CXX11 1 //(__cplusplus >= 201103)
-
 // Include this several times to test delayed loading of armadillo/blitz support.
 #include "gnuplot-iostream.h"
 
@@ -14,13 +10,13 @@
 
 #include <boost/array.hpp>
 
-#if DO_ARMA
+#if USE_ARMA
 #include <armadillo>
 #endif
 
 #include "gnuplot-iostream.h"
 
-#if DO_BLITZ
+#if USE_BLITZ
 #include <blitz/array.h>
 #endif
 
@@ -140,7 +136,7 @@ int main() {
 	runtest("vvd,vvi,vvvi", std::make_pair(vvd, std::make_pair(vvi, vvvi)));
 	runtest("vvvp", vvvp);
 
-#if DO_ARMA
+#if USE_ARMA
 	arma::vec armacol(NX);
 	arma::mat armamat(NX, NY);
 
@@ -155,7 +151,7 @@ int main() {
 	runtest("armamat", armamat);
 #endif
 
-#if DO_BLITZ
+#if USE_BLITZ
 	blitz::Array<double, 1> blitz1d(NX);
 	blitz::Array<double, 2> blitz2d(NX, NY);
 	{
@@ -193,7 +189,7 @@ int main() {
 	runtest("v_st", v_st);
 #endif
 
-#if DO_BLITZ
+#if USE_BLITZ
 	runtest("blitz2d cols", blitz2d);
 #endif
 }

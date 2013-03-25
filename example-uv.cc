@@ -20,9 +20,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-// FIXME - disable by default
-#define USE_ARMA 1
-#define USE_BLITZ 1
 #define USE_CXX (__cplusplus >= 201103)
 
 #include <vector>

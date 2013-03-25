@@ -1,6 +1,10 @@
 CXXFLAGS+=-Wall -Wextra -I/usr/lib64/blitz/include -O0 -g
 LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 
+# This makes the examples and tests more complete, but only works if you have the corresponding
+# libraries installed.
+#CXXFLAGS+=--std=c++11 -DUSE_ARMA -DUSE_BLITZ
+
 ALL_EXAMPLES=example-misc example-tuples example-uv example-interactive
 TEST_BINARIES=test-noncopyable test-outputs
 
