@@ -26,7 +26,7 @@ THE SOFTWARE.
 	Before release:
 		Copyright notice in all files.
 		Docs
-		Unit tests via makefile
+		Put unittest files into git
 		Update README and create changelog
 		Test noncopyable containers
 		Test noncopyable iterators

@@ -29,6 +29,9 @@ test-asserts: test-assert-depth.error.txt test-assert-depth-colmajor.error.txt
 	! $(CXX) $(CXXFLAGS) -c $< -o $<.o 2> $@
 
 test: $(TEST_BINARIES) test-asserts
+	rm -f unittest-output/*
+	./test-outputs
+	diff -qr unittest-output unittest-output-good
 
 ######################
 # FIXME - remove all mentions of tests_v3 from makefile
@@ -43,7 +46,7 @@ tests_v4: tests_v4.o
 clean:
 	rm -f *.o
 	rm -f *.error.txt
-	rm -f $(ALL_BINARIES)
+	rm -f $(ALL_EXAMPLES) $(TEST_BINARIES)
 	# Windows compilation
 	rm -f *.exe *.obj
 	# files created by demo scripts

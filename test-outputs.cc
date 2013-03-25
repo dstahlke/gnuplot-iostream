@@ -28,28 +28,29 @@
 #include "gnuplot-iostream.h"
 
 using namespace gnuplotio;
+
 Gnuplot gp("cat");
+std::string basedir = "unittest-output";
+std::ostream *log_fh;
 
 template <typename T, typename ArrayMode>
 void foo(std::string header, const T &arg, ArrayMode) {
 	std::string modename = ArrayMode::class_name();
-	std::string fn_prefix = "unittest-output/"+header+"-"+modename;
-	std::cout << "ArrayMode=[" << modename << "]" << std::endl;
-	std::cout << "binaryFile=[" << gp.binaryFile(arg, fn_prefix+".bin", "record", ArrayMode()) << "]" << std::endl;
+	std::string fn_prefix = basedir+"/"+header+"-"+modename;
+	*log_fh << "* " << modename << " -> "
+		<< gp.binaryFile(arg, fn_prefix+".bin", "record", ArrayMode()) << std::endl;
 	gp.file(arg, fn_prefix+".txt", ArrayMode());
 }
 
 template <typename T>
 typename boost::enable_if_c<(ArrayTraits<T>::depth == 1)>::type
 bar(std::string header, const T &arg) {
-	foo(header, arg, ModeAuto());
 	foo(header, arg, Mode1D());
 }
 
 template <typename T>
 typename boost::enable_if_c<(ArrayTraits<T>::depth == 2)>::type
 bar(std::string header, const T &arg) {
-	foo(header, arg, ModeAuto());
 	foo(header, arg, Mode2D());
 	foo(header, arg, Mode1DUnwrap());
 }
@@ -57,20 +58,20 @@ bar(std::string header, const T &arg) {
 template <typename T>
 typename boost::enable_if_c<(ArrayTraits<T>::depth >= 3)>::type
 bar(std::string header, const T &arg) {
-	foo(header, arg, ModeAuto());
 	foo(header, arg, Mode2D());
 	foo(header, arg, Mode2DUnwrap());
 }
 
 template <typename T>
 void runtest(std::string header, const T &arg) {
-	std::cout << "--- " << header << " -------------------------------------" << std::endl;
-	std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
-	std::cout << "ModeAutoDecode=" << ModeAutoDecoder<T>::mode::class_name() << std::endl;
+	*log_fh << "--- " << header << " -------------------------------------" << std::endl;
+	*log_fh << "depth=" << ArrayTraits<T>::depth << std::endl;
+	*log_fh << "ModeAutoDecoder=" << ModeAutoDecoder<T>::mode::class_name() << std::endl;
 	bar(header, arg);
 }
 
 int main() {
+	log_fh = new std::ofstream((basedir+"/log.txt").c_str());
 	const int NX=3, NY=4, NZ=2;
 	std::vector<double> vd;
 	std::vector<int> vi;

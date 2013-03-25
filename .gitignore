@@ -5,6 +5,7 @@ example-interactive
 example-misc
 tests_v[34]
 test-noncopyable
+test-outputs
 *.error.txt
 *.o
 
