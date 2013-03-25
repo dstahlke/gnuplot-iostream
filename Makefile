@@ -33,16 +33,6 @@ test: $(TEST_BINARIES) test-asserts
 	./test-outputs
 	diff -qr unittest-output unittest-output-good
 
-######################
-# FIXME - remove all mentions of tests_v3 from makefile
-tests_v3: tests_v3.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
-
-tests_v4: tests_v4.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
-# FIXME - end of experimental stuff
-######################
-
 clean:
 	rm -f *.o
 	rm -f *.error.txt
