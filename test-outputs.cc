@@ -66,6 +66,7 @@ template <typename T>
 void runtest(std::string header, const T &arg) {
 	std::cout << "--- " << header << " -------------------------------------" << std::endl;
 	std::cout << "depth=" << ArrayTraits<T>::depth << std::endl;
+	std::cout << "ModeAutoDecode=" << ModeAutoDecoder<T>::mode::class_name() << std::endl;
 	bar(header, arg);
 }
 

@@ -1080,6 +1080,62 @@ struct Mode1DUnwrap { static std::string class_name() { return "Mode1DUnwrap"; }
 struct Mode2DUnwrap { static std::string class_name() { return "Mode2DUnwrap"; } };
 struct ModeAuto     { static std::string class_name() { return "ModeAuto"    ; } };
 
+/// {{{3 ModeAutoDecoder
+
+template <typename T, typename Enable=void>
+struct ModeAutoDecoder { };
+
+template <typename T>
+struct ModeAutoDecoder<T,
+	typename boost::enable_if_c<
+		(ArrayTraits<T>::depth == 1)
+	>::type>
+{
+	typedef Mode1D mode;
+};
+
+template <typename T>
+struct ModeAutoDecoder<T,
+	typename boost::enable_if_c<
+		(ArrayTraits<T>::depth == 2) &&
+		!ArrayTraits<T>::allow_colwrap
+	>::type>
+{
+	typedef Mode2D mode;
+};
+
+template <typename T>
+struct ModeAutoDecoder<T,
+	typename boost::enable_if_c<
+		(ArrayTraits<T>::depth == 2) &&
+		ArrayTraits<T>::allow_colwrap
+	>::type>
+{
+	typedef Mode1DUnwrap mode;
+};
+
+template <typename T>
+struct ModeAutoDecoder<T,
+	typename boost::enable_if_c<
+		(ArrayTraits<T>::depth > 2) &&
+		ArrayTraits<T>::allow_colwrap
+	>::type>
+{
+	typedef Mode2DUnwrap mode;
+};
+
+template <typename T>
+struct ModeAutoDecoder<T,
+	typename boost::enable_if_c<
+		(ArrayTraits<T>::depth > 2) &&
+		!ArrayTraits<T>::allow_colwrap
+	>::type>
+{
+	typedef Mode2D mode;
+};
+
+/// }}}3
+
 template <typename T>
 size_t get_range_size(const T &arg) {
 	// FIXME - not the fastest way.  Implement a size() method for range.
@@ -1226,52 +1282,8 @@ void generic_sender_level0(std::ostream &stream, const T &arg, Mode2DUnwrap, Pri
 }
 
 template <typename T, typename PrintMode>
-typename boost::enable_if_c<
-	(ArrayTraits<T>::depth == 1)
->::type
-generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
-	//send_array_nocolwrap<1>(stream, arg, PrintMode());
-	generic_sender_level0(stream, arg, Mode1D(), PrintMode());
-}
-
-template <typename T, typename PrintMode>
-typename boost::enable_if_c<
-	(ArrayTraits<T>::depth == 2) &&
-	!ArrayTraits<T>::allow_colwrap
->::type
-generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
-	//send_array_nocolwrap<2>(stream, arg, PrintMode());
-	generic_sender_level0(stream, arg, Mode2D(), PrintMode());
-}
-
-template <typename T, typename PrintMode>
-typename boost::enable_if_c<
-	(ArrayTraits<T>::depth == 2) &&
-	ArrayTraits<T>::allow_colwrap
->::type
-generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
-	//send_array_colwrap<1>(stream, arg, PrintMode());
-	generic_sender_level0(stream, arg, Mode1DUnwrap(), PrintMode());
-}
-
-template <typename T, typename PrintMode>
-typename boost::enable_if_c<
-	(ArrayTraits<T>::depth > 2) &&
-	ArrayTraits<T>::allow_colwrap
->::type
-generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
-	//send_array_colwrap<2>(stream, arg, PrintMode());
-	generic_sender_level0(stream, arg, Mode2DUnwrap(), PrintMode());
-}
-
-template <typename T, typename PrintMode>
-typename boost::enable_if_c<
-	(ArrayTraits<T>::depth > 2) &&
-	!ArrayTraits<T>::allow_colwrap
->::type
-generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
-	//send_array_nocolwrap<2>(stream, arg, PrintMode());
-	generic_sender_level0(stream, arg, Mode2D(), PrintMode());
+void generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
+	generic_sender_level0(stream, arg, ModeAutoDecoder<T>::mode, PrintMode());
 }
 
 /// }}}2
