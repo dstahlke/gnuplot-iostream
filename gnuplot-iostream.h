@@ -28,6 +28,7 @@ THE SOFTWARE.
 		Docs
 		Put unittest files into git
 		Update README and create changelog
+		Update examples on webpage
 
 	TODO later:
 		What version of boost is currently required?

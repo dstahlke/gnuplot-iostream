@@ -22,8 +22,9 @@ THE SOFTWARE.
 
 #include <fstream>
 #include <vector>
-#include <math.h>
 #include <map>
+#include <limits>
+#include <cmath>
 #include <cstdio>
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
@@ -31,6 +32,10 @@ THE SOFTWARE.
 // Warn about use of deprecated functions.
 #define GNUPLOT_DEPRECATE_WARN
 #include "gnuplot-iostream.h"
+
+#ifndef M_PI
+#	define M_PI 3.14159265358979323846
+#endif
 
 // http://stackoverflow.com/a/1658429
 #ifdef _WIN32
@@ -242,6 +247,39 @@ void demo_animation() {
 	}
 }
 
+void demo_NaN() {
+	// Demo of NaN (not-a-number) usage.  Plot a circle that has half the coordinates replaced
+	// by NaN values.
+
+	double nan = std::numeric_limits<double>::quiet_NaN();
+
+	// -persist option makes the window not disappear when your program exits
+	Gnuplot gp("gnuplot -persist");
+
+	std::vector<std::pair<double, double> > xy_pts;
+	for(int i=0; i<100; i++) {
+		double theta = double(i)/100*2*M_PI;
+		if((i/5)%2) {
+			xy_pts.push_back(std::make_pair(
+					std::cos(theta), std::sin(theta)
+				));
+		} else {
+			xy_pts.push_back(std::make_pair(nan, nan));
+		}
+	}
+
+	// You need to tell gnuplot that 'nan' should be treated as missing data (otherwise it just
+	// gives an error).
+	gp << "set datafile missing 'nan'\n";
+	gp << "plot '-' with linespoints\n";
+	gp.send1d(xy_pts);
+
+	// This works too.  But the strange thing is that with text data the segments are joined by
+	// lines and with binary data the segments are not joined.
+	//gp << "plot '-' binary" << gp.binFmt1d(xy_pts, "record") << "with linespoints\n";
+	//gp.sendBinary1d(xy_pts);
+}
+
 int main(int argc, char **argv) {
 	std::map<std::string, void (*)(void)> demos;
 
@@ -254,6 +292,7 @@ int main(int argc, char **argv) {
 	demos["script_external_text"]   = demo_external_text;
 	demos["script_external_binary"] = demo_external_binary;
 	demos["animation"]              = demo_animation;
+	demos["nan"]                    = demo_NaN;
 
 	if(argc < 2) {
 		printf("Usage: %s <demo_name>\n", argv[0]);
