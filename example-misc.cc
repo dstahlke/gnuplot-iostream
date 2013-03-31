@@ -183,7 +183,7 @@ void demo_inline_binary() {
 
 	std::vector<boost::tuple<double, double, double> > vecs = get_trefoil();
 
-	gp << "splot '-' binary" << gp.binfmt1d(vecs, "record") << "with lines notitle\n";
+	gp << "splot '-' binary" << gp.binFmt1d(vecs, "record") << "with lines notitle\n";
 	gp.sendBinary1d(vecs);
 
 	std::cout << "Now run 'gnuplot -persist inline_binary.gnu'.\n";
@@ -210,7 +210,7 @@ void demo_external_binary() {
 	std::vector<boost::tuple<double, double, double> > vecs = get_trefoil();
 
 	std::cout << "Creating external_binary.dat" << std::endl;
-	gp << "splot" << gp.binRec1d(vecs, "external_binary.dat")
+	gp << "splot" << gp.binFile1d(vecs, "record", "external_binary.dat")
 		<< "with lines notitle\n";
 
 	std::cout << "Now run 'gnuplot -persist external_binary.gnu'.\n";
@@ -233,7 +233,7 @@ void demo_animation() {
 			pts[i] = sin(alpha*8.0 + theta) * exp(-alpha*alpha/2.0);
 		}
 
-		gp << "plot '-' binary" << gp.binfmt1d(pts, "array") << "with lines notitle\n";
+		gp << "plot '-' binary" << gp.binFmt1d(pts, "array") << "with lines notitle\n";
 		gp.sendBinary1d(pts);
 		gp.flush();
 

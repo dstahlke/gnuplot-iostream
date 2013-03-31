@@ -28,7 +28,6 @@ THE SOFTWARE.
 		Docs
 		Put unittest files into git
 		Update README and create changelog
-		Consistency regarding arr_or_rec as arg or in function name
 
 	TODO later:
 		What version of boost is currently required?
@@ -1398,6 +1397,7 @@ public:
 		std::ostringstream tmp;
 		tmp << " format='";
 		generic_sender_level0(tmp, arg, ArrayMode(), ModeBinfmt());
+		// FIXME - validate arr_or_rec parameter
 		tmp << "' " << arr_or_rec << "=(";
 		generic_sender_level0(tmp, arg, ArrayMode(), ModeSize());
 		tmp << ")";
@@ -1466,19 +1466,15 @@ public:
 	template <typename T> std::string file1d_colmajor(const T &arg, const std::string &filename="") { return file(arg, filename, Mode1DUnwrap()); }
 	template <typename T> std::string file2d_colmajor(const T &arg, const std::string &filename="") { return file(arg, filename, Mode2DUnwrap()); }
 
-	template <typename T> std::string binfmt1d         (const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode1D      ()); }
-	template <typename T> std::string binfmt2d         (const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode2D      ()); }
-	template <typename T> std::string binfmt1d_colmajor(const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode1DUnwrap()); }
-	template <typename T> std::string binfmt2d_colmajor(const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode2DUnwrap()); }
+	template <typename T> std::string binFmt1d         (const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode1D      ()); }
+	template <typename T> std::string binFmt2d         (const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode2D      ()); }
+	template <typename T> std::string binFmt1d_colmajor(const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode1DUnwrap()); }
+	template <typename T> std::string binFmt2d_colmajor(const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode2DUnwrap()); }
 
-	template <typename T> std::string binArr1d         (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode1D      ()); }
-	template <typename T> std::string binArr2d         (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode2D      ()); }
-	template <typename T> std::string binArr1d_colmajor(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode1DUnwrap()); }
-	template <typename T> std::string binArr2d_colmajor(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode2DUnwrap()); }
-	template <typename T> std::string binRec1d         (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode1D      ()); }
-	template <typename T> std::string binRec2d         (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode2D      ()); }
-	template <typename T> std::string binRec1d_colmajor(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode1DUnwrap()); }
-	template <typename T> std::string binRec2d_colmajor(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode2DUnwrap()); }
+	template <typename T> std::string binFile1d         (const T &arg, const std::string &arr_or_rec, const std::string &filename="") { return binaryFile(arg, filename, arr_or_rec,  Mode1D      ()); }
+	template <typename T> std::string binFile2d         (const T &arg, const std::string &arr_or_rec, const std::string &filename="") { return binaryFile(arg, filename, arr_or_rec,  Mode2D      ()); }
+	template <typename T> std::string binFile1d_colmajor(const T &arg, const std::string &arr_or_rec, const std::string &filename="") { return binaryFile(arg, filename, arr_or_rec,  Mode1DUnwrap()); }
+	template <typename T> std::string binFile2d_colmajor(const T &arg, const std::string &arr_or_rec, const std::string &filename="") { return binaryFile(arg, filename, arr_or_rec,  Mode2DUnwrap()); }
 
 #ifdef GNUPLOT_ENABLE_FEEDBACK
 public:

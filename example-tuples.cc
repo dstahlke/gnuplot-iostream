@@ -124,7 +124,7 @@ int main() {
 		for(int i=0; i<num_steps; i++) {
 			pts.push_back(std::make_pair(std::make_pair(get_x(i, shift), get_y(i, shift)), get_z(i, shift)));
 		}
-		gp << gp.binRec1d(pts) << "with lines title 'vector of nested std::pair'";
+		gp << gp.binFile1d(pts, "record") << "with lines title 'vector of nested std::pair'";
 	}
 
 	gp << ", ";
@@ -136,7 +136,7 @@ int main() {
 		for(int i=0; i<num_steps; i++) {
 			pts.push_back(std::make_pair(std::complex<double>(get_x(i, shift), get_y(i, shift)), get_z(i, shift)));
 		}
-		gp << gp.binRec1d(pts) << "with lines title 'vector of pair of cplx and double'";
+		gp << gp.binFile1d(pts, "record") << "with lines title 'vector of pair of cplx and double'";
 	}
 
 	gp << ", ";
@@ -147,7 +147,7 @@ int main() {
 		for(int i=0; i<num_steps; i++) {
 			pts.push_back(boost::make_tuple(get_x(i, shift), get_y(i, shift), get_z(i, shift)));
 		}
-		gp << gp.binRec1d(pts) << "with lines title 'vector of boost::tuple'";
+		gp << gp.binFile1d(pts, "record") << "with lines title 'vector of boost::tuple'";
 	}
 
 	gp << ", ";
@@ -160,7 +160,7 @@ int main() {
 			y_pts.push_back(get_y(i, shift));
 			z_pts.push_back(get_z(i, shift));
 		}
-		gp << gp.binRec1d(boost::make_tuple(x_pts, y_pts, z_pts)) << "with lines title 'boost::tuple of vector'";
+		gp << gp.binFile1d(boost::make_tuple(x_pts, y_pts, z_pts), "record") << "with lines title 'boost::tuple of vector'";
 	}
 
 	gp << ", ";
@@ -173,7 +173,7 @@ int main() {
 			pts[i][1] = get_y(i, shift);
 			pts[i][2] = get_z(i, shift);
 		}
-		gp << gp.binRec1d(pts) << "with lines title 'vector of boost::array'";
+		gp << gp.binFile1d(pts, "record") << "with lines title 'vector of boost::array'";
 	}
 
 	gp << ", ";
@@ -186,7 +186,7 @@ int main() {
 			pts[i].push_back(get_y(i, shift));
 			pts[i].push_back(get_z(i, shift));
 		}
-		gp << gp.binRec1d(pts) << "with lines title 'vector of vector'";
+		gp << gp.binFile1d(pts, "record") << "with lines title 'vector of vector'";
 	}
 
 	gp << ", ";
@@ -199,7 +199,7 @@ int main() {
 			pts[1].push_back(get_y(i, shift));
 			pts[2].push_back(get_z(i, shift));
 		}
-		gp << gp.binRec1d_colmajor(pts) << "with lines title 'vector of vector (colmajor)'";
+		gp << gp.binFile1d_colmajor(pts, "record") << "with lines title 'vector of vector (colmajor)'";
 	}
 
 	gp << ", ";
@@ -210,7 +210,7 @@ int main() {
 		for(int i=0; i<num_steps; i++) {
 			pts.push_back(MyTriple<double>(get_x(i, shift), get_y(i, shift), get_z(i, shift)));
 		}
-		gp << gp.binRec1d(pts) << "with lines title 'vector of MyTriple'";
+		gp << gp.binFile1d(pts, "record") << "with lines title 'vector of MyTriple'";
 	}
 
 	gp << ", ";
@@ -224,7 +224,7 @@ int main() {
 			pts[i][1] = get_y(i, shift);
 			pts[i][2] = get_z(i, shift);
 		}
-		gp << gp.binRec1d(pts) << "with lines title 'double[N][3]'";
+		gp << gp.binFile1d(pts, "record") << "with lines title 'double[N][3]'";
 	}
 
 	gp << ", ";
@@ -238,7 +238,7 @@ int main() {
 			pts[1][i] = get_y(i, shift);
 			pts[2][i] = get_z(i, shift);
 		}
-		gp << gp.binRec1d_colmajor(pts) << "with lines title 'double[N][3] (colmajor)'";
+		gp << gp.binFile1d_colmajor(pts, "record") << "with lines title 'double[N][3] (colmajor)'";
 	}
 
 	gp << ", ";
@@ -254,7 +254,7 @@ int main() {
 			y_pts[i] = get_y(i, shift);
 			z_pts[i] = get_z(i, shift);
 		}
-		gp << gp.binRec1d(boost::make_tuple(x_pts, y_pts, z_pts)) <<
+		gp << gp.binFile1d(boost::make_tuple(x_pts, y_pts, z_pts), "record") <<
 			"with lines title 'boost::tuple of double[N]'";
 	}
 
@@ -269,7 +269,7 @@ int main() {
 			pts(i, 1) = get_y(i, shift);
 			pts(i, 2) = get_z(i, shift);
 		}
-		gp << gp.binRec1d(pts) << "with lines title 'armadillo N*3'";
+		gp << gp.binFile1d(pts, "record") << "with lines title 'armadillo N*3'";
 	}
 
 	gp << ", ";
@@ -282,7 +282,7 @@ int main() {
 			pts(1, i) = get_y(i, shift);
 			pts(2, i) = get_z(i, shift);
 		}
-		gp << gp.binRec1d_colmajor(pts) << "with lines title 'armadillo 3*N (colmajor)'";
+		gp << gp.binFile1d_colmajor(pts, "record") << "with lines title 'armadillo 3*N (colmajor)'";
 	}
 
 	gp << ", ";
@@ -297,7 +297,7 @@ int main() {
 			y_pts(i) = get_y(i, shift);
 			z_pts(i) = get_z(i, shift);
 		}
-		gp << gp.binRec1d(boost::make_tuple(x_pts, y_pts, z_pts))
+		gp << gp.binFile1d(boost::make_tuple(x_pts, y_pts, z_pts), "record")
 			<< "with lines title 'boost tuple of arma Row,Col,Col'";
 	}
 
@@ -313,7 +313,7 @@ int main() {
 				get_z(i, shift)
 			);
 		}
-		gp << gp.binRec1d(pts) << "with lines title 'armadillo field of boost tuple'";
+		gp << gp.binFile1d(pts, "record") << "with lines title 'armadillo field of boost tuple'";
 	}
 #endif
 
@@ -328,7 +328,7 @@ int main() {
 			pts(i)[1] = get_y(i, shift);
 			pts(i)[2] = get_z(i, shift);
 		}
-		gp << gp.binRec1d(pts) << "with lines title 'blitz::Array<blitz::TinyVector<double, 3>, 1>'";
+		gp << gp.binFile1d(pts, "record") << "with lines title 'blitz::Array<blitz::TinyVector<double, 3>, 1>'";
 	}
 
 	gp << ", ";
@@ -341,7 +341,7 @@ int main() {
 			pts(i, 1) = get_y(i, shift);
 			pts(i, 2) = get_z(i, shift);
 		}
-		gp << gp.binRec1d(pts) << "with lines title 'blitz<double>(N*3)'";
+		gp << gp.binFile1d(pts, "record") << "with lines title 'blitz<double>(N*3)'";
 	}
 
 	gp << ", ";
@@ -354,7 +354,7 @@ int main() {
 			pts(1, i) = get_y(i, shift);
 			pts(2, i) = get_z(i, shift);
 		}
-		gp << gp.binRec1d_colmajor(pts) << "with lines title 'blitz<double>(3*N) (colmajor)'";
+		gp << gp.binFile1d_colmajor(pts, "record") << "with lines title 'blitz<double>(3*N) (colmajor)'";
 	}
 #endif
 
@@ -368,7 +368,7 @@ int main() {
 
 		auto pts = boost::irange(0, num_steps) | boost::adaptors::transformed(f);
 
-		gp << gp.binRec1d(pts) << "with lines title 'boost transform to tuple'";
+		gp << gp.binFile1d(pts, "record") << "with lines title 'boost transform to tuple'";
 	}
 
 	gp << ", ";
@@ -377,11 +377,11 @@ int main() {
 	{
 		auto steps = boost::irange(0, num_steps);
 
-		gp << gp.binRec1d(boost::make_tuple(
+		gp << gp.binFile1d(boost::make_tuple(
 				steps | boost::adaptors::transformed(boost::bind(get_x, _1, shift)),
 				steps | boost::adaptors::transformed(boost::bind(get_y, _1, shift)),
 				steps | boost::adaptors::transformed(boost::bind(get_z, _1, shift))
-			)) << "with lines title 'tuple of boost transform'";
+			), "record") << "with lines title 'tuple of boost transform'";
 	}
 
 	gp << ", ";
@@ -399,7 +399,7 @@ int main() {
 		}
 		// Note: std::make_tuple doesn't work here since it makes the arrays decay to pointers
 		// (and so they forget their sizes).
-		gp << gp.binRec1d(std::tie(x_pts, y_pts, z_pts)) <<
+		gp << gp.binFile1d(std::tie(x_pts, y_pts, z_pts), "record") <<
 			"with lines title 'std::tie of double[N]'";
 	}
 #endif

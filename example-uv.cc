@@ -130,7 +130,7 @@ int main() {
 				pts[u][v] = get_point(u, v+shift);
 			}
 		}
-		gp << gp.binRec2d(pts) << "with lines title 'vec of vec of MyTriple'";
+		gp << gp.binFile2d(pts, "record") << "with lines title 'vec of vec of MyTriple'";
 	}
 
 	gp << ", ";
@@ -148,7 +148,7 @@ int main() {
 				);
 			}
 		}
-		gp << gp.binRec2d(pts) << "with lines title 'vec of vec of boost::tuple'";
+		gp << gp.binFile2d(pts, "record") << "with lines title 'vec of vec of boost::tuple'";
 	}
 
 	gp << ", ";
@@ -168,7 +168,7 @@ int main() {
 				z_pts[u][v] = get_point(u, v+shift).z;
 			}
 		}
-		gp << gp.binRec2d(boost::make_tuple(x_pts, y_pts, z_pts)) <<
+		gp << gp.binFile2d(boost::make_tuple(x_pts, y_pts, z_pts), "record") <<
 			"with lines title 'boost::tuple of vec of vec'";
 	}
 
@@ -192,7 +192,7 @@ int main() {
 			}
 			pts.push_back(boost::make_tuple(x_pts, y_pts, z_pts));
 		}
-		gp << gp.binRec2d(pts) <<
+		gp << gp.binFile2d(pts, "record") <<
 			"with lines title 'vec of boost::tuple of vec'";
 	}
 
@@ -212,7 +212,7 @@ int main() {
 					get_point(u, v+shift).z);
 			}
 		}
-		gp << gp.binRec2d(std::make_pair(x_pts, yz_pts)) <<
+		gp << gp.binFile2d(std::make_pair(x_pts, yz_pts), "record") <<
 			"with lines title 'pair(vec(vec(dbl)),vec(vec(pair(dbl,dbl))))'";
 	}
 
@@ -230,7 +230,7 @@ int main() {
 				pts[u][v][2] = get_point(u, v+shift).z;
 			}
 		}
-		gp << gp.binRec2d(pts) << "with lines title 'vec vec vec'";
+		gp << gp.binFile2d(pts, "record") << "with lines title 'vec vec vec'";
 	}
 
 	gp << ", ";
@@ -247,7 +247,7 @@ int main() {
 				pts[2][u][v] = get_point(u, v+shift).z;
 			}
 		}
-		gp << gp.binRec2d_colmajor(pts) << "with lines title 'vec vec vec (colmajor)'";
+		gp << gp.binFile2d_colmajor(pts, "record") << "with lines title 'vec vec vec (colmajor)'";
 	}
 
 #if USE_ARMA
@@ -278,7 +278,7 @@ int main() {
 				pts(2, u, v) = get_point(u, v+shift).z;
 			}
 		}
-		gp << gp.binRec2d_colmajor(pts) << "with lines title 'arma::cube(3*U*V) (colmajor)'";
+		gp << gp.binFile2d_colmajor(pts, "record") << "with lines title 'arma::cube(3*U*V) (colmajor)'";
 	}
 
 	gp << ", ";
@@ -291,7 +291,7 @@ int main() {
 				pts(u, v) = get_point(u, v+shift);
 			}
 		}
-		gp << gp.binRec2d(pts) << "with lines title 'arma::field'";
+		gp << gp.binFile2d(pts, "record") << "with lines title 'arma::field'";
 	}
 #endif
 
@@ -308,7 +308,7 @@ int main() {
 				pts(u, v)[2] = get_point(u, v+shift).z;
 			}
 		}
-		gp << gp.binRec2d(pts) << "with lines title 'blitz::Array<blitz::TinyVector<double, 3>, 2>'";
+		gp << gp.binFile2d(pts, "record") << "with lines title 'blitz::Array<blitz::TinyVector<double, 3>, 2>'";
 	}
 
 	gp << ", ";
@@ -323,7 +323,7 @@ int main() {
 				pts(u, v, 2) = get_point(u, v+shift).z;
 			}
 		}
-		gp << gp.binRec2d(pts) << "with lines title 'blitz<double>(U*V*3)'";
+		gp << gp.binFile2d(pts, "record") << "with lines title 'blitz<double>(U*V*3)'";
 	}
 
 	gp << ", ";
@@ -338,7 +338,7 @@ int main() {
 				pts(2, u, v) = get_point(u, v+shift).z;
 			}
 		}
-		gp << gp.binRec2d_colmajor(pts) << "with lines title 'blitz<double>(3*U*V) (colmajor)'";
+		gp << gp.binFile2d_colmajor(pts, "record") << "with lines title 'blitz<double>(3*U*V) (colmajor)'";
 	}
 #endif
 
