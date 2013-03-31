@@ -1281,7 +1281,7 @@ void generic_sender_level0(std::ostream &stream, const T &arg, Mode2DUnwrap, Pri
 
 template <typename T, typename PrintMode>
 void generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
-	generic_sender_level0(stream, arg, ModeAutoDecoder<T>::mode, PrintMode());
+	generic_sender_level0(stream, arg, typename ModeAutoDecoder<T>::mode(), PrintMode());
 }
 
 /// }}}2
