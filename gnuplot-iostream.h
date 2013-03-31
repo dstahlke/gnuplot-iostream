@@ -1397,7 +1397,7 @@ public:
 		std::ostringstream tmp;
 		tmp << " format='";
 		generic_sender_level0(tmp, arg, ArrayMode(), ModeBinfmt());
-		// FIXME - validate arr_or_rec parameter
+		assert((arr_or_rec == "array") || (arr_or_rec == "record"));
 		tmp << "' " << arr_or_rec << "=(";
 		generic_sender_level0(tmp, arg, ArrayMode(), ModeSize());
 		tmp << ")";
