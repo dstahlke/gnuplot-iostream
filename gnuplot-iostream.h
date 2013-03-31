@@ -28,8 +28,6 @@ THE SOFTWARE.
 		Docs
 		Put unittest files into git
 		Update README and create changelog
-		Test noncopyable containers
-		Test noncopyable iterators
 		Consistency regarding arr_or_rec as arg or in function name
 
 	TODO later:
@@ -1332,6 +1330,7 @@ public:
 
 private:
 	// noncopyable
+	// FIXME - would be better to use PIMPL so that Gnuplot could be copyable.
 	Gnuplot(const Gnuplot &);
 	const Gnuplot& operator=(const Gnuplot &);
 
@@ -1406,7 +1405,6 @@ public:
 		return tmp.str();
 	}
 
-public:
 	// NOTE: empty filename makes temporary file
 	template <typename T, typename ArrayMode>
 	std::string file(const T &arg, std::string filename, ArrayMode) {
@@ -1435,10 +1433,6 @@ public:
 		return cmdline.str();
 	}
 
-	// FIXME - maybe this is better than the below
-	//template <typename ArrayMode, typename T>
-	//Gnuplot &foobar(const T &arg) { return send(arg, ArrayMode()); }
-
 	template <typename T> Gnuplot GNUPLOT_DEPRECATE("use send1d or send2d")
 		&send(const T &arg) { return send(arg, ModeAuto()); }
 
@@ -1457,7 +1451,6 @@ public:
 		binaryFile(const T &arg, const std::string &filename="", const std::string &arr_or_rec="array")
 		{ return binaryFile(arg, filename, arr_or_rec,  ModeAuto()); }
 
-	// FIXME - there's gotta be a better way...
 	template <typename T> Gnuplot &send1d         (const T &arg) { return send(arg, Mode1D      ()); }
 	template <typename T> Gnuplot &send2d         (const T &arg) { return send(arg, Mode2D      ()); }
 	template <typename T> Gnuplot &send1d_colmajor(const T &arg) { return send(arg, Mode1DUnwrap()); }
@@ -1468,15 +1461,15 @@ public:
 	template <typename T> Gnuplot &sendBinary1d_colmajor(const T &arg) { return sendBinary(arg, Mode1DUnwrap()); }
 	template <typename T> Gnuplot &sendBinary2d_colmajor(const T &arg) { return sendBinary(arg, Mode2DUnwrap()); }
 
-	template <typename T> std::string binfmt1d         (const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode1D      ()); }
-	template <typename T> std::string binfmt2d         (const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode2D      ()); }
-	template <typename T> std::string binfmt1d_colmajor(const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode1DUnwrap()); }
-	template <typename T> std::string binfmt2d_colmajor(const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode2DUnwrap()); }
-
 	template <typename T> std::string file1d         (const T &arg, const std::string &filename="") { return file(arg, filename, Mode1D      ()); }
 	template <typename T> std::string file2d         (const T &arg, const std::string &filename="") { return file(arg, filename, Mode2D      ()); }
 	template <typename T> std::string file1d_colmajor(const T &arg, const std::string &filename="") { return file(arg, filename, Mode1DUnwrap()); }
 	template <typename T> std::string file2d_colmajor(const T &arg, const std::string &filename="") { return file(arg, filename, Mode2DUnwrap()); }
+
+	template <typename T> std::string binfmt1d         (const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode1D      ()); }
+	template <typename T> std::string binfmt2d         (const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode2D      ()); }
+	template <typename T> std::string binfmt1d_colmajor(const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode1DUnwrap()); }
+	template <typename T> std::string binfmt2d_colmajor(const T &arg, const std::string &arr_or_rec) { return binfmt(arg, arr_or_rec,  Mode2DUnwrap()); }
 
 	template <typename T> std::string binArr1d         (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode1D      ()); }
 	template <typename T> std::string binArr2d         (const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "array",  Mode2D      ()); }
@@ -1488,6 +1481,7 @@ public:
 	template <typename T> std::string binRec2d_colmajor(const T &arg, const std::string &filename="") { return binaryFile(arg, filename, "record", Mode2DUnwrap()); }
 
 #ifdef GNUPLOT_ENABLE_FEEDBACK
+public:
 	// Input variables are set to the mouse position and button.  If the gnuplot
 	// window is closed, button -1 is returned.  The msg parameter is the prompt
 	// that is printed to the console.
@@ -1511,6 +1505,7 @@ public:
 		}
 	}
 
+private:
 	void allocFeedback() {
 		if(!feedback) {
 #ifdef GNUPLOT_ENABLE_PTY
