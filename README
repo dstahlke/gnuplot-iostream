@@ -1,23 +1,29 @@
-Direct questions or suggestions to dan@stahlke.org.
+**********************************************************
+*** Direct questions or suggestions to dan@stahlke.org ***
+**********************************************************
+
 
 Gnuplot-Iostream Interface
 ==========================
 
-This interface allows gnuplot to be controlled from C++ and is designed to be
-the lowest hanging fruit. In other words, if you know how gnuplot works it
-should only take 30 seconds to learn this library. Basically it is just an
-iostream pipe to gnuplot with some extra functions for pushing data arrays and
-getting mouse clicks. Data sources include STL containers (eg. vector or map)
-and one or two dimensional Blitz++ arrays (of scalars or TinyVectors). Support
-for other data sources should be easy to add.
+This interface allows gnuplot to be controlled from C++ and is designed to
+be the lowest hanging fruit. In other words, if you know how gnuplot works
+it should only take 30 seconds to learn this library. Basically it is just
+an iostream pipe to gnuplot with some extra functions for pushing data
+arrays and getting mouse clicks. Data sources include STL containers (eg.
+vector), Blitz++, and armadillo.  You can use nested data types like
+std::vector<std::vector<std::pair<double, double>>> (as well as even more
+exotic types).  Support for custom data types is possible.
 
-Basically there are two functions defined: send() sends arrays of data values
-(it is overloaded to do the right thing based upon what type of variable you
-pass) and getMouse() gets the position of a mouse click. Everything else is
-accomplished by sending commands manually to gnuplot via the iostream
-interface. This is in my opinion the easiest way to do it if you are already
-comfortable with using gnuplot. If you would like a more abstract interface
+This is a low level interface, and usage involves manually sending commands
+to gnuplot using the "<<" operator (so you need to know gnuplot syntax).
+This is in my opinion the easiest way to do it if you are already
+comfortable with using gnuplot.  If you would like a more abstract interface
 check out the gnuplot-cpp library (http://code.google.com/p/gnuplot-cpp).
+
+Documentation is available at http://www.stahlke.org/dan/gnuplot-iostream
+but also you can look at the example programs (starting with
+"example-misc.cc").
 
 
 Getting the source code
@@ -29,11 +35,10 @@ git clone git://gitorious.org/gnuplot-iostream/gnuplot-iostream.git
 Usage
 =====
 
-See the examples source code for usage information.
-To build examples just type 'make'.
-To build examples that require optional libraries, type 'make blitz' and 'make interactive'.
-
-Of course, look at 'examples*.cc' to see how to use this library!
+See the examples source code for a quick intro.  Documentation is at
+the project home page http://www.stahlke.org/dan/gnuplot-iostream .
+To build examples just type 'make'.  There is an option you can edit in the
+Makefile to enable extra demos that require optional libraries.
 
 
 Note for Windows users

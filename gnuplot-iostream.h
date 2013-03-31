@@ -27,7 +27,6 @@ THE SOFTWARE.
 		Copyright notice in all files.
 		Docs
 		Put unittest files into git
-		Update README and create changelog
 		Update examples on webpage
 
 	TODO later:
@@ -40,6 +39,7 @@ THE SOFTWARE.
 		Docs for new send methods
 		Table of compiler support (with C++11)
 		Note about using tie to avoid copying containers
+		Note about Windows.
 
 	ChangeLog:
 		send() for iterators has been removed
