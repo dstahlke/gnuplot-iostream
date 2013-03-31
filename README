@@ -18,7 +18,7 @@ exotic types).  Support for custom data types is possible.
 This is a low level interface, and usage involves manually sending commands
 to gnuplot using the "<<" operator (so you need to know gnuplot syntax).
 This is in my opinion the easiest way to do it if you are already
-comfortable with using gnuplot.  If you would like a more abstract interface
+comfortable with using gnuplot.  If you would like a more high level interface
 check out the gnuplot-cpp library (http://code.google.com/p/gnuplot-cpp).
 
 Documentation is available at http://www.stahlke.org/dan/gnuplot-iostream
