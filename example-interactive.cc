@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 #include <boost/tuple/tuple.hpp>
 
+// This must be defined before the first time that "gnuplot-iostream.h" is included.
 #define GNUPLOT_ENABLE_PTY
 #include "gnuplot-iostream.h"
 
