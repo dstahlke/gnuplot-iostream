@@ -25,21 +25,16 @@ THE SOFTWARE.
 /*
 	Before release:
 		Copyright notice in all files.
-		Docs
 		Put unittest files into git
 		Update examples on webpage
+		Windows: make window persist, wait for keypress before exit
+		Windows: unit tests via batch file
 
 	TODO later:
 		What version of boost is currently required?
 		On windows, "-persist" doesn't work properly.  Using pgnuplot helps, but temporary
 		  files disappear before gnuplot tries to read them.
 		Callbacks via 'bind' function (needs pty reader thread)
-
-	Docs:
-		Docs for new send methods
-		Table of compiler support (with C++11)
-		Note about using tie to avoid copying containers
-		Note about Windows.
 
 	ChangeLog:
 		send() for iterators has been removed

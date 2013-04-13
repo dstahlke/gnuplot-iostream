@@ -1,0 +1,13 @@
+Updates happen via git with no regular release schedule or versioning.
+However, I will bump up the GNUPLOT_IOSTREAM_VERSION macro whenever
+something major changes (but note that prior to version 2 this macro is not
+defined).
+
+Version 2:
+	* Major rewrite.
+	* Nearly every combination of container and tuple types is supported.
+	* Now you should use send1d() and send2d() rather than just send().
+
+Version 1:
+	* Original version.
+	* The GNUPLOT_IOSTREAM_VERSION macro is not defined prior to version 2.
