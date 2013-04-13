@@ -7,6 +7,8 @@ Version 2:
 	* Major rewrite.
 	* Nearly every combination of container and tuple types is supported.
 	* Now you should use send1d() and send2d() rather than just send().
+	* When the Gnuplot object is constructed with no arguments, an attempt is made to determine
+	  the best gnuplot command and arguments for your operating system.
 
 Version 1:
 	* Original version.

@@ -14,7 +14,7 @@ public:
 };
 
 int main() {
-	Gnuplot gp("gnuplot -persist");
+	Gnuplot gp;
 	NonCopyable<double> nc_x, nc_y;
 	for(int i=0; i<100; i++) {
 		nc_x.push_back(-i);

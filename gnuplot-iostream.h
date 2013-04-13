@@ -124,6 +124,18 @@ THE SOFTWARE.
 #	define GNUPLOT_FILENO fileno
 #endif
 
+#ifndef GNUPLOT_DEFAULT_COMMAND
+#ifdef _WIN32
+// "pgnuplot" is considered deprecated according to the Internet.  However, it seems to be much
+// faster.  Also, unlike "gnuplot", it doesn't echo commands to stdout.
+//#	define GNUPLOT_DEFAULT_COMMAND "pgnuplot -persist"
+#	define GNUPLOT_DEFAULT_COMMAND "gnuplot -persist"
+//#	define GNUPLOT_DEFAULT_COMMAND "gnuplot -persist > NUL"
+#else
+#	define GNUPLOT_DEFAULT_COMMAND "gnuplot -persist"
+#endif
+#endif
+
 /// }}}1
 
 namespace gnuplotio {
@@ -1289,7 +1301,7 @@ class Gnuplot : public boost::iostreams::stream<
 	boost::iostreams::file_descriptor_sink>
 {
 public:
-	explicit Gnuplot(const std::string &cmd = "gnuplot") :
+	explicit Gnuplot(const std::string &cmd = GNUPLOT_DEFAULT_COMMAND) :
 		boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
 			GNUPLOT_FILENO(pout = GNUPLOT_POPEN(cmd.c_str(), "w")),
 #if BOOST_VERSION >= 104400

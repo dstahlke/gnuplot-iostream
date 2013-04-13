@@ -51,8 +51,7 @@ THE SOFTWARE.
 #endif
 
 void demo_basic() {
-	// -persist option makes the window not disappear when your program exits
-	Gnuplot gp("gnuplot -persist");
+	Gnuplot gp;
 	// For debugging or manual editing of commands:
 	//Gnuplot gp(fopen("plot.gnu"));
 	// or
@@ -77,8 +76,7 @@ void demo_basic() {
 }
 
 void demo_tmpfile() {
-	// -persist option makes the window not disappear when your program exits
-	Gnuplot gp("gnuplot -persist");
+	Gnuplot gp;
 
 	std::vector<std::pair<double, double> > xy_pts_A;
 	for(double x=-2; x<2; x+=0.01) {
@@ -138,8 +136,7 @@ void demo_png() {
 }
 
 void demo_vectors() {
-	// -persist option makes the window not disappear when your program exits
-	Gnuplot gp("gnuplot -persist");
+	Gnuplot gp;
 
 	std::vector<boost::tuple<double, double, double, double> > vecs;
 	for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
@@ -250,11 +247,11 @@ void demo_animation() {
 void demo_NaN() {
 	// Demo of NaN (not-a-number) usage.  Plot a circle that has half the coordinates replaced
 	// by NaN values.
+	// FIXME - doesn't work on Windows.
 
 	double nan = std::numeric_limits<double>::quiet_NaN();
 
-	// -persist option makes the window not disappear when your program exits
-	Gnuplot gp("gnuplot -persist");
+	Gnuplot gp;
 
 	std::vector<std::pair<double, double> > xy_pts;
 	for(int i=0; i<100; i++) {

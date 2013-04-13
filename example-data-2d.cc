@@ -106,8 +106,7 @@ MyTriple<double> get_point(int u, int v) {
 }
 
 int main() {
-	// -persist option makes the window not disappear when your program exits
-	Gnuplot gp("gnuplot -persist");
+	Gnuplot gp;
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
