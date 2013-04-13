@@ -6,7 +6,7 @@ LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 #CXXFLAGS+=--std=c++11 -DUSE_ARMA=1 -DUSE_BLITZ=1
 CXXFLAGS+=-DUSE_ARMA=0 -DUSE_BLITZ=0
 
-ALL_EXAMPLES=example-misc example-tuples example-uv example-interactive
+ALL_EXAMPLES=example-misc example-data-1d example-data-2d example-interactive
 TEST_BINARIES=test-noncopyable test-outputs
 
 all: $(ALL_EXAMPLES)
@@ -17,10 +17,10 @@ all: $(ALL_EXAMPLES)
 example-misc: example-misc.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-example-tuples: example-tuples.o
+example-data-1d: example-data-1d.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-example-uv: example-uv.o
+example-data-2d: example-data-2d.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 example-interactive: example-interactive.o
