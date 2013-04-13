@@ -427,8 +427,10 @@ int main() {
 	//std::cout << shift << std::endl;
 	assert(std::fabs(shift - 1.0) < 1e-12);
 
-#ifdef _WIN32 // FIXME
-	std::cout << "Press any key to exit." << std::endl;
+#ifdef _WIN32
+	// For Windows, prompt for a keystroke before exit so that gnuplot has time to read the
+	// temporary files.  It seems this is not needed on Linux.
+	std::cout << "Press enter to exit." << std::endl;
 	std::cin.get();
 #endif
 
