@@ -29,6 +29,7 @@ THE SOFTWARE.
 		Update examples on webpage
 		Windows: make window persist, wait for keypress before exit
 		Windows: unit tests via batch file
+		Put link to wiki docs on my homepage
 
 	TODO later:
 		What version of boost is currently required?
@@ -1377,8 +1378,7 @@ public:
 		// FIXME - boost's close method calls close() on the file descriptor, but
 		// we need to use pclose instead.  For now, just skip calling boost's close
 		// and use flush just in case.
-		*this << std::flush;
-		fflush(pout);
+		do_flush();
 		// Wish boost had a pclose method...
 		//close();
 
@@ -1401,6 +1401,11 @@ public:
 	}
 
 private:
+	void do_flush() {
+		*this << std::flush;
+		fflush(pout);
+	}
+
 	std::string make_tmpfile() {
 #ifdef GNUPLOT_USE_TMPFILE
 		boost::shared_ptr<GnuplotTmpfile> tmp_file(new GnuplotTmpfile());
@@ -1418,12 +1423,14 @@ public:
 	Gnuplot &send(const T &arg, ArrayMode) {
 		generic_sender_level0(*this, arg, ArrayMode(), ModeText());
 		*this << "e" << std::endl; // gnuplot's "end of array" token
+		do_flush(); // FIXME - failed attempt to make Windows write without having to close the stream
 		return *this;
 	}
 
 	template <typename T, typename ArrayMode>
 	Gnuplot &sendBinary(const T &arg, ArrayMode) {
 		generic_sender_level0(*this, arg, ArrayMode(), ModeBinary());
+		do_flush(); // FIXME - failed attempt to make Windows write without having to close the stream
 		return *this;
 	}
 

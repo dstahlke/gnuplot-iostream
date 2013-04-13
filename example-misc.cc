@@ -121,6 +121,14 @@ void demo_tmpfile() {
 	// and won't be deleted.
 	gp << "plot" << gp.file1d(xy_pts_A) << "with lines title 'cubic',"
 		<< gp.file1d(xy_pts_B) << "with points title 'circle'\n";
+	// FIXME - on Windows, only works with std::endl rather than "\n"
+
+#ifdef _WIN32
+	// For Windows, prompt for a keystroke before the Gnuplot object goes out of scope so that
+	// gnuplot has time to read the temporary files.  It seems this is not needed on Linux.
+	std::cout << "Press enter to exit." << std::endl;
+	std::cin.get();
+#endif
 }
 
 void demo_png() {
@@ -335,9 +343,4 @@ int main(int argc, char **argv) {
 	}
 
 	demos[arg]();
-
-#ifdef _WIN32 // FIXME - too late, must be before destruction of gp
-	std::cout << "Press any key to exit." << std::endl;
-	std::cin.get();
-#endif
 }
