@@ -73,11 +73,16 @@ void demo_basic() {
 	gp << "plot '-' with lines title 'cubic', '-' with points title 'circle'\n";
 	gp.send1d(xy_pts_A);
 	gp.send1d(xy_pts_B);
+
+#ifdef _WIN32
+	// For Windows, prompt for a keystroke before the Gnuplot object goes out of scope so that
+	// the gnuplot window doesn't get closed.
+	std::cout << "Press enter to exit." << std::endl;
+	std::cin.get();
+#endif
 }
 
 void demo_binary() {
-	// FIXME - doesn't work in Windows
-
 	Gnuplot gp;
 
 	std::vector<std::pair<double, double> > xy_pts_A;
@@ -97,6 +102,13 @@ void demo_binary() {
 		<< "'-' binary" << gp.binFmt1d(xy_pts_B, "record") << "with points title 'circle'\n";
 	gp.sendBinary1d(xy_pts_A);
 	gp.sendBinary1d(xy_pts_B);
+
+#ifdef _WIN32
+	// For Windows, prompt for a keystroke before the Gnuplot object goes out of scope so that
+	// the gnuplot window doesn't get closed.
+	std::cout << "Press enter to exit." << std::endl;
+	std::cin.get();
+#endif
 }
 
 void demo_tmpfile() {
@@ -119,9 +131,11 @@ void demo_tmpfile() {
 	// gp.clearTmpfiles() or when gp goes out of scope.  If you pass a filename
 	// (i.e. "gp.file1d(pts, 'mydata.dat')"), then the named file will be created
 	// and won't be deleted.
+	//
+	// Note: you need std::endl here in order to flush the buffer.  The send1d()
+	// function flushes automatically, but we're not using that here.
 	gp << "plot" << gp.file1d(xy_pts_A) << "with lines title 'cubic',"
-		<< gp.file1d(xy_pts_B) << "with points title 'circle'\n";
-	// FIXME - on Windows, only works with std::endl rather than "\n"
+		<< gp.file1d(xy_pts_B) << "with points title 'circle'" << std::endl;
 
 #ifdef _WIN32
 	// For Windows, prompt for a keystroke before the Gnuplot object goes out of scope so that

@@ -27,11 +27,14 @@ THE SOFTWARE.
 		Copyright notice in all files.
 		Put unittest files into git
 		Update examples on webpage
-		Windows: make window persist, wait for keypress before exit
-		Windows: unit tests via batch file
-		Windows: flush doesn't work, but std::endl does
 		Change binFmt syntax
 		Put link to wiki docs on my homepage
+
+	Windows:
+		make window persist, wait for keypress before exit
+		unit tests via batch file
+		flush doesn't work, but std::endl does
+		need to toggle between text and binary modes for "\n"?
 
 	TODO later:
 		What version of boost is currently required?
@@ -131,11 +134,12 @@ THE SOFTWARE.
 #ifndef GNUPLOT_DEFAULT_COMMAND
 #ifdef _WIN32
 // FIXME - what is best?
-// "pgnuplot" is considered deprecated according to the Internet.  However, it seems to be much
-// faster.  Also, unlike "gnuplot", it doesn't echo commands to stdout.
-#	define GNUPLOT_DEFAULT_COMMAND "pgnuplot -persist"
-//#	define GNUPLOT_DEFAULT_COMMAND "gnuplot -persist"
-//#	define GNUPLOT_DEFAULT_COMMAND "gnuplot -persist > NUL"
+// "pgnuplot" is considered deprecated according to the Internet.  It may be faster.  It
+// doesn't seem to handle binary data though.
+//#	define GNUPLOT_DEFAULT_COMMAND "pgnuplot -persist"
+// On Windows, gnuplot echos commands to stderr.  So we forward its stderr to the bit bucket.
+// Unfortunately, this means you will miss out on legitimate error messages.
+#	define GNUPLOT_DEFAULT_COMMAND "gnuplot -persist 2> NUL"
 #else
 #	define GNUPLOT_DEFAULT_COMMAND "gnuplot -persist"
 #endif
