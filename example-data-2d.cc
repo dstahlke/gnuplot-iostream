@@ -32,11 +32,11 @@ THE SOFTWARE.
 #include <boost/range/irange.hpp>
 #include <boost/bind.hpp>
 
-#if USE_ARMA
+#ifdef USE_ARMA
 #include <armadillo>
 #endif
 
-#if USE_BLITZ
+#ifdef USE_BLITZ
 #include <blitz/array.h>
 #endif
 
@@ -111,7 +111,14 @@ int main() {
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
-	int num_examples = 7 + USE_BLITZ*3 + USE_ARMA*3;
+	int num_examples = 7;
+#ifdef USE_ARMA
+	num_examples += 3;
+#endif
+#ifdef USE_BLITZ
+	num_examples += 3;
+#endif
+
 	int num_v_each = 50 / num_examples + 1;
 
 	num_v_total = (num_v_each-1) * num_examples + 1;
@@ -119,6 +126,12 @@ int main() {
 
 	gp << "set zrange [-1:1]\n";
 	gp << "set hidden3d nooffset\n";
+
+	// I use temporary files rather than stdin because the syntax ends up being easier when
+	// plotting several datasets.  With the stdin method you have to give the full plot
+	// command, then all the data.  But I would rather give the portion of the plot command for
+	// the first dataset, then give the data, then the command for the second dataset, then the
+	// data, etc.
 
 	gp << "splot ";
 
@@ -250,7 +263,7 @@ int main() {
 		gp << gp.binFile2d_colmajor(pts, "record") << "with lines title 'vec vec vec (colmajor)'";
 	}
 
-#if USE_ARMA
+#ifdef USE_ARMA
 	gp << ", ";
 	shift += num_v_each-1;
 
@@ -295,7 +308,7 @@ int main() {
 	}
 #endif
 
-#if USE_BLITZ
+#ifdef USE_BLITZ
 	gp << ", ";
 	shift += num_v_each-1;
 

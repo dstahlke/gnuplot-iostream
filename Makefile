@@ -4,7 +4,6 @@ LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 # This makes the examples and tests more complete, but only works if you have the corresponding
 # libraries installed.
 #CXXFLAGS+=--std=c++11 -DUSE_ARMA=1 -DUSE_BLITZ=1
-CXXFLAGS+=-DUSE_ARMA=0 -DUSE_BLITZ=0
 
 ALL_EXAMPLES=example-misc example-data-1d example-data-2d example-interactive
 TEST_BINARIES=test-noncopyable test-outputs

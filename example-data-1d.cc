@@ -20,7 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#define USE_CXX (__cplusplus >= 201103)
+#if (__cplusplus >= 201103)
+#define USE_CXX
+#endif
 
 #include <vector>
 #include <complex>
@@ -32,11 +34,11 @@ THE SOFTWARE.
 #include <boost/range/irange.hpp>
 #include <boost/bind.hpp>
 
-#if USE_ARMA
+#ifdef USE_ARMA
 #include <armadillo>
 #endif
 
-#if USE_BLITZ
+#ifdef USE_BLITZ
 #include <blitz/array.h>
 #endif
 
@@ -112,10 +114,26 @@ int main() {
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
-	int num_examples = 11 + 4*USE_ARMA + 3*USE_BLITZ + 3*USE_CXX;
+	int num_examples = 11;
+#ifdef USE_ARMA
+	num_examples += 4;
+#endif
+#ifdef USE_BLITZ
+	num_examples += 3;
+#endif
+#ifdef USE_CXX
+	num_examples += 3;
+#endif
+
 	double shift = 0;
 
 	gp << "set zrange [-1:1]\n";
+
+	// I use temporary files rather than stdin because the syntax ends up being easier when
+	// plotting several datasets.  With the stdin method you have to give the full plot
+	// command, then all the data.  But I would rather give the portion of the plot command for
+	// the first dataset, then give the data, then the command for the second dataset, then the
+	// data, etc.
 
 	gp << "splot ";
 
@@ -258,7 +276,7 @@ int main() {
 			"with lines title 'boost::tuple of double[N]'";
 	}
 
-#if USE_ARMA
+#ifdef USE_ARMA
 	gp << ", ";
 	shift += 1.0/num_examples;
 
@@ -317,7 +335,7 @@ int main() {
 	}
 #endif
 
-#if USE_BLITZ
+#ifdef USE_BLITZ
 	gp << ", ";
 	shift += 1.0/num_examples;
 
@@ -358,7 +376,7 @@ int main() {
 	}
 #endif
 
-#if USE_CXX
+#ifdef USE_CXX
 	gp << ", ";
 	shift += 1.0/num_examples;
 
@@ -409,6 +427,11 @@ int main() {
 	shift += 1.0/num_examples;
 	//std::cout << shift << std::endl;
 	assert(std::fabs(shift - 1.0) < 1e-12);
+
+#ifdef _WIN32 // FIXME
+	std::cout << "Press any key to exit." << std::endl;
+	std::cin.get();
+#endif
 
 	return 0;
 }
