@@ -33,7 +33,6 @@ THE SOFTWARE.
 	Windows:
 		make window persist, wait for keypress before exit
 		unit tests via batch file
-		flush doesn't work, but std::endl does
 		need to toggle between text and binary modes for "\n"?
 
 	TODO later:
