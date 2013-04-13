@@ -1316,9 +1316,14 @@ private:
 		std::string cmd = in.empty() ? get_default_cmd() : in;
 		assert(!cmd.empty());
 		if(cmd[0] == '>') {
-			return fopen(cmd.c_str()+1, "w");
+			std::string fn = cmd.substr(1);
+			FILE *ret = fopen(fn.c_str(), "w");
+			if(!ret) throw(std::ios_base::failure("cannot open file "+fn));
+			return ret;
 		} else {
-			return GNUPLOT_POPEN(cmd.c_str(), "w");
+			FILE *ret = GNUPLOT_POPEN(cmd.c_str(), "w");
+			if(!ret) throw(std::ios_base::failure("cannot open pipe "+cmd));
+			return ret;
 		}
 	}
 
