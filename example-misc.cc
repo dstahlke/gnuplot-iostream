@@ -75,6 +75,30 @@ void demo_basic() {
 	gp.send1d(xy_pts_B);
 }
 
+void demo_binary() {
+	// FIXME - doesn't work in Windows
+
+	Gnuplot gp;
+
+	std::vector<std::pair<double, double> > xy_pts_A;
+	for(double x=-2; x<2; x+=0.01) {
+		double y = x*x*x;
+		xy_pts_A.push_back(std::make_pair(x, y));
+	}
+
+	std::vector<std::pair<double, double> > xy_pts_B;
+	for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
+		double theta = alpha*2.0*3.14159;
+		xy_pts_B.push_back(std::make_pair(cos(theta), sin(theta)));
+	}
+
+	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
+	gp << "plot '-' binary" << gp.binFmt1d(xy_pts_A, "record") << "with lines title 'cubic',"
+		<< "'-' binary" << gp.binFmt1d(xy_pts_B, "record") << "with points title 'circle'\n";
+	gp.sendBinary1d(xy_pts_A);
+	gp.sendBinary1d(xy_pts_B);
+}
+
 void demo_tmpfile() {
 	Gnuplot gp;
 
@@ -219,6 +243,8 @@ void demo_external_binary() {
 }
 
 void demo_animation() {
+	// FIXME - doesn't work in Windows
+
 	Gnuplot gp;
 
 	std::cout << "Press Ctrl-C to quit (closing gnuplot window doesn't quit)." << std::endl;
@@ -281,6 +307,7 @@ int main(int argc, char **argv) {
 	std::map<std::string, void (*)(void)> demos;
 
 	demos["basic"]                  = demo_basic;
+	demos["binary"]                 = demo_binary;
 	demos["tmpfile"]                = demo_tmpfile;
 	demos["png"]                    = demo_png;
 	demos["vectors"]                = demo_vectors;
@@ -308,4 +335,9 @@ int main(int argc, char **argv) {
 	}
 
 	demos[arg]();
+
+#ifdef _WIN32 // FIXME - too late, must be before destruction of gp
+	std::cout << "Press any key to exit." << std::endl;
+	std::cin.get();
+#endif
 }

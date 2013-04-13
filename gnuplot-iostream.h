@@ -69,6 +69,7 @@ THE SOFTWARE.
 #include <iomanip>
 #include <vector>
 #include <complex>
+#include <cstdlib>
 #if GNUPLOT_ENABLE_CXX11
 #	include <tuple>
 #endif
@@ -126,10 +127,11 @@ THE SOFTWARE.
 
 #ifndef GNUPLOT_DEFAULT_COMMAND
 #ifdef _WIN32
+// FIXME - what is best?
 // "pgnuplot" is considered deprecated according to the Internet.  However, it seems to be much
 // faster.  Also, unlike "gnuplot", it doesn't echo commands to stdout.
-//#	define GNUPLOT_DEFAULT_COMMAND "pgnuplot -persist"
-#	define GNUPLOT_DEFAULT_COMMAND "gnuplot -persist"
+#	define GNUPLOT_DEFAULT_COMMAND "pgnuplot -persist"
+//#	define GNUPLOT_DEFAULT_COMMAND "gnuplot -persist"
 //#	define GNUPLOT_DEFAULT_COMMAND "gnuplot -persist > NUL"
 #else
 #	define GNUPLOT_DEFAULT_COMMAND "gnuplot -persist"
@@ -1300,10 +1302,30 @@ void generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMo
 class Gnuplot : public boost::iostreams::stream<
 	boost::iostreams::file_descriptor_sink>
 {
+private:
+	static std::string get_default_cmd() {
+		char *from_env = std::getenv("GNUPLOT_IOSTREAM_CMD");
+		if(from_env && from_env[0]) {
+			return from_env;
+		} else {
+			return GNUPLOT_DEFAULT_COMMAND;
+		}
+	}
+
+	static FILE *open_cmdline(const std::string &in) {
+		std::string cmd = in.empty() ? get_default_cmd() : in;
+		assert(!cmd.empty());
+		if(cmd[0] == '>') {
+			return fopen(cmd.c_str()+1, "w");
+		} else {
+			return GNUPLOT_POPEN(cmd.c_str(), "w");
+		}
+	}
+
 public:
-	explicit Gnuplot(const std::string &cmd = GNUPLOT_DEFAULT_COMMAND) :
+	explicit Gnuplot(const std::string &cmd="") :
 		boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
-			GNUPLOT_FILENO(pout = GNUPLOT_POPEN(cmd.c_str(), "w")),
+			GNUPLOT_FILENO(pout = open_cmdline(cmd)),
 #if BOOST_VERSION >= 104400
 			boost::iostreams::never_close_handle
 #else
