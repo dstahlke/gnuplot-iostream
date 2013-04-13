@@ -29,6 +29,8 @@ THE SOFTWARE.
 		Update examples on webpage
 		Windows: make window persist, wait for keypress before exit
 		Windows: unit tests via batch file
+		Windows: flush doesn't work, but std::endl does
+		Change binFmt syntax
 		Put link to wiki docs on my homepage
 
 	TODO later:
