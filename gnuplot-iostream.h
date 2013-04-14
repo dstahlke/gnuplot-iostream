@@ -23,12 +23,6 @@ THE SOFTWARE.
 */
 
 /*
-	Before release:
-		Put link to wiki docs on my homepage
-		Windows:
-			final check of unit tests
-			test all demos
-
 	TODO later:
 		What version of boost is currently required?
 		Callbacks via 'bind' function (needs pty reader thread)

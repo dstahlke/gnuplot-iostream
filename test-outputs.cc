@@ -108,7 +108,7 @@ int main() {
 	for(int x=0; x<NX; x++) {
 		vd.push_back(x+7.5);
 		vi.push_back(x+7);
-		vf.push_back(x+7.2);
+		vf.push_back(x+7.2F);
 		v_bt.push_back(boost::make_tuple(x+0.123, 100+x, 200+x));
 #if GNUPLOT_ENABLE_CXX11
 		v_st.push_back(std::make_tuple(x+0.123, 100+x, 200+x));

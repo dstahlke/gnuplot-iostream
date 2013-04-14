@@ -268,7 +268,7 @@ void demo_animation() {
 	// the terminal window on the task bar and close it from there.  Other than
 	// that, it seems to work.
 	std::cout << "Sorry, the animation demo doesn't work in Windows." << std::endl;
-	//return;
+	return;
 #endif
 
 	Gnuplot gp;
