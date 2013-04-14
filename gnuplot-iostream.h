@@ -25,7 +25,6 @@ THE SOFTWARE.
 /*
 	Before release:
 		Put link to wiki docs on my homepage
-		test-asserts needs updated: compile fails for wrong reason
 		Windows:
 			final check of unit tests
 			test all demos

@@ -59,6 +59,7 @@ test-asserts: test-assert-depth.error.txt test-assert-depth-colmajor.error.txt
 	# These are programs that are supposed to *not* compile.
 	# The "!" causes "make" to throw an error if the compile succeeds.
 	! $(CXX) $(CXXFLAGS) -c $< -o $<.o 2> $@
+	grep -q 'container not deep enough\|boost::STATIC_ASSERTION_FAILURE' $@
 
 test: $(TEST_BINARIES) test-asserts
 	rm -f unittest-output/*

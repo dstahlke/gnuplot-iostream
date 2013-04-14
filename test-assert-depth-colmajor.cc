@@ -29,11 +29,11 @@ int main() {
 
 	std::vector<std::vector<int> > pts;
 	// These should be okay.
-	gp << gp.binRec1d(pts);
-	gp << gp.binRec1d_colmajor(pts);
-	gp << gp.binRec2d(pts);
+	gp << gp.sendBinary1d(pts);
+	gp << gp.sendBinary1d_colmajor(pts);
+	gp << gp.sendBinary2d(pts);
 	// This should throw a compilation error.
-	gp << gp.binRec2d_colmajor(pts);
+	gp << gp.sendBinary2d_colmajor(pts);
 
 	return 0;
 }
