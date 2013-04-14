@@ -24,7 +24,6 @@ THE SOFTWARE.
 
 /*
 	Before release:
-		Copyright notice in all files.
 		Put unittest files into git
 		Update examples on webpage
 		Change binFmt syntax?

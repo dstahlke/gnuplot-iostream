@@ -1,9 +1,37 @@
-CXXFLAGS+=-Wall -Wextra -I/usr/lib64/blitz/include -O0 -g
+# Copyright (c) 2013 Daniel Stahlke
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+###########################################################################
+# This Makefile is just for the demos and unit tests.  You don't need to compile
+# anything to install this package.  Just copy the gnuplot-iostream.h header
+# somewhere and you are good to go.
+###########################################################################
+
+# The -O0 option speeds up the compile, which is good for testing.  This should
+# never be used for production since the generated code is extremely slow!
+CXXFLAGS+=-Wall -Wextra -O0 -g
 LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 
 # This makes the examples and tests more complete, but only works if you have the corresponding
 # libraries installed.
-#CXXFLAGS+=--std=c++11 -DUSE_ARMA=1 -DUSE_BLITZ=1
+CXXFLAGS+=--std=c++11 -DUSE_ARMA=1 -DUSE_BLITZ=1
 
 ALL_EXAMPLES=example-misc example-data-1d example-data-2d example-interactive
 TEST_BINARIES=test-noncopyable test-outputs
