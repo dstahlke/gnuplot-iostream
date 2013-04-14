@@ -1,0 +1,61 @@
+# Copyright (c) 2013 Daniel Stahlke
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+###########################################################################
+# This Makefile is just for my personal use, to test that things work in MSVC.
+# It has paths hard-coded for my system.  If you know how to make a proper,
+# portable build file for Windows, and want to do so, then email me.
+###########################################################################
+
+ALL_EXAMPLES=example-misc.exe example-data-1d.exe example-data-2d.exe
+TEST_BINARIES=test-noncopyable.exe test-outputs.exe
+
+# Even the Nov 2012 CTP won't compile with C++11 support.
+#EXTRA_FLAGS=/DGNUPLOT_ENABLE_CXX11 /DUSE_CXX
+
+#set PATH=C:\Program Files (x86)\Microsoft Visual C++ Compiler Nov 2012 CTP\bin;%PATH%
+#set INCLUDE=C:\Program Files (x86)\Microsoft Visual C++ Compiler Nov 2012 CTP\include;%INCLUDE%
+
+all: $(ALL_EXAMPLES)
+
+%.exe: %.cc gnuplot-iostream.h
+	cl /W3 /EHsc /D_CRT_SECURE_NO_WARNINGS $(EXTRA_FLAGS) /I "C:\Program Files\boost\boost_1_51" $< /link /LIBPATH:"e:\boost_libs_1_51\lib32"
+
+test-asserts: test-assert-depth.error.txt test-assert-depth-colmajor.error.txt
+
+%.error.txt: %.cc gnuplot-iostream.h
+	# These are programs that are supposed to *not* compile.
+	# The "!" causes "make" to throw an error if the compile succeeds.
+	! cl /W3 /EHsc /D_CRT_SECURE_NO_WARNINGS $(EXTRA_FLAGS) /I "C:\Program Files\boost\boost_1_51" $< /link /LIBPATH:"e:\boost_libs_1_51\lib32" > $@
+
+test: $(TEST_BINARIES) test-asserts
+	rm -f unittest-output/*
+	./test-outputs
+	dos2unix -q unittest-output/*.txt
+	diff -qr unittest-output unittest-output-good
+
+clean:
+	rm -f *.o
+	rm -f *.error.txt
+	rm -f $(ALL_EXAMPLES) $(TEST_BINARIES)
+	# Windows compilation
+	rm -f *.exe *.obj
+	# files created by demo scripts
+	rm -f my_graph_*.png external_binary.dat external_binary.gnu external_text.dat external_text.gnu inline_binary.gnu inline_text.gnu

@@ -24,15 +24,11 @@ THE SOFTWARE.
 
 /*
 	Before release:
-		Put unittest files into git
-		Update examples on webpage
-		Change binFmt syntax?
 		Put link to wiki docs on my homepage
-
-	Windows:
-		unit tests via batch file
-		need to toggle between text and binary modes for "\n"?
-		test all demos
+		test-asserts needs updated: compile fails for wrong reason
+		Windows:
+			final check of unit tests
+			test all demos
 
 	TODO later:
 		What version of boost is currently required?
