@@ -1,0 +1,4 @@
+--- pair{vf,stup{vd,pair{vi,vi},vf}} -------------------------------------
+depth=1
+ModeAutoDecoder=Mode1D
+* Mode1D ->  'unittest-output/pair{vf,stup{vd,pair{vi,vi},vf}}-Mode1D.bin' binary format='%float%double%int32%int32%float' record=(3) 

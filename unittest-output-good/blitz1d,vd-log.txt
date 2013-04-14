@@ -1,0 +1,4 @@
+--- blitz1d,vd -------------------------------------
+depth=1
+ModeAutoDecoder=Mode1D
+* Mode1D ->  'unittest-output/blitz1d,vd-Mode1D.bin' binary format='%double%double' record=(3) 

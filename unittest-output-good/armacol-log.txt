@@ -1,0 +1,4 @@
+--- armacol -------------------------------------
+depth=1
+ModeAutoDecoder=Mode1D
+* Mode1D ->  'unittest-output/armacol-Mode1D.bin' binary format='%double' record=(3) 

@@ -1,0 +1,5 @@
+--- armamat -------------------------------------
+depth=2
+ModeAutoDecoder=Mode2D
+* Mode2D ->  'unittest-output/armamat-Mode2D.bin' binary format='%double' record=(4,3) 
+* Mode1DUnwrap ->  'unittest-output/armamat-Mode1DUnwrap.bin' binary format='%double%double%double' record=(4) 

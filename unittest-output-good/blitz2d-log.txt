@@ -1,0 +1,5 @@
+--- blitz2d -------------------------------------
+depth=2
+ModeAutoDecoder=Mode2D
+* Mode2D ->  'unittest-output/blitz2d-Mode2D.bin' binary format='%double' record=(4,3) 
+* Mode1DUnwrap ->  'unittest-output/blitz2d-Mode1DUnwrap.bin' binary format='%double%double%double' record=(4) 

@@ -1,0 +1,4 @@
+--- v_st -------------------------------------
+depth=1
+ModeAutoDecoder=Mode1D
+* Mode1D ->  'unittest-output/v_st-Mode1D.bin' binary format='%double %int32 %int32' record=(3) 

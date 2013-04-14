@@ -1,0 +1,5 @@
+--- vvvi cols -------------------------------------
+depth=3
+ModeAutoDecoder=Mode2DUnwrap
+* Mode2D ->  'unittest-output/vvvi cols-Mode2D.bin' binary format='%int32%int32' record=(4,3) 
+* Mode2DUnwrap ->  'unittest-output/vvvi cols-Mode2DUnwrap.bin' binary format='%int32%int32%int32' record=(2,4) 

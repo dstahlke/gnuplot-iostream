@@ -1,0 +1,4 @@
+--- boost_tie{ai,bi} -------------------------------------
+depth=1
+ModeAutoDecoder=Mode1D
+* Mode1D ->  'unittest-output/boost_tie{ai,bi}-Mode1D.bin' binary format='%int32%int32' record=(3) 

@@ -1,0 +1,4 @@
+--- btup{vd,stup{vi,btup{vf},vi},vd} -------------------------------------
+depth=1
+ModeAutoDecoder=Mode1D
+* Mode1D ->  'unittest-output/btup{vd,stup{vi,btup{vf},vi},vd}-Mode1D.bin' binary format='%double%int32%float%int32%double' record=(3) 

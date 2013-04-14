@@ -1,0 +1,4 @@
+--- ai -------------------------------------
+depth=1
+ModeAutoDecoder=Mode1D
+* Mode1D ->  'unittest-output/ai-Mode1D.bin' binary format='%int32' record=(3) 

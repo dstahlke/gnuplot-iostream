@@ -1,0 +1,5 @@
+--- vvd,vvi -------------------------------------
+depth=2
+ModeAutoDecoder=Mode2D
+* Mode2D ->  'unittest-output/vvd,vvi-Mode2D.bin' binary format='%double%int32' record=(4,3) 
+* Mode1DUnwrap ->  'unittest-output/vvd,vvi-Mode1DUnwrap.bin' binary format='%double%int32%double%int32%double%int32' record=(4) 

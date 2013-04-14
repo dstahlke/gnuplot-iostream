@@ -47,49 +47,48 @@ THE SOFTWARE.
 
 using namespace gnuplotio;
 
-Gnuplot gp("cat");
+Gnuplot gp;
 std::string basedir = "unittest-output";
-std::ostream *log_fh;
 
 template <typename T, typename ArrayMode>
-void foo(std::string header, const T &arg, ArrayMode) {
+void test_given_mode(std::ostream &log_fh, std::string header, const T &arg, ArrayMode) {
 	std::string modename = ArrayMode::class_name();
 	std::string fn_prefix = basedir+"/"+header+"-"+modename;
-	*log_fh << "* " << modename << " -> "
+	log_fh << "* " << modename << " -> "
 		<< gp.binaryFile(arg, fn_prefix+".bin", "record", ArrayMode()) << std::endl;
 	gp.file(arg, fn_prefix+".txt", ArrayMode());
 }
 
 template <typename T>
 typename boost::enable_if_c<(ArrayTraits<T>::depth == 1)>::type
-bar(std::string header, const T &arg) {
-	foo(header, arg, Mode1D());
+runtest_inner(std::ostream &log_fh, std::string header, const T &arg) {
+	test_given_mode(log_fh, header, arg, Mode1D());
 }
 
 template <typename T>
 typename boost::enable_if_c<(ArrayTraits<T>::depth == 2)>::type
-bar(std::string header, const T &arg) {
-	foo(header, arg, Mode2D());
-	foo(header, arg, Mode1DUnwrap());
+runtest_inner(std::ostream &log_fh, std::string header, const T &arg) {
+	test_given_mode(log_fh, header, arg, Mode2D());
+	test_given_mode(log_fh, header, arg, Mode1DUnwrap());
 }
 
 template <typename T>
 typename boost::enable_if_c<(ArrayTraits<T>::depth >= 3)>::type
-bar(std::string header, const T &arg) {
-	foo(header, arg, Mode2D());
-	foo(header, arg, Mode2DUnwrap());
+runtest_inner(std::ostream &log_fh, std::string header, const T &arg) {
+	test_given_mode(log_fh, header, arg, Mode2D());
+	test_given_mode(log_fh, header, arg, Mode2DUnwrap());
 }
 
 template <typename T>
 void runtest(std::string header, const T &arg) {
-	*log_fh << "--- " << header << " -------------------------------------" << std::endl;
-	*log_fh << "depth=" << ArrayTraits<T>::depth << std::endl;
-	*log_fh << "ModeAutoDecoder=" << ModeAutoDecoder<T>::mode::class_name() << std::endl;
-	bar(header, arg);
+	std::ofstream log_fh((basedir+"/"+header+"-log.txt").c_str());
+	log_fh << "--- " << header << " -------------------------------------" << std::endl;
+	log_fh << "depth=" << ArrayTraits<T>::depth << std::endl;
+	log_fh << "ModeAutoDecoder=" << ModeAutoDecoder<T>::mode::class_name() << std::endl;
+	runtest_inner(log_fh, header, arg);
 }
 
 int main() {
-	log_fh = new std::ofstream((basedir+"/log.txt").c_str());
 	const int NX=3, NY=4, NZ=2;
 	std::vector<double> vd;
 	std::vector<int> vi;
