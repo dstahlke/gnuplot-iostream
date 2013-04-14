@@ -50,6 +50,15 @@ THE SOFTWARE.
 	}
 #endif
 
+void pause_if_needed() {
+#ifdef _WIN32
+	// For Windows, prompt for a keystroke before the Gnuplot object goes out of scope so that
+	// the gnuplot window doesn't get closed.
+	std::cout << "Press enter to exit." << std::endl;
+	std::cin.get();
+#endif
+}
+
 void demo_basic() {
 	Gnuplot gp;
 	// For debugging or manual editing of commands:
@@ -74,12 +83,7 @@ void demo_basic() {
 	gp.send1d(xy_pts_A);
 	gp.send1d(xy_pts_B);
 
-#ifdef _WIN32
-	// For Windows, prompt for a keystroke before the Gnuplot object goes out of scope so that
-	// the gnuplot window doesn't get closed.
-	std::cout << "Press enter to exit." << std::endl;
-	std::cin.get();
-#endif
+	pause_if_needed();
 }
 
 void demo_binary() {
@@ -103,12 +107,7 @@ void demo_binary() {
 	gp.sendBinary1d(xy_pts_A);
 	gp.sendBinary1d(xy_pts_B);
 
-#ifdef _WIN32
-	// For Windows, prompt for a keystroke before the Gnuplot object goes out of scope so that
-	// the gnuplot window doesn't get closed.
-	std::cout << "Press enter to exit." << std::endl;
-	std::cin.get();
-#endif
+	pause_if_needed();
 }
 
 void demo_tmpfile() {
@@ -137,12 +136,7 @@ void demo_tmpfile() {
 	gp << "plot" << gp.file1d(xy_pts_A) << "with lines title 'cubic',"
 		<< gp.file1d(xy_pts_B) << "with points title 'circle'" << std::endl;
 
-#ifdef _WIN32
-	// For Windows, prompt for a keystroke before the Gnuplot object goes out of scope so that
-	// gnuplot has time to read the temporary files.  It seems this is not needed on Linux.
-	std::cout << "Press enter to exit." << std::endl;
-	std::cin.get();
-#endif
+	pause_if_needed();
 }
 
 void demo_png() {
@@ -196,6 +190,8 @@ void demo_vectors() {
 	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
 	gp << "plot '-' with vectors title 'circle'\n";
 	gp.send1d(vecs);
+
+	pause_if_needed();
 }
 
 std::vector<boost::tuple<double, double, double> > get_trefoil() {
@@ -265,7 +261,15 @@ void demo_external_binary() {
 }
 
 void demo_animation() {
-	// FIXME - doesn't work in Windows
+#ifdef _WIN32
+	// No animation demo for Windows.  The problem is that every time the plot
+	// is updated, the gnuplot window grabs focus.  So you can't ever focus the
+	// terminal window to press Ctrl-C.  The only way to quit is to right-click
+	// the terminal window on the task bar and close it from there.  Other than
+	// that, it seems to work.
+	std::cout << "Sorry, the animation demo doesn't work in Windows." << std::endl;
+	//return;
+#endif
 
 	Gnuplot gp;
 
@@ -295,7 +299,6 @@ void demo_animation() {
 void demo_NaN() {
 	// Demo of NaN (not-a-number) usage.  Plot a circle that has half the coordinates replaced
 	// by NaN values.
-	// FIXME - doesn't work on Windows.
 
 	double nan = std::numeric_limits<double>::quiet_NaN();
 
@@ -323,6 +326,8 @@ void demo_NaN() {
 	// lines and with binary data the segments are not joined.
 	//gp << "plot '-' binary" << gp.binFmt1d(xy_pts, "record") << "with linespoints\n";
 	//gp.sendBinary1d(xy_pts);
+
+	pause_if_needed();
 }
 
 int main(int argc, char **argv) {

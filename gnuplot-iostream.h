@@ -27,22 +27,18 @@ THE SOFTWARE.
 		Copyright notice in all files.
 		Put unittest files into git
 		Update examples on webpage
-		Change binFmt syntax
+		Change binFmt syntax?
 		Put link to wiki docs on my homepage
 
 	Windows:
-		make window persist, wait for keypress before exit
 		unit tests via batch file
 		need to toggle between text and binary modes for "\n"?
+		test all demos
 
 	TODO later:
 		What version of boost is currently required?
-		On windows, "-persist" doesn't work properly.  Using pgnuplot helps, but temporary
-		  files disappear before gnuplot tries to read them.
 		Callbacks via 'bind' function (needs pty reader thread)
-
-	ChangeLog:
-		send() for iterators has been removed
+		Maybe temporary files read in a thread can replace PTY stuff.
 */
 
 #ifndef GNUPLOT_IOSTREAM_H
@@ -75,6 +71,8 @@ THE SOFTWARE.
 #include <vector>
 #include <complex>
 #include <cstdlib>
+#include <cmath>
+
 #if GNUPLOT_ENABLE_CXX11
 #	include <tuple>
 #endif
@@ -128,6 +126,14 @@ THE SOFTWARE.
 #	define GNUPLOT_PCLOSE pclose
 #	define GNUPLOT_POPEN  popen
 #	define GNUPLOT_FILENO fileno
+#endif
+
+#ifdef _WIN32
+#	define GNUPLOT_ISNAN _isnan
+#else
+// cppreference.com says std::isnan is only for C++11.  However, this seems to work on Linux
+// and I am assuming that if isnan exists in math.h then std::isnan exists in cmath.
+#	define GNUPLOT_ISNAN std::isnan
 #endif
 
 #ifndef GNUPLOT_DEFAULT_COMMAND
@@ -487,6 +493,14 @@ template<> struct BinarySender< int32_t> : public FlatBinarySender< int32_t> { }
 template<> struct BinarySender<uint32_t> : public FlatBinarySender<uint32_t> { };
 template<> struct BinarySender< int64_t> : public FlatBinarySender< int64_t> { };
 template<> struct BinarySender<uint64_t> : public FlatBinarySender<uint64_t> { };
+
+// Make sure that the same not-a-number string is printed on all platforms.
+template<> struct TextSender<float> {
+	static void send(std::ostream &stream, const double &v) {
+		if(GNUPLOT_ISNAN(v)) { stream << "nan"; } else { stream << v; } } };
+template<> struct TextSender<double> {
+	static void send(std::ostream &stream, const double &v) {
+		if(GNUPLOT_ISNAN(v)) { stream << "nan"; } else { stream << v; } } };
 
 /// }}}2
 

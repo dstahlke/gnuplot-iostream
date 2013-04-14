@@ -44,11 +44,8 @@ Makefile to enable extra demos that require optional libraries.
 Note for Windows users
 ======================
 
-You may need to supply the full path to the gnuplot executable, and in doing so you must take
-care to properly quote spaces and escape slashes.  For example, you should construct the
-Gnuplot object like so:
-
-	Gnuplot gp("\"C:\\my path\\gnuplot.exe\"");
+Windows support basically works, but there are some troubles.  For hints, see:
+	https://gitorious.org/gnuplot-iostream/pages/Portability
 
 Contributors
 ============
