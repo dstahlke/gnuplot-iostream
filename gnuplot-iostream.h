@@ -23,7 +23,7 @@ THE SOFTWARE.
 */
 
 /*
-	TODO later:
+	TODO:
 		What version of boost is currently required?
 		Callbacks via 'bind' function (needs pty reader thread)
 		Maybe temporary files read in a thread can replace PTY stuff.
@@ -126,7 +126,6 @@ THE SOFTWARE.
 
 #ifndef GNUPLOT_DEFAULT_COMMAND
 #ifdef _WIN32
-// FIXME - what is best?
 // "pgnuplot" is considered deprecated according to the Internet.  It may be faster.  It
 // doesn't seem to handle binary data though.
 //#	define GNUPLOT_DEFAULT_COMMAND "pgnuplot -persist"
@@ -197,13 +196,18 @@ template<typename T> struct has_attrib_n_cols {
 	typedef boost::mpl::bool_<value> type;
 };
 
-// FIXME - rename, since it matches other arma datatypes
-// FIXME - make more selective
+BOOST_MPL_HAS_XXX_TRAIT_DEF(elem_type);
+BOOST_MPL_HAS_XXX_TRAIT_DEF(pod_type);
+BOOST_MPL_HAS_XXX_TRAIT_DEF(col_iterator);
+
 template <typename T>
-struct is_armadillo_mat {
+struct is_armadillo_container {
 	typedef boost::mpl::and_<
 			typename has_attrib_n_rows<T>::type,
-			typename has_attrib_n_cols<T>::type
+			typename has_attrib_n_cols<T>::type,
+			typename has_elem_type<T>::type,
+			typename has_pod_type<T>::type,
+			typename has_col_iterator<T>::type
 		> type;
 };
 
@@ -811,7 +815,7 @@ template <typename T>
 class ArrayTraits<T, typename boost::enable_if<
 	boost::mpl::and_<
 		is_like_stl_container<T>,
-		boost::mpl::not_<is_armadillo_mat<T> >
+		boost::mpl::not_<is_armadillo_container<T> >
 	>
 >::type> : public ArrayTraitsDefaults<typename T::value_type> {
 public:
@@ -1372,7 +1376,6 @@ public:
 
 private:
 	// noncopyable
-	// FIXME - would be better to use PIMPL so that Gnuplot could be copyable.
 	Gnuplot(const Gnuplot &);
 	const Gnuplot& operator=(const Gnuplot &);
 
@@ -1430,14 +1433,14 @@ public:
 	Gnuplot &send(const T &arg, ArrayMode) {
 		generic_sender_level0(*this, arg, ArrayMode(), ModeText());
 		*this << "e" << std::endl; // gnuplot's "end of array" token
-		do_flush(); // FIXME - failed attempt to make Windows write without having to close the stream
+		do_flush(); // probably not really needed, but doesn't hurt
 		return *this;
 	}
 
 	template <typename T, typename ArrayMode>
 	Gnuplot &sendBinary(const T &arg, ArrayMode) {
 		generic_sender_level0(*this, arg, ArrayMode(), ModeBinary());
-		do_flush(); // FIXME - failed attempt to make Windows write without having to close the stream
+		do_flush(); // probably not really needed, but doesn't hurt
 		return *this;
 	}
 

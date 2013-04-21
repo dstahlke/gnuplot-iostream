@@ -62,6 +62,7 @@ test-asserts: test-assert-depth.error.txt test-assert-depth-colmajor.error.txt
 	grep -q 'container not deep enough\|boost::STATIC_ASSERTION_FAILURE' $@
 
 test: $(TEST_BINARIES) test-asserts
+	mkdir -p unittest-output
 	rm -f unittest-output/*
 	./test-outputs
 	diff -qr unittest-output unittest-output-good
