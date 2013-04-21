@@ -81,12 +81,10 @@ void demo_array() {
 	gp.send(arr);
 }
 
-// FIXME - this is only a template because I'm messing around with things.  Put it back to
-// double before release.
 namespace xyz {
 template <typename T>
-struct Triple {
-	Triple(
+struct MyTriple {
+	MyTriple(
 		T _x,
 		T _y,
 		T _z
@@ -95,11 +93,11 @@ struct Triple {
 	T x, y, z;
 };
 }
-using xyz::Triple;
+using xyz::MyTriple;
 
 namespace gnuplotio {
 	template<typename T>
-	struct BinfmtSender<Triple<T> > {
+	struct BinfmtSender<MyTriple<T> > {
 		static void send(std::ostream &stream) {
 			BinfmtSender<T>::send(stream);
 			BinfmtSender<T>::send(stream);
@@ -107,11 +105,18 @@ namespace gnuplotio {
 		}
 	};
 
-	// FIXME - should implement BinarySender, with note that default works in some cases.
+	template <typename T>
+	struct BinarySender<MyTriple<T> > {
+		static void send(std::ostream &stream, const MyTriple<T> &v) {
+			BinarySender<T>::send(stream, v.x);
+			BinarySender<T>::send(stream, v.y);
+			BinarySender<T>::send(stream, v.z);
+		}
+	};
 
 	template<typename T>
-	struct TextSender<Triple<T> > {
-		static void send(std::ostream &stream, const Triple<T> &v) {
+	struct TextSender<MyTriple<T> > {
+		static void send(std::ostream &stream, const MyTriple<T> &v) {
 			TextSender<T>::send(stream, v.x);
 			stream << " ";
 			TextSender<T>::send(stream, v.y);
@@ -125,20 +130,17 @@ void demo_tuple() {
 	// -persist option makes the window not disappear when your program exits
 	Gnuplot gp("gnuplot -persist");
 
-	std::vector<Triple<double> > pts;
+	std::vector<MyTriple<double> > pts;
 	for(double alpha=0; alpha<1; alpha+=1.0/120.0) {
 		double theta = alpha*2.0*3.14159;
 		double x = (2+cos(3*theta))*cos(2*theta);
 		double y = (2+cos(3*theta))*sin(2*theta);
 		double z = sin(3*theta);
-		pts.push_back(Triple<double> (x, y, z));
+		pts.push_back(MyTriple<double> (x, y, z));
 	}
 
-	// FIXME
-	gp << "splot '-' with lines notitle\n";
-	gp.send(pts);
-	//gp << "splot '-' binary" << gp.binfmt(pts, "record") << "with lines notitle\n";
-	//gp.sendBinary(pts);
+	gp << "splot '-' binary" << gp.binfmt(pts, "record") << "with lines notitle\n";
+	gp.sendBinary(pts);
 }
 
 void demo_tmpfile() {
