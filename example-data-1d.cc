@@ -234,7 +234,10 @@ int main() {
 	shift += 1.0/num_examples;
 
 	{
-		// FIXME - note warning against using C arrays
+		// Note: C style arrays seem to work, but are a bit fragile since they easily decay to
+		// pointers, causing them to forget their lengths.  It is highly recommended that you
+		// use boost::array or std::array instead.  These have the same size and efficiency of
+		// C style arrays, but act like STL containers.
 		double pts[num_steps][3];
 		for(int i=0; i<num_steps; i++) {
 			pts[i][0] = get_x(i, shift);
@@ -248,7 +251,10 @@ int main() {
 	shift += 1.0/num_examples;
 
 	{
-		// FIXME - note warning against using C arrays
+		// Note: C style arrays seem to work, but are a bit fragile since they easily decay to
+		// pointers, causing them to forget their lengths.  It is highly recommended that you
+		// use boost::array or std::array instead.  These have the same size and efficiency of
+		// C style arrays, but act like STL containers.
 		double pts[3][num_steps];
 		for(int i=0; i<num_steps; i++) {
 			pts[0][i] = get_x(i, shift);
@@ -262,7 +268,10 @@ int main() {
 	shift += 1.0/num_examples;
 
 	{
-		// FIXME - note warning against using C arrays
+		// Note: C style arrays seem to work, but are a bit fragile since they easily decay to
+		// pointers, causing them to forget their lengths.  It is highly recommended that you
+		// use boost::array or std::array instead.  These have the same size and efficiency of
+		// C style arrays, but act like STL containers.
 		double x_pts[num_steps];
 		double y_pts[num_steps];
 		double z_pts[num_steps];
@@ -405,7 +414,10 @@ int main() {
 	shift += 1.0/num_examples;
 
 	{
-		// FIXME - note warning against using C arrays
+		// Note: C style arrays seem to work, but are a bit fragile since they easily decay to
+		// pointers, causing them to forget their lengths.  It is highly recommended that you
+		// use boost::array or std::array instead.  These have the same size and efficiency of
+		// C style arrays, but act like STL containers.
 		double x_pts[num_steps];
 		double y_pts[num_steps];
 		double z_pts[num_steps];
@@ -414,8 +426,8 @@ int main() {
 			y_pts[i] = get_y(i, shift);
 			z_pts[i] = get_z(i, shift);
 		}
-		// Note: std::make_tuple doesn't work here since it makes the arrays decay to pointers
-		// (and so they forget their sizes).
+		// Note: std::make_tuple doesn't work here since it makes the arrays decay to pointers,
+		// and as a result they forget their lengths.
 		gp << gp.binFile1d(std::tie(x_pts, y_pts, z_pts), "record") <<
 			"with lines title 'std::tie of double[N]'";
 	}
