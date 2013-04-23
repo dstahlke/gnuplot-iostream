@@ -90,6 +90,8 @@ void runtest(std::string header, const T &arg) {
 
 int main() {
 	const int NX=3, NY=4, NZ=2;
+	// FIXME - why doesn't it compile with std::vector<char>?
+	std::vector<int8_t> vc; // should print as integers
 	std::vector<double> vd;
 	std::vector<int> vi;
 	std::vector<float> vf;
@@ -107,6 +109,7 @@ int main() {
 
 	for(int x=0; x<NX; x++) {
 		vd.push_back(x+7.5);
+		vc.push_back(x+7);
 		vi.push_back(x+7);
 		vf.push_back(x+7.2F);
 		v_bt.push_back(boost::make_tuple(x+0.123, 100+x, 200+x));
@@ -135,6 +138,7 @@ int main() {
 	}
 
 	runtest("vd,vi,bi", std::make_pair(vd, std::make_pair(vi, bi)));
+	runtest("vc", vc);
 	runtest("vvd", vvd);
 	runtest("vvd,vvi", std::make_pair(vvd, vvi));
 	runtest("ai", ai);

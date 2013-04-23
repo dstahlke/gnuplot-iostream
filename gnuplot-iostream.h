@@ -27,7 +27,6 @@ THE SOFTWARE.
 		What version of boost is currently required?
 		Callbacks via 'bind' function (needs pty reader thread)
 		Maybe temporary files read in a thread can replace PTY stuff.
-		Test: does int8_t print as a char?
 */
 
 #ifndef GNUPLOT_IOSTREAM_H
@@ -491,9 +490,15 @@ template<> struct BinarySender<boost::uint32_t> : public FlatBinarySender<boost:
 template<> struct BinarySender<boost:: int64_t> : public FlatBinarySender<boost:: int64_t> { };
 template<> struct BinarySender<boost::uint64_t> : public FlatBinarySender<boost::uint64_t> { };
 
+// Make int8_t and char print as integers, not as characters.
+template<> struct TextSender<int8_t> {
+	static void send(std::ostream &stream, const int8_t &v) { stream << int(v); } };
+template<> struct TextSender<char> {
+	static void send(std::ostream &stream, const char &v) { stream << int(v); } };
+
 // Make sure that the same not-a-number string is printed on all platforms.
 template<> struct TextSender<float> {
-	static void send(std::ostream &stream, const double &v) {
+	static void send(std::ostream &stream, const float &v) {
 		if(GNUPLOT_ISNAN(v)) { stream << "nan"; } else { stream << v; } } };
 template<> struct TextSender<double> {
 	static void send(std::ostream &stream, const double &v) {
