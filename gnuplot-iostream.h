@@ -27,6 +27,7 @@ THE SOFTWARE.
 		What version of boost is currently required?
 		Callbacks via 'bind' function (needs pty reader thread)
 		Maybe temporary files read in a thread can replace PTY stuff.
+		Test: does int8_t print as a char?
 */
 
 #ifndef GNUPLOT_IOSTREAM_H
@@ -77,6 +78,9 @@ THE SOFTWARE.
 #	define GNUPLOT_USE_TMPFILE
 #	include <boost/filesystem.hpp>
 #endif // BOOST_VERSION
+
+// This is used because VS2008 doesn't have stdint.h.
+#include <boost/cstdint.hpp>
 
 // Note: this is here for reverse compatibility.  The new way to enable blitz support is to
 // just include the gnuplot-iostream.h header after you include the blitz header (likewise for
@@ -464,27 +468,28 @@ struct BinfmtSender {
 	static void send(std::ostream &);
 };
 
-template<> struct BinfmtSender<   float> { static void send(std::ostream &stream) { stream << "%float";  } };
-template<> struct BinfmtSender<  double> { static void send(std::ostream &stream) { stream << "%double"; } };
-template<> struct BinfmtSender<  int8_t> { static void send(std::ostream &stream) { stream << "%int8";   } };
-template<> struct BinfmtSender< uint8_t> { static void send(std::ostream &stream) { stream << "%uint8";  } };
-template<> struct BinfmtSender< int16_t> { static void send(std::ostream &stream) { stream << "%int16";  } };
-template<> struct BinfmtSender<uint16_t> { static void send(std::ostream &stream) { stream << "%uint16"; } };
-template<> struct BinfmtSender< int32_t> { static void send(std::ostream &stream) { stream << "%int32";  } };
-template<> struct BinfmtSender<uint32_t> { static void send(std::ostream &stream) { stream << "%uint32"; } };
-template<> struct BinfmtSender< int64_t> { static void send(std::ostream &stream) { stream << "%int64";  } };
-template<> struct BinfmtSender<uint64_t> { static void send(std::ostream &stream) { stream << "%uint64"; } };
+// Types from boost/cstdint.hpp are used because VS2008 doesn't have stdint.h.
+template<> struct BinfmtSender< float> { static void send(std::ostream &stream) { stream << "%float";  } };
+template<> struct BinfmtSender<double> { static void send(std::ostream &stream) { stream << "%double"; } };
+template<> struct BinfmtSender<boost::  int8_t> { static void send(std::ostream &stream) { stream << "%int8";   } };
+template<> struct BinfmtSender<boost:: uint8_t> { static void send(std::ostream &stream) { stream << "%uint8";  } };
+template<> struct BinfmtSender<boost:: int16_t> { static void send(std::ostream &stream) { stream << "%int16";  } };
+template<> struct BinfmtSender<boost::uint16_t> { static void send(std::ostream &stream) { stream << "%uint16"; } };
+template<> struct BinfmtSender<boost:: int32_t> { static void send(std::ostream &stream) { stream << "%int32";  } };
+template<> struct BinfmtSender<boost::uint32_t> { static void send(std::ostream &stream) { stream << "%uint32"; } };
+template<> struct BinfmtSender<boost:: int64_t> { static void send(std::ostream &stream) { stream << "%int64";  } };
+template<> struct BinfmtSender<boost::uint64_t> { static void send(std::ostream &stream) { stream << "%uint64"; } };
 
-template<> struct BinarySender<   float> : public FlatBinarySender<   float> { };
-template<> struct BinarySender<  double> : public FlatBinarySender<  double> { };
-template<> struct BinarySender<  int8_t> : public FlatBinarySender<  int8_t> { };
-template<> struct BinarySender< uint8_t> : public FlatBinarySender< uint8_t> { };
-template<> struct BinarySender< int16_t> : public FlatBinarySender< int16_t> { };
-template<> struct BinarySender<uint16_t> : public FlatBinarySender<uint16_t> { };
-template<> struct BinarySender< int32_t> : public FlatBinarySender< int32_t> { };
-template<> struct BinarySender<uint32_t> : public FlatBinarySender<uint32_t> { };
-template<> struct BinarySender< int64_t> : public FlatBinarySender< int64_t> { };
-template<> struct BinarySender<uint64_t> : public FlatBinarySender<uint64_t> { };
+template<> struct BinarySender< float> : public FlatBinarySender< float> { };
+template<> struct BinarySender<double> : public FlatBinarySender<double> { };
+template<> struct BinarySender<boost::  int8_t> : public FlatBinarySender<boost::  int8_t> { };
+template<> struct BinarySender<boost:: uint8_t> : public FlatBinarySender<boost:: uint8_t> { };
+template<> struct BinarySender<boost:: int16_t> : public FlatBinarySender<boost:: int16_t> { };
+template<> struct BinarySender<boost::uint16_t> : public FlatBinarySender<boost::uint16_t> { };
+template<> struct BinarySender<boost:: int32_t> : public FlatBinarySender<boost:: int32_t> { };
+template<> struct BinarySender<boost::uint32_t> : public FlatBinarySender<boost::uint32_t> { };
+template<> struct BinarySender<boost:: int64_t> : public FlatBinarySender<boost:: int64_t> { };
+template<> struct BinarySender<boost::uint64_t> : public FlatBinarySender<boost::uint64_t> { };
 
 // Make sure that the same not-a-number string is printed on all platforms.
 template<> struct TextSender<float> {
