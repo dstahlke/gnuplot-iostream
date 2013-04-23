@@ -491,8 +491,9 @@ template<> struct BinarySender<boost:: int64_t> : public FlatBinarySender<boost:
 template<> struct BinarySender<boost::uint64_t> : public FlatBinarySender<boost::uint64_t> { };
 
 // Make int8_t and char print as integers, not as characters.
-template<> struct TextSender<int8_t> {
-	static void send(std::ostream &stream, const int8_t &v) { stream << int(v); } };
+// Are there any other types that need to be handled in this way?  I don't know.
+template<> struct TextSender<boost::int8_t> {
+	static void send(std::ostream &stream, const boost::int8_t &v) { stream << int(v); } };
 template<> struct TextSender<char> {
 	static void send(std::ostream &stream, const char &v) { stream << int(v); } };
 
