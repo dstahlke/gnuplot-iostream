@@ -1,0 +1,4 @@
+--- vu32 -------------------------------------
+depth=1
+ModeAutoDecoder=Mode1D
+* Mode1D ->  'unittest-output/vu32-Mode1D.bin' binary format='%uint32' record=(4) 

@@ -490,20 +490,27 @@ template<> struct BinarySender<boost::uint32_t> : public FlatBinarySender<boost:
 template<> struct BinarySender<boost:: int64_t> : public FlatBinarySender<boost:: int64_t> { };
 template<> struct BinarySender<boost::uint64_t> : public FlatBinarySender<boost::uint64_t> { };
 
-// Make int8_t and char print as integers, not as characters.
-// Are there any other types that need to be handled in this way?  I don't know.
-template<> struct TextSender<boost::int8_t> {
-	static void send(std::ostream &stream, const boost::int8_t &v) { stream << int(v); } };
-template<> struct TextSender<char> {
-	static void send(std::ostream &stream, const char &v) { stream << int(v); } };
+// Make char types print as integers, not as characters.
+template <typename T>
+struct CastIntTextSender {
+	static void send(std::ostream &stream, const T &v) {
+		stream << int(v);
+	}
+};
+template<> struct TextSender<          char> : public CastIntTextSender<          char> { };
+template<> struct TextSender<   signed char> : public CastIntTextSender<   signed char> { };
+template<> struct TextSender< unsigned char> : public CastIntTextSender< unsigned char> { };
 
 // Make sure that the same not-a-number string is printed on all platforms.
-template<> struct TextSender<float> {
-	static void send(std::ostream &stream, const float &v) {
-		if(GNUPLOT_ISNAN(v)) { stream << "nan"; } else { stream << v; } } };
-template<> struct TextSender<double> {
-	static void send(std::ostream &stream, const double &v) {
-		if(GNUPLOT_ISNAN(v)) { stream << "nan"; } else { stream << v; } } };
+template <typename T>
+struct FloatTextSender {
+	static void send(std::ostream &stream, const T &v) {
+		if(GNUPLOT_ISNAN(v)) { stream << "nan"; } else { stream << v; }
+	}
+};
+template<> struct TextSender<      float> : FloatTextSender<      float> { };
+template<> struct TextSender<     double> : FloatTextSender<     double> { };
+template<> struct TextSender<long double> : FloatTextSender<long double> { };
 
 /// }}}2
 

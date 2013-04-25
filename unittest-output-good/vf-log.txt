@@ -1,0 +1,4 @@
+--- vf -------------------------------------
+depth=1
+ModeAutoDecoder=Mode1D
+* Mode1D ->  'unittest-output/vf-Mode1D.bin' binary format='%float' record=(5) 

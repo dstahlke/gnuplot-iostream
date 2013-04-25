@@ -53,6 +53,12 @@ example-data-2d: example-data-2d.o
 example-interactive: example-interactive.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
+test-noncopyable: test-noncopyable.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+test-outputs: test-outputs.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
 test-asserts: test-assert-depth.error.txt test-assert-depth-colmajor.error.txt
 
 %.error.txt: %.cc gnuplot-iostream.h

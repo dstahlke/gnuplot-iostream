@@ -51,7 +51,10 @@ Gnuplot gp;
 std::string basedir = "unittest-output";
 
 template <typename T, typename ArrayMode>
-void test_given_mode(std::ostream &log_fh, std::string header, const T &arg, ArrayMode) {
+void test_given_mode(
+	std::ostream &log_fh, std::string header, const T &arg,
+	ArrayMode, boost::mpl::true_
+) {
 	std::string modename = ArrayMode::class_name();
 	std::string fn_prefix = basedir+"/"+header+"-"+modename;
 	log_fh << "* " << modename << " -> "
@@ -59,39 +62,77 @@ void test_given_mode(std::ostream &log_fh, std::string header, const T &arg, Arr
 	gp.file(arg, fn_prefix+".txt", ArrayMode());
 }
 
-template <typename T>
+template <typename T, typename ArrayMode>
+void test_given_mode(
+	std::ostream &log_fh, std::string header, const T &arg,
+	ArrayMode, boost::mpl::false_
+) {
+	std::string modename = ArrayMode::class_name();
+	std::string fn_prefix = basedir+"/"+header+"-"+modename;
+	log_fh << "* " << modename << " (skipped binary) " << std::endl;
+	gp.file(arg, fn_prefix+".txt", ArrayMode());
+}
+
+template <typename T, typename DoBinary>
 typename boost::enable_if_c<(ArrayTraits<T>::depth == 1)>::type
 runtest_inner(std::ostream &log_fh, std::string header, const T &arg) {
-	test_given_mode(log_fh, header, arg, Mode1D());
+	test_given_mode<T>(log_fh, header, arg, Mode1D(), DoBinary());
 }
 
-template <typename T>
+template <typename T, typename DoBinary>
 typename boost::enable_if_c<(ArrayTraits<T>::depth == 2)>::type
 runtest_inner(std::ostream &log_fh, std::string header, const T &arg) {
-	test_given_mode(log_fh, header, arg, Mode2D());
-	test_given_mode(log_fh, header, arg, Mode1DUnwrap());
+	test_given_mode<T>(log_fh, header, arg, Mode2D(), DoBinary());
+	test_given_mode<T>(log_fh, header, arg, Mode1DUnwrap(), DoBinary());
 }
 
-template <typename T>
+template <typename T, typename DoBinary>
 typename boost::enable_if_c<(ArrayTraits<T>::depth >= 3)>::type
 runtest_inner(std::ostream &log_fh, std::string header, const T &arg) {
-	test_given_mode(log_fh, header, arg, Mode2D());
-	test_given_mode(log_fh, header, arg, Mode2DUnwrap());
+	test_given_mode<T>(log_fh, header, arg, Mode2D(), DoBinary());
+	test_given_mode<T>(log_fh, header, arg, Mode2DUnwrap(), DoBinary());
 }
 
-template <typename T>
-void runtest(std::string header, const T &arg) {
+template <typename T, typename DoBinary>
+void runtest_maybe_dobin(std::string header, const T &arg) {
 	std::ofstream log_fh((basedir+"/"+header+"-log.txt").c_str());
 	log_fh << "--- " << header << " -------------------------------------" << std::endl;
 	log_fh << "depth=" << ArrayTraits<T>::depth << std::endl;
 	log_fh << "ModeAutoDecoder=" << ModeAutoDecoder<T>::mode::class_name() << std::endl;
-	runtest_inner(log_fh, header, arg);
+	runtest_inner<T, DoBinary>(log_fh, header, arg);
+}
+
+template <typename T>
+void runtest(std::string header, const T &arg) {
+	runtest_maybe_dobin<T, boost::mpl::true_>(header, arg);
+}
+
+template <typename T>
+void runtest_nobin(std::string header, const T &arg) {
+	runtest_maybe_dobin<T, boost::mpl::false_>(header, arg);
+}
+
+template <typename T, typename DoBinary>
+void basic_datatype_test_integral(std::string name) {
+	std::vector<T> v;
+	for(int i=0; i<4; i++) {
+		v.push_back(i);
+	}
+	runtest_maybe_dobin<std::vector<T>, DoBinary>(name, v);
+}
+
+template <typename T, typename DoBinary>
+void basic_datatype_test_float(std::string name) {
+	std::vector<T> v;
+	for(int i=0; i<4; i++) {
+		v.push_back(i + T(0.1234));
+	}
+	v.push_back(std::numeric_limits<T>::quiet_NaN());
+	runtest_maybe_dobin<std::vector<T>, DoBinary>(name, v);
 }
 
 int main() {
 	const int NX=3, NY=4, NZ=2;
-	// FIXME - why doesn't it compile with std::vector<char>?
-	std::vector<int8_t> vc; // should print as integers
 	std::vector<double> vd;
 	std::vector<int> vi;
 	std::vector<float> vf;
@@ -109,7 +150,6 @@ int main() {
 
 	for(int x=0; x<NX; x++) {
 		vd.push_back(x+7.5);
-		vc.push_back(x+7);
 		vi.push_back(x+7);
 		vf.push_back(x+7.2F);
 		v_bt.push_back(boost::make_tuple(x+0.123, 100+x, 200+x));
@@ -137,8 +177,23 @@ int main() {
 		}
 	}
 
+	basic_datatype_test_integral<boost::  int8_t, boost::mpl::true_>("vi8");
+	basic_datatype_test_integral<boost:: uint8_t, boost::mpl::true_>("vu8");
+	basic_datatype_test_integral<boost:: int16_t, boost::mpl::true_>("vi16");
+	basic_datatype_test_integral<boost::uint16_t, boost::mpl::true_>("vu16");
+	basic_datatype_test_integral<boost:: int32_t, boost::mpl::true_>("vi32");
+	basic_datatype_test_integral<boost::uint32_t, boost::mpl::true_>("vu32");
+
+	// these should all print as integers
+	basic_datatype_test_integral<char, boost::mpl::false_>("vpc");
+	basic_datatype_test_integral<signed char, boost::mpl::false_>("vsc");
+	basic_datatype_test_integral<unsigned char, boost::mpl::false_>("vuc");
+
+	basic_datatype_test_float<float, boost::mpl::true_>("vf");
+	basic_datatype_test_float<double, boost::mpl::true_>("vd");
+	basic_datatype_test_float<long double, boost::mpl::false_>("vld");
+
 	runtest("vd,vi,bi", std::make_pair(vd, std::make_pair(vi, bi)));
-	runtest("vc", vc);
 	runtest("vvd", vvd);
 	runtest("vvd,vvi", std::make_pair(vvd, vvi));
 	runtest("ai", ai);

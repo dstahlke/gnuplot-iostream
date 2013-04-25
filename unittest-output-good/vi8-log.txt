@@ -1,0 +1,4 @@
+--- vi8 -------------------------------------
+depth=1
+ModeAutoDecoder=Mode1D
+* Mode1D ->  'unittest-output/vi8-Mode1D.bin' binary format='%int8' record=(4) 
