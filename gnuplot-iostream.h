@@ -146,20 +146,6 @@ namespace gnuplotio {
 
 /// {{{1 Basic traits helpers
 
-// Old version, to be used if BOOST_MPL_HAS_XXX_TRAIT_DEF doesn't work well.
-//template <typename T>
-//class is_like_stl_container {
-//    typedef char one;
-//    typedef long two;
-//
-//    template <typename C> static one test(typename C::value_type *, typename C::const_iterator *);
-//    template <typename C> static two test(...);
-//
-//public:
-//    static const bool value = sizeof(test<T>(NULL, NULL)) == sizeof(char);
-//	typedef boost::mpl::bool_<value> type;
-//};
-
 // This can be specialized as needed, in order to not use the STL interfaces for specific
 // classes.
 template <typename T>
@@ -191,20 +177,6 @@ struct is_boost_tuple_nulltype<boost::tuples::null_type> {
 	static const bool value = true;
 	typedef boost::mpl::bool_<value> type;
 };
-
-// Old version, to be used if BOOST_MPL_HAS_XXX_TRAIT_DEF doesn't work well.
-//template <typename T>
-//class is_boost_tuple {
-//    typedef char one;
-//    typedef long two;
-//
-//    template <typename C> static one test(typename C::head_type *, typename C::tail_type *);
-//    template <typename C> static two test(...);
-//
-//public:
-//    static const bool value = sizeof(test<T>(NULL, NULL)) == sizeof(char);
-//	typedef boost::mpl::bool_<value> type;
-//};
 
 BOOST_MPL_HAS_XXX_TRAIT_DEF(head_type)
 BOOST_MPL_HAS_XXX_TRAIT_DEF(tail_type)
