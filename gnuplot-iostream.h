@@ -160,6 +160,13 @@ namespace gnuplotio {
 //	typedef boost::mpl::bool_<value> type;
 //};
 
+// This can be specialized as needed, in order to not use the STL interfaces for specific
+// classes.
+template <typename T>
+struct dont_treat_as_stl_container {
+	typedef boost::mpl::bool_<false> type;
+};
+
 BOOST_MPL_HAS_XXX_TRAIT_DEF(value_type)
 BOOST_MPL_HAS_XXX_TRAIT_DEF(const_iterator)
 
@@ -167,51 +174,10 @@ template <typename T>
 struct is_like_stl_container {
 	typedef boost::mpl::and_<
 			typename has_value_type<T>::type,
-			typename has_const_iterator<T>::type
+			typename has_const_iterator<T>::type,
+			boost::mpl::not_<dont_treat_as_stl_container<T> >
 		> type;
 	static const bool value = type::value;
-};
-
-// http://stackoverflow.com/a/1007175/1048959
-template<typename T> struct has_attrib_n_rows {
-    struct Fallback { int n_rows; };
-    struct Derived : T, Fallback { };
-
-    template<typename C, C> struct ChT;
-
-    template<typename C> static char (&f(ChT<int Fallback::*, &C::n_rows>*))[1];
-    template<typename C> static char (&f(...))[2];
-
-    static bool const value = sizeof(f<Derived>(0)) == 2;
-	typedef boost::mpl::bool_<value> type;
-};
-
-template<typename T> struct has_attrib_n_cols {
-    struct Fallback { int n_cols; };
-    struct Derived : T, Fallback { };
-
-    template<typename C, C> struct ChT;
-
-    template<typename C> static char (&f(ChT<int Fallback::*, &C::n_cols>*))[1];
-    template<typename C> static char (&f(...))[2];
-
-    static bool const value = sizeof(f<Derived>(0)) == 2;
-	typedef boost::mpl::bool_<value> type;
-};
-
-BOOST_MPL_HAS_XXX_TRAIT_DEF(elem_type);
-BOOST_MPL_HAS_XXX_TRAIT_DEF(pod_type);
-BOOST_MPL_HAS_XXX_TRAIT_DEF(col_iterator);
-
-template <typename T>
-struct is_armadillo_container {
-	typedef boost::mpl::and_<
-			typename has_attrib_n_rows<T>::type,
-			typename has_attrib_n_cols<T>::type,
-			typename has_elem_type<T>::type,
-			typename has_pod_type<T>::type,
-			typename has_col_iterator<T>::type
-		> type;
 };
 
 template <typename T>
@@ -830,12 +796,9 @@ private:
 };
 
 template <typename T>
-class ArrayTraits<T, typename boost::enable_if<
-	boost::mpl::and_<
-		is_like_stl_container<T>,
-		boost::mpl::not_<is_armadillo_container<T> >
-	>
->::type> : public ArrayTraitsDefaults<typename T::value_type> {
+class ArrayTraits<T,
+	  typename boost::enable_if<is_like_stl_container<T> >::type
+> : public ArrayTraitsDefaults<typename T::value_type> {
 public:
 	typedef IteratorRange<typename T::const_iterator, typename T::value_type> range_type;
 
@@ -1762,6 +1725,12 @@ public:
 #ifndef GNUPLOT_ARMADILLO_SUPPORT_LOADED
 #define GNUPLOT_ARMADILLO_SUPPORT_LOADED
 namespace gnuplotio {
+
+template <typename T> struct dont_treat_as_stl_container<arma::Row  <T> > { typedef boost::mpl::bool_<true> type; };
+template <typename T> struct dont_treat_as_stl_container<arma::Col  <T> > { typedef boost::mpl::bool_<true> type; };
+template <typename T> struct dont_treat_as_stl_container<arma::Mat  <T> > { typedef boost::mpl::bool_<true> type; };
+template <typename T> struct dont_treat_as_stl_container<arma::Cube <T> > { typedef boost::mpl::bool_<true> type; };
+template <typename T> struct dont_treat_as_stl_container<arma::field<T> > { typedef boost::mpl::bool_<true> type; };
 
 /// {{{3 Cube
 
