@@ -36,14 +36,14 @@ TEST_BINARIES=test-noncopyable.exe test-outputs.exe
 all: $(ALL_EXAMPLES)
 
 %.exe: %.cc gnuplot-iostream.h
-	cl /W3 /EHsc /D_CRT_SECURE_NO_WARNINGS $(EXTRA_FLAGS) /I "C:\Program Files\boost\boost_1_51" $< /link /LIBPATH:"e:\boost_libs_1_51\lib32"
+	cl /W3 /EHsc $(EXTRA_FLAGS) /I "C:\Program Files\boost\boost_1_51" $< /link /LIBPATH:"e:\boost_libs_1_51\lib32"
 
 test-asserts: test-assert-depth.error.txt test-assert-depth-colmajor.error.txt
 
 %.error.txt: %.cc gnuplot-iostream.h
 	# These are programs that are supposed to *not* compile.
 	# The "!" causes "make" to throw an error if the compile succeeds.
-	! cl /W3 /EHsc /D_CRT_SECURE_NO_WARNINGS $(EXTRA_FLAGS) /I "C:\Program Files\boost\boost_1_51" $< /link /LIBPATH:"e:\boost_libs_1_51\lib32" > $@
+	! cl /W3 /EHsc $(EXTRA_FLAGS) /I "C:\Program Files\boost\boost_1_51" $< /link /LIBPATH:"e:\boost_libs_1_51\lib32" > $@
 	grep -q 'container not deep enough\|boost::STATIC_ASSERTION_FAILURE' $@
 
 test: $(TEST_BINARIES) test-asserts

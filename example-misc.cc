@@ -59,10 +59,16 @@ void pause_if_needed() {
 #endif
 }
 
+// Tell MSVC to not warn about using fopen.
+// http://stackoverflow.com/a/4805353/1048959
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+#pragma warning(disable:4996)
+#endif
+
 void demo_basic() {
 	Gnuplot gp;
 	// For debugging or manual editing of commands:
-	//Gnuplot gp(fopen("plot.gnu"));
+	//Gnuplot gp(std::fopen("plot.gnu"));
 	// or
 	//Gnuplot gp("tee plot.gnu | gnuplot -persist");
 
@@ -210,7 +216,7 @@ std::vector<boost::tuple<double, double, double> > get_trefoil() {
 void demo_inline_text() {
 	std::cout << "Creating inline_text.gnu" << std::endl;
 	// This file handle will be closed automatically when gp goes out of scope.
-	Gnuplot gp(fopen("inline_text.gnu", "w"));
+	Gnuplot gp(std::fopen("inline_text.gnu", "w"));
 
 	std::vector<boost::tuple<double, double, double> > vecs = get_trefoil();
 
@@ -223,7 +229,7 @@ void demo_inline_text() {
 void demo_inline_binary() {
 	std::cout << "Creating inline_binary.gnu" << std::endl;
 	// This file handle will be closed automatically when gp goes out of scope.
-	Gnuplot gp(fopen("inline_binary.gnu", "wb"));
+	Gnuplot gp(std::fopen("inline_binary.gnu", "wb"));
 
 	std::vector<boost::tuple<double, double, double> > vecs = get_trefoil();
 
@@ -236,7 +242,7 @@ void demo_inline_binary() {
 void demo_external_text() {
 	std::cout << "Creating external_text.gnu" << std::endl;
 	// This file handle will be closed automatically when gp goes out of scope.
-	Gnuplot gp(fopen("external_text.gnu", "w"));
+	Gnuplot gp(std::fopen("external_text.gnu", "w"));
 
 	std::vector<boost::tuple<double, double, double> > vecs = get_trefoil();
 
@@ -249,7 +255,7 @@ void demo_external_text() {
 void demo_external_binary() {
 	std::cout << "Creating external_binary.gnu" << std::endl;
 	// This file handle will be closed automatically when gp goes out of scope.
-	Gnuplot gp(fopen("external_binary.gnu", "w"));
+	Gnuplot gp(std::fopen("external_binary.gnu", "w"));
 
 	std::vector<boost::tuple<double, double, double> > vecs = get_trefoil();
 

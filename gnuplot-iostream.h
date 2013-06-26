@@ -127,6 +127,21 @@ THE SOFTWARE.
 #	define GNUPLOT_ISNAN std::isnan
 #endif
 
+// MSVC gives a warning saying that fopen and getenv are not secure.  But they are secure.
+// Unfortunately their replacement functions are not simple drop-in replacements.  The best
+// solution is to just temporarily disable this warning whenever fopen or getenv is used.
+// http://stackoverflow.com/a/4805353/1048959
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+#	define GNUPLOT_MSVC_WARNING_4996_PUSH \
+		__pragma(warning(push)) \
+		__pragma(warning(disable:4996))
+#	define GNUPLOT_MSVC_WARNING_4996_POP \
+		__pragma(warning(pop))
+#else
+#	define GNUPLOT_MSVC_WARNING_4996_PUSH
+#	define GNUPLOT_MSVC_WARNING_4996_POP
+#endif
+
 #ifndef GNUPLOT_DEFAULT_COMMAND
 #ifdef _WIN32
 // "pgnuplot" is considered deprecated according to the Internet.  It may be faster.  It
@@ -342,7 +357,9 @@ private:
 //		if(debug_messages) {
 //			std::cerr << "feedback_fn=" << filename() << std::endl;
 //		}
-//		fh = fopen(filename().c_str(), "a");
+//		GNUPLOT_MSVC_WARNING_4996_PUSH
+//		fh = std::fopen(filename().c_str(), "a");
+//		GNUPLOT_MSVC_WARNING_4996_POP
 //	}
 //
 //	~GnuplotFeedbackTmpfile() {
@@ -1269,7 +1286,9 @@ class Gnuplot : public boost::iostreams::stream<
 {
 private:
 	static std::string get_default_cmd() {
+		GNUPLOT_MSVC_WARNING_4996_PUSH
 		char *from_env = std::getenv("GNUPLOT_IOSTREAM_CMD");
+		GNUPLOT_MSVC_WARNING_4996_POP
 		if(from_env && from_env[0]) {
 			return from_env;
 		} else {
@@ -1281,8 +1300,11 @@ private:
 		std::string cmd = in.empty() ? get_default_cmd() : in;
 		assert(!cmd.empty());
 		if(cmd[0] == '>') {
+			// FIXME - need to make sure pclose is not called in this case!
 			std::string fn = cmd.substr(1);
-			FILE *ret = fopen(fn.c_str(), "w");
+			GNUPLOT_MSVC_WARNING_4996_PUSH
+			FILE *ret = std::fopen(fn.c_str(), "w");
+			GNUPLOT_MSVC_WARNING_4996_POP
 			if(!ret) throw(std::ios_base::failure("cannot open file "+fn));
 			return ret;
 		} else {
