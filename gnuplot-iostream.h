@@ -1279,10 +1279,48 @@ void generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMo
 
 /// }}}1
 
+/// {{{1 FileHandleWrapper
+
+// This holds the file handle that gnuplot commands will be sent two.  The purpose of this
+// wrapper is twofold:
+// 1. It allows storing the FILE* before it gets passed to the boost::iostreams::stream
+//    constructor (which is a base class of the main Gnuplot class).  This is accomplished
+//    via multiple inheritance as described at http://stackoverflow.com/a/3821756/1048959
+// 2. It remembers whether the handle needs to be closed via fclose or pclose.
+struct FileHandleWrapper {
+	FileHandleWrapper(std::FILE *_fh, bool _should_use_pclose) :
+		wrapped_fh(_fh), should_use_pclose(_should_use_pclose) { }
+
+	void fh_close() {
+		if(should_use_pclose) {
+			if(GNUPLOT_PCLOSE(wrapped_fh)) {
+				std::cerr << "pclose returned error" << std::endl;
+			}
+		} else {
+			if(fclose(wrapped_fh)) {
+				std::cerr << "fclose returned error" << std::endl;
+			}
+		}
+	}
+
+	int fh_fileno() {
+		return GNUPLOT_FILENO(wrapped_fh);
+	}
+
+	std::FILE *wrapped_fh;
+	bool should_use_pclose;
+};
+
+/// }}}1
+
 /// {{{1 Main class
 
-class Gnuplot : public boost::iostreams::stream<
-	boost::iostreams::file_descriptor_sink>
+class Gnuplot :
+	// Some setup needs to be done before obtaining the file descriptor that gets passed to
+	// boost::iostreams::stream.  This is accomplished by using a multiple inheritance trick,
+	// as described at http://stackoverflow.com/a/3821756/1048959
+	private FileHandleWrapper,
+	public boost::iostreams::stream<boost::iostreams::file_descriptor_sink>
 {
 private:
 	static std::string get_default_cmd() {
@@ -1296,35 +1334,34 @@ private:
 		}
 	}
 
-	static FILE *open_cmdline(const std::string &in) {
+	static FileHandleWrapper open_cmdline(const std::string &in) {
 		std::string cmd = in.empty() ? get_default_cmd() : in;
 		assert(!cmd.empty());
 		if(cmd[0] == '>') {
-			// FIXME - need to make sure pclose is not called in this case!
 			std::string fn = cmd.substr(1);
 			GNUPLOT_MSVC_WARNING_4996_PUSH
-			FILE *ret = std::fopen(fn.c_str(), "w");
+			FILE *fh = std::fopen(fn.c_str(), "w");
 			GNUPLOT_MSVC_WARNING_4996_POP
-			if(!ret) throw(std::ios_base::failure("cannot open file "+fn));
-			return ret;
+			if(!fh) throw(std::ios_base::failure("cannot open file "+fn));
+			return FileHandleWrapper(fh, false);
 		} else {
-			FILE *ret = GNUPLOT_POPEN(cmd.c_str(), "w");
-			if(!ret) throw(std::ios_base::failure("cannot open pipe "+cmd));
-			return ret;
+			FILE *fh = GNUPLOT_POPEN(cmd.c_str(), "w");
+			if(!fh) throw(std::ios_base::failure("cannot open pipe "+cmd));
+			return FileHandleWrapper(fh, true);
 		}
 	}
 
 public:
-	explicit Gnuplot(const std::string &cmd="") :
+	explicit Gnuplot(const std::string &_cmd="") :
+		FileHandleWrapper(open_cmdline(_cmd)),
 		boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
-			GNUPLOT_FILENO(pout = open_cmdline(cmd)),
+			fh_fileno(),
 #if BOOST_VERSION >= 104400
 			boost::iostreams::never_close_handle
 #else
 			false
 #endif
 		),
-		is_pipe(true),
 		feedback(NULL),
 		tmp_files(),
 		debug_messages(false)
@@ -1332,16 +1369,16 @@ public:
 		*this << std::scientific << std::setprecision(18);  // refer <iomanip>
 	}
 
-	explicit Gnuplot(FILE *fh) :
+	explicit Gnuplot(FILE *_fh) :
+		FileHandleWrapper(_fh, 0),
 		boost::iostreams::stream<boost::iostreams::file_descriptor_sink>(
-			GNUPLOT_FILENO(pout = fh),
+			fh_fileno(),
 #if BOOST_VERSION >= 104400
 			boost::iostreams::never_close_handle
 #else
 			false
 #endif
 		),
-		is_pipe(false),
 		feedback(NULL),
 		tmp_files(),
 		debug_messages(false)
@@ -1367,15 +1404,7 @@ public:
 		// Wish boost had a pclose method...
 		//close();
 
-		if(is_pipe) {
-			if(GNUPLOT_PCLOSE(pout)) {
-				std::cerr << "pclose returned error" << std::endl;
-			}
-		} else {
-			if(fclose(pout)) {
-				std::cerr << "fclose returned error" << std::endl;
-			}
-		}
+		fh_close();
 
 		delete feedback;
 	}
@@ -1388,7 +1417,7 @@ public:
 private:
 	void do_flush() {
 		*this << std::flush;
-		fflush(pout);
+		fflush(wrapped_fh);
 	}
 
 	std::string make_tmpfile() {
@@ -1543,8 +1572,6 @@ private:
 #endif // GNUPLOT_ENABLE_FEEDBACK
 
 private:
-	FILE *pout;
-	bool is_pipe;
 	GnuplotFeedback *feedback;
 #ifdef GNUPLOT_USE_TMPFILE
 	std::vector<boost::shared_ptr<GnuplotTmpfile> > tmp_files;
