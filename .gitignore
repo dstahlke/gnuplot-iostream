@@ -7,6 +7,9 @@ test-noncopyable
 test-outputs
 *.error.txt
 *.o
+# Windows compiled stuff
+*.exe
+*.obj
 
 # cmake stuff
 build

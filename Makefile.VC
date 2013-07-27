@@ -48,7 +48,7 @@ test-asserts: test-assert-depth.error.txt test-assert-depth-colmajor.error.txt
 
 test: $(TEST_BINARIES) test-asserts
 	rm -f unittest-output/*
-	./test-outputs
+	./test-outputs.exe
 	dos2unix -q unittest-output/*.txt
 	diff -qr unittest-output unittest-output-good
 
