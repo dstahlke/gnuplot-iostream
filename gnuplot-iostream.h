@@ -22,17 +22,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-/*
-	TODO:
-		What version of boost is currently required?
-		Callbacks via 'bind' function (needs pty reader thread)
-		Maybe temporary files read in a thread can replace PTY stuff.
-*/
+/* A C++ interface to gnuplot.
+ * Web page: http://www.stahlke.org/dan/gnuplot-iostream
+ * Documentation: https://gitorious.org/gnuplot-iostream/pages/Home
+ *
+ * TODO:
+ * 	What version of boost is currently required?
+ * 	Callbacks via gnuplot's 'bind' function.  This would allow triggering user functions when
+ * 	keys are pressed in the gnuplot window.  However, it would require a PTY reader thread.
+ * 	Maybe temporary files read in a thread can replace PTY stuff.
+ */
 
 #ifndef GNUPLOT_IOSTREAM_H
 #define GNUPLOT_IOSTREAM_H
 
-/// {{{1 Includes and defines
+// {{{1 Includes and defines
 
 #define GNUPLOT_IOSTREAM_VERSION 2
 
@@ -71,7 +75,6 @@ THE SOFTWARE.
 #include <boost/utility.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/mpl/bool.hpp>
-//#include <boost/type_traits.hpp>
 // This is the version of boost which has v3 of the filesystem libraries by default.
 #if BOOST_VERSION >= 104600
 #	define GNUPLOT_USE_TMPFILE
@@ -155,11 +158,13 @@ THE SOFTWARE.
 #endif
 #endif
 
-/// }}}1
+// }}}1
 
 namespace gnuplotio {
 
-/// {{{1 Basic traits helpers
+// {{{1 Basic traits helpers
+// The mechanisms constructed in this section enable us to detect what sort of datatype has
+// been passed to a function.
 
 // This can be specialized as needed, in order to not use the STL interfaces for specific
 // classes.
@@ -228,9 +233,9 @@ struct is_boost_tuple {
 //	typedef boost::mpl::bool_<false> type;
 //};
 
-/// }}}1
+// }}}1
 
-/// {{{1 Tmpfile helper class
+// {{{1 Tmpfile helper class
 #ifdef GNUPLOT_USE_TMPFILE
 // RAII temporary file.  File is removed when this object goes out of scope.
 class GnuplotTmpfile {
@@ -260,10 +265,20 @@ public:
 	boost::filesystem::path file;
 };
 #endif // GNUPLOT_USE_TMPFILE
-/// }}}1
+// }}}1
 
-/// {{{1 Feedback helper classes
+// {{{1 Feedback helper classes
+//
 // Used for reading stuff sent from gnuplot via gnuplot's "print" function.
+//
+// For example, this is used for capturing mouse clicks in the gnuplot window.  There are two
+// implementations, only the first of which is complete.  The first implementation allocates a
+// PTY (pseudo terminal) which is written to by gnuplot and read by us.  This only works in
+// Linux.  The second implementation creates a temporary file which is written to by gnuplot
+// and read by us.  However, this doesn't currently work since fscanf doesn't block.  It would
+// be possible to get this working using a more complicated mechanism (select or threads) but I
+// haven't had the need for it.
+
 class GnuplotFeedback {
 public:
 	GnuplotFeedback() { }
@@ -385,12 +400,27 @@ private:
 //	FILE *fh;
 //};
 #endif // GNUPLOT_ENABLE_PTY, GNUPLOT_USE_TMPFILE
-/// }}}1
+// }}}1
 
-/// {{{1 Traits and printers for entry datatypes
+// {{{1 Traits and printers for entry datatypes
+//
+// This section contains the mechanisms for sending scalar and tuple data to gnuplot.  Pairs
+// and tuples are sent by appealing to the senders defined for their component scalar types.
+// Senders for arrays are defined in a later section.
+//
+// There are three classes which need to be specialized for each supported datatype:
+// 1. TextSender to send data as text.  The default is to just send using the ostream's `<<`
+// operator.
+// 2. BinarySender to send data as binary, in a format which gnuplot can understand.  There is
+// no default implementation (unimplemented types raise a compile time error), however
+// inheriting from FlatBinarySender will send the data literally as it is stored in memory.
+// This suffices for most of the standard built-in types (e.g. uint32_t or double).
+// 3. BinfmtSender sends a description of the data format to gnuplot (e.g. `%uint32`).  Type
+// `show datafile binary datasizes` in gnuplot to see a list of supported formats.
 
-/// {{{2 Basic entry datatypes
+// {{{2 Basic entry datatypes
 
+// Default TextSender, sends data using `<<` operator.
 template <typename T, typename Enable=void>
 struct TextSender {
 	static void send(std::ostream &stream, const T &v) {
@@ -398,6 +428,7 @@ struct TextSender {
 	}
 };
 
+// Default BinarySender, raises a compile time error.
 template <typename T, typename Enable=void>
 struct BinarySender {
 	MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "BinarySender class not specialized for this type");
@@ -406,7 +437,8 @@ struct BinarySender {
 	static void send(std::ostream &stream, const T &v);
 };
 
-// This is a BinarySender implementation that just sends directly from memory.
+// This is a BinarySender implementation that just sends directly from memory.  Data types
+// which can be sent this way can have their BinarySender specialization inherit from this.
 template <typename T>
 struct FlatBinarySender {
 	static void send(std::ostream &stream, const T &v) {
@@ -414,6 +446,7 @@ struct FlatBinarySender {
 	}
 };
 
+// Default BinfmtSender, raises a compile time error.
 template <typename T, typename Enable=void>
 struct BinfmtSender {
 	MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "BinfmtSender class not specialized for this type");
@@ -422,6 +455,7 @@ struct BinfmtSender {
 	static void send(std::ostream &);
 };
 
+// BinfmtSender implementations for basic data types supported by gnuplot.
 // Types from boost/cstdint.hpp are used because VS2008 doesn't have stdint.h.
 template<> struct BinfmtSender< float> { static void send(std::ostream &stream) { stream << "%float";  } };
 template<> struct BinfmtSender<double> { static void send(std::ostream &stream) { stream << "%double"; } };
@@ -434,6 +468,8 @@ template<> struct BinfmtSender<boost::uint32_t> { static void send(std::ostream 
 template<> struct BinfmtSender<boost:: int64_t> { static void send(std::ostream &stream) { stream << "%int64";  } };
 template<> struct BinfmtSender<boost::uint64_t> { static void send(std::ostream &stream) { stream << "%uint64"; } };
 
+// BinarySender implementations for basic data types supported by gnuplot.  These types can
+// just be sent as stored in memory, so all these senders inherit from FlatBinarySender.
 template<> struct BinarySender< float> : public FlatBinarySender< float> { };
 template<> struct BinarySender<double> : public FlatBinarySender<double> { };
 template<> struct BinarySender<boost::  int8_t> : public FlatBinarySender<boost::  int8_t> { };
@@ -467,9 +503,10 @@ template<> struct TextSender<      float> : FloatTextSender<      float> { };
 template<> struct TextSender<     double> : FloatTextSender<     double> { };
 template<> struct TextSender<long double> : FloatTextSender<long double> { };
 
-/// }}}2
+// }}}2
 
-/// {{{2 std::pair support
+// {{{2 std::pair support
+
 template <typename T, typename U>
 struct TextSender<std::pair<T, U> > {
 	static void send(std::ostream &stream, const std::pair<T, U> &v) {
@@ -494,9 +531,11 @@ struct BinarySender<std::pair<T, U> > {
 		BinarySender<U>::send(stream, v.second);
 	}
 };
-/// }}}2
 
-/// {{{2 std::complex support
+// }}}2
+
+// {{{2 std::complex support
+
 template <typename T>
 struct TextSender<std::complex<T> > {
 	static void send(std::ostream &stream, const std::complex<T> &v) {
@@ -521,9 +560,10 @@ struct BinarySender<std::complex<T> > {
 		BinarySender<T>::send(stream, v.imag());
 	}
 };
-/// }}}2
 
-/// {{{2 boost::tuple support
+// }}}2
+
+// {{{2 boost::tuple support
 
 template <typename T>
 struct TextSender<T,
@@ -614,9 +654,9 @@ struct BinarySender<T,
 	}
 };
 
-/// }}}2
+// }}}2
 
-/// {{{2 std::tuple support
+// {{{2 std::tuple support
 
 #if GNUPLOT_ENABLE_CXX11
 
@@ -688,15 +728,26 @@ struct BinarySender<std::tuple<Args...> > {
 
 #endif // GNUPLOT_ENABLE_CXX11
 
-/// }}}2
+// }}}2
 
-/// }}}1
+// }}}1
 
-/// {{{1 New array writer stuff
+// {{{1 New array writer stuff
+//
+// This section handles sending of array data to gnuplot.  It is rather complicated because of
+// the diversity of storage schemes supported.  For example, it treats a
+// `std::pair<std::vector<T>, std::vector<U>>` in the same way as a
+// `std::vector<std::pair<T, U>>`, iterating through the two arrays in lockstep, and sending
+// pair data to gnuplot.  In fact, any nested combination of pairs, tuples, STL containers,
+// Blitz arrays, and Armadillo arrays is supported.  Nested containers are considered to be
+// multidimensional arrays (although gnuplot in principle only supports 1D and 2D arrays, our
+// module is in principle not limited).
+//
+// The ArrayTraits is specialized for every supported array or container type.
 
-/// {{{2 ArrayTraits and Range classes
+// {{{2 ArrayTraits and Range classes
 
-/// {{{3 ArrayTraits generic class and defaults
+// {{{3 ArrayTraits generic class and defaults
 
 // Error messages involving this stem from treating something that was not a container as if it
 // was.  This is only here to allow compiliation without errors in normal cases.
@@ -717,7 +768,7 @@ public:
 	typedef Error_WasNotContainer value_type;
 	typedef Error_WasNotContainer range_type;
 	static const bool is_container = false;
-	static const bool allow_colwrap = false;
+	static const bool allow_auto_unwrap = false;
 	static const size_t depth = 0;
 
 	static range_type get_range(const T &) {
@@ -732,7 +783,7 @@ public:
 	typedef V value_type;
 
 	static const bool is_container = true;
-	static const bool allow_colwrap = true;
+	static const bool allow_auto_unwrap = true;
 	static const size_t depth = ArrayTraits<V>::depth + 1;
 };
 
@@ -749,9 +800,9 @@ template <typename T>
 class ArrayTraits<T&&> : public ArrayTraits<T> { };
 #endif
 
-/// }}}3
+// }}}3
 
-/// {{{3 STL container support
+// {{{3 STL container support
 
 template <typename TI, typename TV>
 class IteratorRange {
@@ -786,7 +837,7 @@ private:
 
 template <typename T>
 class ArrayTraits<T,
-	  typename boost::enable_if<is_like_stl_container<T> >::type
+	typename boost::enable_if<is_like_stl_container<T> >::type
 > : public ArrayTraitsDefaults<typename T::value_type> {
 public:
 	typedef IteratorRange<typename T::const_iterator, typename T::value_type> range_type;
@@ -796,9 +847,9 @@ public:
 	}
 };
 
-/// }}}3
+// }}}3
 
-/// {{{3 C style array support
+// {{{3 C style array support
 
 template <typename T, size_t N>
 class ArrayTraits<T[N]> : public ArrayTraitsDefaults<T> {
@@ -810,9 +861,9 @@ public:
 	}
 };
 
-/// }}}3
+// }}}3
 
-/// {{{3 std::pair support
+// {{{3 std::pair support
 
 template <typename RT, typename RU>
 class PairOfRange {
@@ -862,7 +913,7 @@ public:
 	typedef std::pair<typename ArrayTraits<T>::value_type, typename ArrayTraits<U>::value_type> value_type;
 	static const bool is_container = ArrayTraits<T>::is_container && ArrayTraits<U>::is_container;
 	// Don't allow colwrap since it's already wrapped.
-	static const bool allow_colwrap = false;
+	static const bool allow_auto_unwrap = false;
 	// It is allowed for l_depth != r_depth, for example one column could be 'double' and the
 	// other column could be 'vector<double>'.
 	static const size_t l_depth = ArrayTraits<T>::depth;
@@ -877,9 +928,9 @@ public:
 	}
 };
 
-/// }}}3
+// }}}3
 
-/// {{{3 boost::tuple support
+// {{{3 boost::tuple support
 
 template <typename T>
 class ArrayTraits<T,
@@ -930,9 +981,9 @@ public:
 	}
 };
 
-/// }}}3
+// }}}3
 
-/// {{{3 std::tuple support
+// {{{3 std::tuple support
 
 #if GNUPLOT_ENABLE_CXX11
 
@@ -975,9 +1026,9 @@ public:
 
 #endif // GNUPLOT_ENABLE_CXX11
 
-/// }}}3
+// }}}3
 
-/// {{{3 Support column unwrap of container
+// {{{3 Support column unwrap of container
 
 template <typename RT>
 class VecOfRange {
@@ -990,7 +1041,7 @@ public:
 
 	static const bool is_container = RT::is_container;
 	// Don't allow colwrap since it's already wrapped.
-	static const bool allow_colwrap = false;
+	static const bool allow_auto_unwrap = false;
 
 	typedef std::vector<typename RT::value_type> value_type;
 	typedef VecOfRange<typename RT::subiter_type> subiter_type;
@@ -1046,11 +1097,11 @@ get_columns_range(const T &arg) {
 	return ret;
 }
 
-/// }}}3
+// }}}3
 
-/// }}}2
+// }}}2
 
-/// {{{2 Array printing functions
+// {{{2 Array printing functions
 
 static bool debug_array_print = 0;
 void set_debug_array_print(bool v) { debug_array_print = v; }
@@ -1069,7 +1120,7 @@ struct Mode1DUnwrap { static std::string class_name() { return "Mode1DUnwrap"; }
 struct Mode2DUnwrap { static std::string class_name() { return "Mode2DUnwrap"; } };
 struct ModeAuto     { static std::string class_name() { return "ModeAuto"    ; } };
 
-/// {{{3 ModeAutoDecoder
+// {{{3 ModeAutoDecoder
 
 template <typename T, typename Enable=void>
 struct ModeAutoDecoder { };
@@ -1087,7 +1138,7 @@ template <typename T>
 struct ModeAutoDecoder<T,
 	typename boost::enable_if_c<
 		(ArrayTraits<T>::depth == 2) &&
-		!ArrayTraits<T>::allow_colwrap
+		!ArrayTraits<T>::allow_auto_unwrap
 	>::type>
 {
 	typedef Mode2D mode;
@@ -1097,7 +1148,7 @@ template <typename T>
 struct ModeAutoDecoder<T,
 	typename boost::enable_if_c<
 		(ArrayTraits<T>::depth == 2) &&
-		ArrayTraits<T>::allow_colwrap
+		ArrayTraits<T>::allow_auto_unwrap
 	>::type>
 {
 	typedef Mode1DUnwrap mode;
@@ -1107,7 +1158,7 @@ template <typename T>
 struct ModeAutoDecoder<T,
 	typename boost::enable_if_c<
 		(ArrayTraits<T>::depth > 2) &&
-		ArrayTraits<T>::allow_colwrap
+		ArrayTraits<T>::allow_auto_unwrap
 	>::type>
 {
 	typedef Mode2DUnwrap mode;
@@ -1117,13 +1168,13 @@ template <typename T>
 struct ModeAutoDecoder<T,
 	typename boost::enable_if_c<
 		(ArrayTraits<T>::depth > 2) &&
-		!ArrayTraits<T>::allow_colwrap
+		!ArrayTraits<T>::allow_auto_unwrap
 	>::type>
 {
 	typedef Mode2D mode;
 };
 
-/// }}}3
+// }}}3
 
 template <typename T>
 size_t get_range_size(const T &arg) {
@@ -1275,13 +1326,13 @@ void generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMo
 	generic_sender_level0(stream, arg, typename ModeAutoDecoder<T>::mode(), PrintMode());
 }
 
-/// }}}2
+// }}}2
 
-/// }}}1
+// }}}1
 
-/// {{{1 FileHandleWrapper
+// {{{1 FileHandleWrapper
 
-// This holds the file handle that gnuplot commands will be sent two.  The purpose of this
+// This holds the file handle that gnuplot commands will be sent to.  The purpose of this
 // wrapper is twofold:
 // 1. It allows storing the FILE* before it gets passed to the boost::iostreams::stream
 //    constructor (which is a base class of the main Gnuplot class).  This is accomplished
@@ -1311,9 +1362,9 @@ struct FileHandleWrapper {
 	bool should_use_pclose;
 };
 
-/// }}}1
+// }}}1
 
-/// {{{1 Main class
+// {{{1 Main class
 
 class Gnuplot :
 	// Some setup needs to be done before obtaining the file descriptor that gets passed to
@@ -1584,7 +1635,7 @@ public:
 	bool debug_messages;
 };
 
-/// }}}1
+// }}}1
 
 } // namespace gnuplotio
 
@@ -1594,9 +1645,9 @@ using gnuplotio::Gnuplot;
 
 #endif // GNUPLOT_IOSTREAM_H
 
-/// {{{1 Support for 3rd party array libraries
+// {{{1 Support for 3rd party array libraries
 
-/// {{{2 Blitz support
+// {{{2 Blitz support
 
 // This is outside of the main header guard so that it will be compiled when people do
 // something like this:
@@ -1715,7 +1766,7 @@ private:
 template <typename T, int ArrayDim>
 class ArrayTraits<blitz::Array<T, ArrayDim> > : public ArrayTraitsDefaults<T> {
 public:
-	static const bool allow_colwrap = false;
+	static const bool allow_auto_unwrap = false;
 	static const size_t depth = ArrayTraits<T>::depth + ArrayDim;
 
 	typedef BlitzIterator<T, ArrayDim, ArrayDim> range_type;
@@ -1731,9 +1782,9 @@ public:
 #endif // GNUPLOT_BLITZ_SUPPORT_LOADED
 #endif // BZ_BLITZ_H
 
-/// }}}2
+// }}}2
 
-/// {{{2 Armadillo support
+// {{{2 Armadillo support
 
 // This is outside of the main header guard so that it will be compiled when people do
 // something like this:
@@ -1753,7 +1804,7 @@ template <typename T> struct dont_treat_as_stl_container<arma::Mat  <T> > { type
 template <typename T> struct dont_treat_as_stl_container<arma::Cube <T> > { typedef boost::mpl::bool_<true> type; };
 template <typename T> struct dont_treat_as_stl_container<arma::field<T> > { typedef boost::mpl::bool_<true> type; };
 
-/// {{{3 Cube
+// {{{3 Cube
 
 template <typename T>
 class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
@@ -1841,7 +1892,7 @@ class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
 	};
 
 public:
-	static const bool allow_colwrap = false;
+	static const bool allow_auto_unwrap = false;
 	static const size_t depth = ArrayTraits<T>::depth + 3;
 
 	typedef RowRange range_type;
@@ -1852,9 +1903,9 @@ public:
 	}
 };
 
-/// }}}3
+// }}}3
 
-/// {{{3 Mat and Field
+// {{{3 Mat and Field
 
 template <typename RF, typename T>
 class ArrayTraits_ArmaMatOrField : public ArrayTraitsDefaults<T> {
@@ -1914,7 +1965,7 @@ class ArrayTraits_ArmaMatOrField : public ArrayTraitsDefaults<T> {
 	};
 
 public:
-	static const bool allow_colwrap = false;
+	static const bool allow_auto_unwrap = false;
 	static const size_t depth = ArrayTraits<T>::depth + 2;
 
 	typedef RowRange range_type;
@@ -1931,14 +1982,14 @@ class ArrayTraits<arma::field<T> > : public ArrayTraits_ArmaMatOrField<arma::fie
 template <typename T>
 class ArrayTraits<arma::Mat<T> > : public ArrayTraits_ArmaMatOrField<arma::Mat<T>, T> { };
 
-/// }}}3
+// }}}3
 
-/// {{{3 Row
+// {{{3 Row
 
 template <typename T>
 class ArrayTraits<arma::Row<T> > : public ArrayTraitsDefaults<T> {
 public:
-	static const bool allow_colwrap = false;
+	static const bool allow_auto_unwrap = false;
 
 	typedef IteratorRange<typename arma::Row<T>::const_iterator, T> range_type;
 
@@ -1948,14 +1999,14 @@ public:
 	}
 };
 
-/// }}}3
+// }}}3
 
-/// {{{3 Col
+// {{{3 Col
 
 template <typename T>
 class ArrayTraits<arma::Col<T> > : public ArrayTraitsDefaults<T> {
 public:
-	static const bool allow_colwrap = false;
+	static const bool allow_auto_unwrap = false;
 
 	typedef IteratorRange<typename arma::Col<T>::const_iterator, T> range_type;
 
@@ -1965,12 +2016,12 @@ public:
 	}
 };
 
-/// }}}3
+// }}}3
 
 } // namespace gnuplotio
 #endif // GNUPLOT_ARMADILLO_SUPPORT_LOADED
 #endif // ARMA_INCLUDES
 
-/// }}}2
+// }}}2
 
-/// }}}1
+// }}}1
