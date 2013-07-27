@@ -95,9 +95,9 @@ THE SOFTWARE.
 #endif
 
 #ifdef BOOST_STATIC_ASSERT_MSG
-#	define MY_STATIC_ASSERT_MSG(cond, msg) BOOST_STATIC_ASSERT_MSG((cond), msg)
+#	define GNUPLOT_STATIC_ASSERT_MSG(cond, msg) BOOST_STATIC_ASSERT_MSG((cond), msg)
 #else
-#	define MY_STATIC_ASSERT_MSG(cond, msg) BOOST_STATIC_ASSERT((cond))
+#	define GNUPLOT_STATIC_ASSERT_MSG(cond, msg) BOOST_STATIC_ASSERT((cond))
 #endif
 
 // If this is defined, warn about use of deprecated functions.
@@ -166,6 +166,7 @@ THE SOFTWARE.
 namespace gnuplotio {
 
 // {{{1 Basic traits helpers
+//
 // The mechanisms constructed in this section enable us to detect what sort of datatype has
 // been passed to a function.
 
@@ -434,7 +435,7 @@ struct TextSender {
 // Default BinarySender, raises a compile time error.
 template <typename T, typename Enable=void>
 struct BinarySender {
-	MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "BinarySender class not specialized for this type");
+	GNUPLOT_STATIC_ASSERT_MSG((sizeof(T) == 0), "BinarySender class not specialized for this type");
 
 	// This is here to avoid further compilation errors, beyond what the assert prints.
 	static void send(std::ostream &stream, const T &v);
@@ -452,7 +453,7 @@ struct FlatBinarySender {
 // Default BinfmtSender, raises a compile time error.
 template <typename T, typename Enable=void>
 struct BinfmtSender {
-	MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "BinfmtSender class not specialized for this type");
+	GNUPLOT_STATIC_ASSERT_MSG((sizeof(T) == 0), "BinfmtSender class not specialized for this type");
 
 	// This is here to avoid further compilation errors, beyond what the assert prints.
 	static void send(std::ostream &);
@@ -817,7 +818,7 @@ public:
 
 	// Returns the range (iterator) for an array.
 	static range_type get_range(const T &) {
-		MY_STATIC_ASSERT_MSG((sizeof(T)==0), "argument was not a container");
+		GNUPLOT_STATIC_ASSERT_MSG((sizeof(T)==0), "argument was not a container");
 		throw std::logic_error("static assert should have been triggered by this point");
 	}
 };
@@ -867,13 +868,13 @@ public:
 	void inc() { ++it; }
 
 	value_type deref() const {
-		MY_STATIC_ASSERT_MSG(sizeof(TV) && !is_container,
+		GNUPLOT_STATIC_ASSERT_MSG(sizeof(TV) && !is_container,
 			"deref called on nested container");
 		return *it;
 	}
 
 	subiter_type deref_subiter() const {
-		MY_STATIC_ASSERT_MSG(sizeof(TV) && is_container,
+		GNUPLOT_STATIC_ASSERT_MSG(sizeof(TV) && is_container,
 			"deref_iter called on non-nested container");
 		return ArrayTraits<TV>::get_range(*it);
 	}
@@ -1165,8 +1166,11 @@ get_columns_range(const T &arg) {
 static bool debug_array_print = 0;
 void set_debug_array_print(bool v) { debug_array_print = v; }
 
+// {{{2 Tags (like enums for metaprogramming)
+
 // These tags define what our goal is, what sort of thing should ultimately be sent to the
-// ostream:
+// ostream.  These tags are passed to the PrintMode template argument of the functions in this
+// section.
 //
 // ModeText   - Sends the data in an array in text format
 // ModeBinary - Sends the data in an array in binary format
@@ -1183,13 +1187,15 @@ struct ColUnwrapYes { };
 
 // The user must give a hint to describe how nested containers are to be interpreted.  This is
 // done by calling e.g. `send1d_colmajor()` or `send2d()`.  This hint is then described by the
-// following tags.
+// following tags.  This is passed to the OrganizationMode template argument.
 struct Mode1D       { static std::string class_name() { return "Mode1D"      ; } };
 struct Mode2D       { static std::string class_name() { return "Mode2D"      ; } };
 struct Mode1DUnwrap { static std::string class_name() { return "Mode1DUnwrap"; } };
 struct Mode2DUnwrap { static std::string class_name() { return "Mode2DUnwrap"; } };
 // Support for the legacy behavior that guesses which of the above four modes should be used.
 struct ModeAuto     { static std::string class_name() { return "ModeAuto"    ; } };
+
+// }}}2
 
 // {{{2 ModeAutoDecoder
 //
@@ -1252,13 +1258,19 @@ struct ModeAutoDecoder<T,
 
 // }}}2
 
-template <typename T>
-size_t get_range_size(const T &arg) {
-	// FIXME - not the fastest way.  Implement a size() method for range.
-	size_t ret = 0;
-	for(T i=arg; !i.is_end(); i.inc()) ++ret;
-	return ret;
-}
+// The data is processed using several levels of functions that call each other in sequence,
+// each defined in a subsection of code below.  Because C++ wants you to declare a function
+// before using it, we begin with the innermost function.  So in order to see the sequence in
+// which these are called, you should read the following subsections in reverse order.  Nested
+// arrays are formated into blocks (for 2D data) and lines (for 1D or 2D data), then further
+// nesting levels are formatted into columns.  Also tag dispatching is used in order to define
+// various sorts of behavior.  Each of these tasks is handled by one of the following
+// subsections.
+
+// {{{2 send_scalar()
+//
+// Send a scalar in one of three possible ways: via TextSender, BinarySender, or BinfmtSender,
+// depending on which PrintMode tag is passed to the function.
 
 template <typename T>
 void send_scalar(std::ostream &stream, const T &arg, ModeText) {
@@ -1275,6 +1287,15 @@ void send_scalar(std::ostream &stream, const T &, ModeBinfmt) {
 	BinfmtSender<T>::send(stream);
 }
 
+// }}}2
+
+// {{{2 deref_and_print()
+//
+// Dereferences and prints the given range (iterator).  At this point we are done with treating
+// containers as blocks (for 2D data) and lines (for 1D or 2D data).  Any further levels of
+// nested containers will at this point be treated as columns.
+
+// If arg is not a container, then print it via send_scalar().
 template <typename T, typename PrintMode>
 typename boost::disable_if_c<T::is_container>::type
 deref_and_print(std::ostream &stream, const T &arg, PrintMode) {
@@ -1282,6 +1303,9 @@ deref_and_print(std::ostream &stream, const T &arg, PrintMode) {
 	send_scalar(stream, v, PrintMode());
 }
 
+// If arg is a container (but not a PairOfRange or VecOfRange, which are handled below) then
+// treat the contents as columns, iterating over the contents recursively.  If outputting in
+// text mode, put a space between columns.
 template <typename T, typename PrintMode>
 typename boost::enable_if_c<T::is_container>::type
 deref_and_print(std::ostream &stream, const T &arg, PrintMode) {
@@ -1297,6 +1321,7 @@ deref_and_print(std::ostream &stream, const T &arg, PrintMode) {
 	if(debug_array_print && PrintMode::is_text) stream << "}";
 }
 
+// PairOfRange is treated as columns.  In text mode, put a space between columns.
 template <typename T, typename U, typename PrintMode>
 void deref_and_print(std::ostream &stream, const PairOfRange<T, U> &arg, PrintMode) {
 	deref_and_print(stream, arg.l, PrintMode());
@@ -1304,6 +1329,7 @@ void deref_and_print(std::ostream &stream, const PairOfRange<T, U> &arg, PrintMo
 	deref_and_print(stream, arg.r, PrintMode());
 }
 
+// VecOfRange is treated as columns.  In text mode, put a space between columns.
 template <typename T, typename PrintMode>
 void deref_and_print(std::ostream &stream, const VecOfRange<T> &arg, PrintMode) {
 	for(size_t i=0; i<arg.rvec.size(); i++) {
@@ -1312,23 +1338,45 @@ void deref_and_print(std::ostream &stream, const VecOfRange<T> &arg, PrintMode) 
 	}
 }
 
+// }}}2
+
+// {{{2 print_block()
+//
+// Here we format nested containers into blocks (for 2D data) and lines.  Actually, block and
+// line formatting is only truely needed for text mode output, but for uniformity this function
+// is also invoked in binary mode (the PrintMode tag determines the output mode).  If the goal
+// is to just print the array size or the binary format string, then the loops exit after the
+// first iteration.
+//
+// The Depth argument tells how deep to recurse.  It will be either `2` for 2D data, formatted
+// into blocks and lines, with empty lines between blocks, or `1` for 1D data formatted into
+// lines but not blocks.  Gnuplot only supports 1D and 2D data, but if it were to support 3D in
+// the future (e.g. volume rendering), all that would be needed would be some trivial changes
+// in this section.  After Depth number of nested containers have been recursed into, control
+// is passed to deref_and_print(), which treats any further nested containers as columns.
+
+// Depth==1 and we are not asked to print the size of the array.  Send each element of the
+// range to deref_and_print() for further processing into columns.
 template <size_t Depth, typename T, typename PrintMode>
 typename boost::enable_if_c<(Depth==1) && !PrintMode::is_size>::type
 print_block(std::ostream &stream, T &arg, PrintMode) {
-	while(!arg.is_end()) {
+	for(; !arg.is_end(); arg.inc()) {
 		//print_entry(arg.deref());
 		deref_and_print(stream, arg, PrintMode());
+		// If asked to print the binary format string, only the first element needs to be
+		// looked at.
 		if(PrintMode::is_binfmt) break;
 		if(PrintMode::is_text) stream << std::endl;
-		arg.inc();
 	}
 }
 
+// Depth>1 and we are not asked to print the size of the array.  Loop over the range and
+// recurse into print_block() with Depth -> Depth-1.
 template <size_t Depth, typename T, typename PrintMode>
 typename boost::enable_if_c<(Depth>1) && !PrintMode::is_size>::type
 print_block(std::ostream &stream, T &arg, PrintMode) {
 	bool first = true;
-	while(!arg.is_end()) {
+	for(; !arg.is_end(); arg.inc()) {
 		if(first) {
 			first = false;
 		} else {
@@ -1337,17 +1385,29 @@ print_block(std::ostream &stream, T &arg, PrintMode) {
 		if(debug_array_print && PrintMode::is_text) stream << "<block>" << std::endl;
 		typename T::subiter_type sub = arg.deref_subiter();
 		print_block<Depth-1>(stream, sub, PrintMode());
+		// If asked to print the binary format string, only the first element needs to be
+		// looked at.
 		if(PrintMode::is_binfmt) break;
-		arg.inc();
 	}
 }
 
+// Determine how many elements are in the given range.  Used in the functions below.
+template <typename T>
+size_t get_range_size(const T &arg) {
+	// FIXME - not the fastest way.  Implement a size() method for range.
+	size_t ret = 0;
+	for(T i=arg; !i.is_end(); i.inc()) ++ret;
+	return ret;
+}
+
+// Depth==1 and we are asked to print the size of the array.
 template <size_t Depth, typename T, typename PrintMode>
 typename boost::enable_if_c<(Depth==1) && PrintMode::is_size>::type
 print_block(std::ostream &stream, T &arg, PrintMode) {
 	stream << get_range_size(arg);
 }
 
+// Depth>1 and we are asked to print the size of the array.
 template <size_t Depth, typename T, typename PrintMode>
 typename boost::enable_if_c<(Depth>1) && PrintMode::is_size>::type
 print_block(std::ostream &stream, T &arg, PrintMode) {
@@ -1358,48 +1418,73 @@ print_block(std::ostream &stream, T &arg, PrintMode) {
 	stream << "," << get_range_size(arg);
 }
 
-template <size_t Depth, typename T, typename PrintMode>
-void generic_sender_level2(std::ostream &stream, T &arg, PrintMode) {
-	print_block<Depth>(stream, arg, PrintMode());
-}
+// }}}2
+
+// {{{2 handle_colunwrap_tag()
+//
+// If passed the ColUnwrapYes then treat the outermost nested container as columns by calling
+// get_columns_range().  Otherwise just call get_range().  The range iterator is then passed to
+// print_block() for further processing.
 
 template <size_t Depth, typename T, typename PrintMode>
-void generic_sender_level1(std::ostream &stream, const T &arg, ColUnwrapNo, PrintMode) {
-	MY_STATIC_ASSERT_MSG(ArrayTraits<T>::depth >= Depth, "container not deep enough");
+void handle_colunwrap_tag(std::ostream &stream, const T &arg, ColUnwrapNo, PrintMode) {
+	GNUPLOT_STATIC_ASSERT_MSG(ArrayTraits<T>::depth >= Depth, "container not deep enough");
 	typename ArrayTraits<T>::range_type range = ArrayTraits<T>::get_range(arg);
-	generic_sender_level2<Depth>(stream, range, PrintMode());
+	print_block<Depth>(stream, range, PrintMode());
 }
 
 template <size_t Depth, typename T, typename PrintMode>
-void generic_sender_level1(std::ostream &stream, const T &arg, ColUnwrapYes, PrintMode) {
-	MY_STATIC_ASSERT_MSG(ArrayTraits<T>::depth >= Depth+1, "container not deep enough");
+void handle_colunwrap_tag(std::ostream &stream, const T &arg, ColUnwrapYes, PrintMode) {
+	GNUPLOT_STATIC_ASSERT_MSG(ArrayTraits<T>::depth >= Depth+1, "container not deep enough");
 	VecOfRange<typename ArrayTraits<T>::range_type::subiter_type> cols = get_columns_range(arg);
-	generic_sender_level2<Depth>(stream, cols, PrintMode());
+	print_block<Depth>(stream, cols, PrintMode());
+}
+
+// }}}2
+
+// {{{2 handle_organization_tag()
+//
+// Parse the OrganizationMode tag then forward to handle_colunwrap_tag() for further
+// processing.  If passed the Mode1D or Mode2D tags, then set Depth=1 or Depth=2.  If passed
+// Mode{1,2}DUnwrap then use the ColUnwrapYes tag.  If passed ModeAuto (which is for legacy
+// support) then use ModeAutoDecoder to guess which of Mode1D, Mode2D, etc. should be used.
+
+template <typename T, typename PrintMode>
+void handle_organization_tag(std::ostream &stream, const T &arg, Mode1D, PrintMode) {
+	handle_colunwrap_tag<1>(stream, arg, ColUnwrapNo(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
-void generic_sender_level0(std::ostream &stream, const T &arg, Mode1D, PrintMode) {
-	generic_sender_level1<1>(stream, arg, ColUnwrapNo(), PrintMode());
+void handle_organization_tag(std::ostream &stream, const T &arg, Mode2D, PrintMode) {
+	handle_colunwrap_tag<2>(stream, arg, ColUnwrapNo(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
-void generic_sender_level0(std::ostream &stream, const T &arg, Mode2D, PrintMode) {
-	generic_sender_level1<2>(stream, arg, ColUnwrapNo(), PrintMode());
+void handle_organization_tag(std::ostream &stream, const T &arg, Mode1DUnwrap, PrintMode) {
+	handle_colunwrap_tag<1>(stream, arg, ColUnwrapYes(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
-void generic_sender_level0(std::ostream &stream, const T &arg, Mode1DUnwrap, PrintMode) {
-	generic_sender_level1<1>(stream, arg, ColUnwrapYes(), PrintMode());
+void handle_organization_tag(std::ostream &stream, const T &arg, Mode2DUnwrap, PrintMode) {
+	handle_colunwrap_tag<2>(stream, arg, ColUnwrapYes(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
-void generic_sender_level0(std::ostream &stream, const T &arg, Mode2DUnwrap, PrintMode) {
-	generic_sender_level1<2>(stream, arg, ColUnwrapYes(), PrintMode());
+void handle_organization_tag(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
+	handle_organization_tag(stream, arg, typename ModeAutoDecoder<T>::mode(), PrintMode());
 }
 
-template <typename T, typename PrintMode>
-void generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
-	generic_sender_level0(stream, arg, typename ModeAutoDecoder<T>::mode(), PrintMode());
+// }}}2
+
+// The entry point for the processing defined in this section.  It just forwards immediately to
+// handle_organization_tag().  This function is only here to give a sane name to the entry
+// point.
+//
+// The allowed values for the OrganizationMode and PrintMode tags are defined in the beginning
+// of this section.
+template <typename T, typename OrganizationMode, typename PrintMode>
+void top_level_array_sender(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
+	handle_organization_tag(stream, arg, OrganizationMode(), PrintMode());
 }
 
 // }}}1
@@ -1560,7 +1645,7 @@ private:
 public:
 	template <typename T, typename ArrayMode>
 	Gnuplot &send(const T &arg, ArrayMode) {
-		generic_sender_level0(*this, arg, ArrayMode(), ModeText());
+		top_level_array_sender(*this, arg, ArrayMode(), ModeText());
 		*this << "e" << std::endl; // gnuplot's "end of array" token
 		do_flush(); // probably not really needed, but doesn't hurt
 		return *this;
@@ -1568,7 +1653,7 @@ public:
 
 	template <typename T, typename ArrayMode>
 	Gnuplot &sendBinary(const T &arg, ArrayMode) {
-		generic_sender_level0(*this, arg, ArrayMode(), ModeBinary());
+		top_level_array_sender(*this, arg, ArrayMode(), ModeBinary());
 		do_flush(); // probably not really needed, but doesn't hurt
 		return *this;
 	}
@@ -1577,10 +1662,10 @@ public:
 	std::string binfmt(const T &arg, const std::string &arr_or_rec, ArrayMode) {
 		std::ostringstream tmp;
 		tmp << " format='";
-		generic_sender_level0(tmp, arg, ArrayMode(), ModeBinfmt());
+		top_level_array_sender(tmp, arg, ArrayMode(), ModeBinfmt());
 		assert((arr_or_rec == "array") || (arr_or_rec == "record"));
 		tmp << "' " << arr_or_rec << "=(";
-		generic_sender_level0(tmp, arg, ArrayMode(), ModeSize());
+		top_level_array_sender(tmp, arg, ArrayMode(), ModeSize());
 		tmp << ")";
 		tmp << " ";
 		return tmp.str();
@@ -1591,7 +1676,7 @@ public:
 	std::string file(const T &arg, std::string filename, ArrayMode) {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
-		generic_sender_level0(tmp_stream, arg, ArrayMode(), ModeText());
+		top_level_array_sender(tmp_stream, arg, ArrayMode(), ModeText());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
@@ -1605,7 +1690,7 @@ public:
 	std::string binaryFile(const T &arg, std::string filename, const std::string &arr_or_rec, ArrayMode) {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out | std::fstream::binary);
-		generic_sender_level0(tmp_stream, arg, ArrayMode(), ModeBinary());
+		top_level_array_sender(tmp_stream, arg, ArrayMode(), ModeBinary());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
@@ -1788,7 +1873,7 @@ public:
 	}
 
 	value_type deref() const {
-		MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "cannot deref a blitz slice");
+		GNUPLOT_STATIC_ASSERT_MSG((sizeof(T) == 0), "cannot deref a blitz slice");
 		throw std::logic_error("static assert should have been triggered by this point");
 	}
 
@@ -1828,7 +1913,7 @@ public:
 	}
 
 	subiter_type deref_subiter() const {
-		MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "argument was not a container");
+		GNUPLOT_STATIC_ASSERT_MSG((sizeof(T) == 0), "argument was not a container");
 		throw std::logic_error("static assert should have been triggered by this point");
 	}
 
@@ -1901,7 +1986,7 @@ class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
 		}
 
 		subiter_type deref_subiter() const {
-			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "argument was not a container");
+			GNUPLOT_STATIC_ASSERT_MSG((sizeof(T) == 0), "argument was not a container");
 			throw std::logic_error("static assert should have been triggered by this point");
 		}
 
@@ -1925,7 +2010,7 @@ class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
 		void inc() { ++col; }
 
 		value_type deref() const {
-			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "can't call deref on an armadillo cube col");
+			GNUPLOT_STATIC_ASSERT_MSG((sizeof(T) == 0), "can't call deref on an armadillo cube col");
 			throw std::logic_error("static assert should have been triggered by this point");
 		}
 
@@ -1952,7 +2037,7 @@ class ArrayTraits<arma::Cube<T> > : public ArrayTraitsDefaults<T> {
 		void inc() { ++row; }
 
 		value_type deref() const {
-			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "can't call deref on an armadillo cube row");
+			GNUPLOT_STATIC_ASSERT_MSG((sizeof(T) == 0), "can't call deref on an armadillo cube row");
 			throw std::logic_error("static assert should have been triggered by this point");
 		}
 
@@ -2002,7 +2087,7 @@ class ArrayTraits_ArmaMatOrField : public ArrayTraitsDefaults<T> {
 		}
 
 		subiter_type deref_subiter() const {
-			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "argument was not a container");
+			GNUPLOT_STATIC_ASSERT_MSG((sizeof(T) == 0), "argument was not a container");
 			throw std::logic_error("static assert should have been triggered by this point");
 		}
 
@@ -2025,7 +2110,7 @@ class ArrayTraits_ArmaMatOrField : public ArrayTraitsDefaults<T> {
 		void inc() { ++row; }
 
 		value_type deref() const {
-			MY_STATIC_ASSERT_MSG((sizeof(T) == 0), "can't call deref on an armadillo matrix row");
+			GNUPLOT_STATIC_ASSERT_MSG((sizeof(T) == 0), "can't call deref on an armadillo matrix row");
 			throw std::logic_error("static assert should have been triggered by this point");
 		}
 
