@@ -1607,9 +1607,9 @@ public:
 			std::cerr << "ending gnuplot session" << std::endl;
 		}
 
-		// FIXME - boost's close method calls close() on the file descriptor, but
-		// we need to use pclose instead.  For now, just skip calling boost's close
-		// and use flush just in case.
+		// FIXME - boost's close method calls close() on the file descriptor, but we need to
+		// use sometimes use pclose instead.  For now, just skip calling boost's close and use
+		// flush just in case.
 		do_flush();
 		// Wish boost had a pclose method...
 		//close();
@@ -1888,7 +1888,7 @@ public:
 	typedef BlitzIterator<T, ArrayDim, SliceDim-1> subiter_type;
 	static const bool is_container = true;
 
-	// FIXME - handle one-based arrays
+	// FIXME - it would be nice to also handle one-based arrays
 	bool is_end() const {
 		return idx[ArrayDim-SliceDim] == p->shape()[ArrayDim-SliceDim];
 	}
@@ -1924,7 +1924,7 @@ public:
 	typedef Error_WasNotContainer subiter_type;
 	static const bool is_container = false;
 
-	// FIXME - handle one-based arrays
+	// FIXME - it would be nice to also handle one-based arrays
 	bool is_end() const {
 		return idx[ArrayDim-1] == p->shape()[ArrayDim-1];
 	}
