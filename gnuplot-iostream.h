@@ -732,7 +732,7 @@ struct BinarySender<std::tuple<Args...> > {
 
 // }}}1
 
-// {{{1 New array writer stuff
+// {{{1 ArrayTraits and Range classes
 //
 // This section handles sending of array data to gnuplot.  It is rather complicated because of
 // the diversity of storage schemes supported.  For example, it treats a
@@ -743,11 +743,36 @@ struct BinarySender<std::tuple<Args...> > {
 // multidimensional arrays (although gnuplot in principle only supports 1D and 2D arrays, our
 // module is in principle not limited).
 //
-// The ArrayTraits is specialized for every supported array or container type.
+// The ArrayTraits is specialized for every supported array or container type (the default,
+// unspecialized, version of ArrayTraits exists only to tell you that something is *not* a
+// container, via the is_container flag).
+// ArrayTraits tells you the depth of a nested (or multidimensional) container, the value type,
+// and can provided a specialized sort of iterator (via `get_range`).  Ranges are sort of like
+// STL iterators, except that they have built-in knowledge of the end condition so you don't
+// have to carry around both a begin() and an end() iterator like in STL.
+//
+// As an example of how this works, consider a std::pair of std::vectors.  Ultimately this gets
+// sent to gnuplot as two columns, so the two vectors need to be iterated in lockstep.
+// The `value_type` of `std::pair<std::vector<T>, std::vector<U>>` is then `std::pair<T, U>`
+// and this is what deferencing the range (iterator) gives.  Internally, this range is built
+// out of a pair of ranges (PairOfRange class), and the `inc()` (advance to next element)
+// method calls `inc()` on each of the children.  Tuples are handled as nexted pairs.
+//
+// In addition to PairOfRange, there is also a VecOfRange class that can be used to treat a
+// container as if it were a tuple.  This is used for the case where 2D data is sent to
+// send1d() or 3D data is sent to plot2d(): the inner dimension is treated as columns.
+//
+// The range, accessed via `ArrayTraits<T>::get_range`, will be of a different class depending
+// on T (and this is defined by the ArrayTraits specialization for T).  It will always have
+// methods `inc()` to advance to the next element and `is_end()` for checking whether one has
+// advanced past the final element.  For nested containers, `deref_subiter()` returns a range
+// iterator for the next nesting level.  When at the last level of nesting, `deref()` returns
+// the value of the entry the iterator points to (a scalar, pair, or tuple).  A range class
+// will have a typedef `value_type` that gives the return value of `deref()` and `subiter_type`
+// corresponding to the return type of `deref_subiter()`.  Only one of these two will be
+// available, depending on whether there are deeper levels of nesting.
 
-// {{{2 ArrayTraits and Range classes
-
-// {{{3 ArrayTraits generic class and defaults
+// {{{2 ArrayTraits generic class and defaults
 
 // Error messages involving this stem from treating something that was not a container as if it
 // was.  This is only here to allow compiliation without errors in normal cases.
@@ -777,6 +802,8 @@ public:
 	}
 };
 
+// Most specializations of ArrayTraits should inherit from this (with V set to the value type).
+// It sets some default values.
 template <typename V>
 class ArrayTraitsDefaults {
 public:
@@ -800,9 +827,9 @@ template <typename T>
 class ArrayTraits<T&&> : public ArrayTraits<T> { };
 #endif
 
-// }}}3
+// }}}2
 
-// {{{3 STL container support
+// {{{2 STL container support
 
 template <typename TI, typename TV>
 class IteratorRange {
@@ -820,13 +847,13 @@ public:
 	void inc() { ++it; }
 
 	value_type deref() const {
-		MY_STATIC_ASSERT_MSG((sizeof(TV) && !is_container),
+		MY_STATIC_ASSERT_MSG(sizeof(TV) && !is_container,
 			"deref called on nested container");
 		return *it;
 	}
 
 	subiter_type deref_subiter() const {
-		MY_STATIC_ASSERT_MSG(sizeof(TV) && (is_container),
+		MY_STATIC_ASSERT_MSG(sizeof(TV) && is_container,
 			"deref_iter called on non-nested container");
 		return ArrayTraits<TV>::get_range(*it);
 	}
@@ -847,9 +874,9 @@ public:
 	}
 };
 
-// }}}3
+// }}}2
 
-// {{{3 C style array support
+// {{{2 C style array support
 
 template <typename T, size_t N>
 class ArrayTraits<T[N]> : public ArrayTraitsDefaults<T> {
@@ -861,9 +888,9 @@ public:
 	}
 };
 
-// }}}3
+// }}}2
 
-// {{{3 std::pair support
+// {{{2 std::pair support
 
 template <typename RT, typename RU>
 class PairOfRange {
@@ -928,9 +955,9 @@ public:
 	}
 };
 
-// }}}3
+// }}}2
 
-// {{{3 boost::tuple support
+// {{{2 boost::tuple support
 
 template <typename T>
 class ArrayTraits<T,
@@ -981,9 +1008,9 @@ public:
 	}
 };
 
-// }}}3
+// }}}2
 
-// {{{3 std::tuple support
+// {{{2 std::tuple support
 
 #if GNUPLOT_ENABLE_CXX11
 
@@ -1026,9 +1053,9 @@ public:
 
 #endif // GNUPLOT_ENABLE_CXX11
 
-// }}}3
+// }}}2
 
-// {{{3 Support column unwrap of container
+// {{{2 Support column unwrap of container
 
 template <typename RT>
 class VecOfRange {
@@ -1097,11 +1124,11 @@ get_columns_range(const T &arg) {
 	return ret;
 }
 
-// }}}3
-
 // }}}2
 
-// {{{2 Array printing functions
+// }}}1
+
+// {{{1 Array printing functions
 
 static bool debug_array_print = 0;
 void set_debug_array_print(bool v) { debug_array_print = v; }
@@ -1120,7 +1147,7 @@ struct Mode1DUnwrap { static std::string class_name() { return "Mode1DUnwrap"; }
 struct Mode2DUnwrap { static std::string class_name() { return "Mode2DUnwrap"; } };
 struct ModeAuto     { static std::string class_name() { return "ModeAuto"    ; } };
 
-// {{{3 ModeAutoDecoder
+// {{{2 ModeAutoDecoder
 
 template <typename T, typename Enable=void>
 struct ModeAutoDecoder { };
@@ -1174,7 +1201,7 @@ struct ModeAutoDecoder<T,
 	typedef Mode2D mode;
 };
 
-// }}}3
+// }}}2
 
 template <typename T>
 size_t get_range_size(const T &arg) {
@@ -1325,8 +1352,6 @@ template <typename T, typename PrintMode>
 void generic_sender_level0(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
 	generic_sender_level0(stream, arg, typename ModeAutoDecoder<T>::mode(), PrintMode());
 }
-
-// }}}2
 
 // }}}1
 
