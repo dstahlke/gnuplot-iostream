@@ -1,7 +1,7 @@
 // vim:foldmethod=marker
 
 /*
-Copyright (c) 2013 Daniel Stahlke
+Copyright (c) 2013 Daniel Stahlke (dan@stahlke.org)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,9 @@ THE SOFTWARE.
 /* A C++ interface to gnuplot.
  * Web page: http://www.stahlke.org/dan/gnuplot-iostream
  * Documentation: https://gitorious.org/gnuplot-iostream/pages/Home
+ *
+ * The whole library consists of this monolithic header file, for ease of installation (the
+ * Makefile and *.cc files are only for examples and tests).
  *
  * TODO:
  * 	What version of boost is currently required?
@@ -738,39 +741,47 @@ struct BinarySender<std::tuple<Args...> > {
 // the diversity of storage schemes supported.  For example, it treats a
 // `std::pair<std::vector<T>, std::vector<U>>` in the same way as a
 // `std::vector<std::pair<T, U>>`, iterating through the two arrays in lockstep, and sending
-// pair data to gnuplot.  In fact, any nested combination of pairs, tuples, STL containers,
-// Blitz arrays, and Armadillo arrays is supported.  Nested containers are considered to be
-// multidimensional arrays (although gnuplot in principle only supports 1D and 2D arrays, our
-// module is in principle not limited).
+// pairs <T,U> to gnuplot as columns.  In fact, any nested combination of pairs, tuples, STL
+// containers, Blitz arrays, and Armadillo arrays is supported (with the caveat that, for
+// instance, Blitz arrays should never be put into an STL container or you will suffer
+// unpredictable results due the way Blitz handles assignment).  Nested containers are
+// considered to be multidimensional arrays.  Although gnuplot only supports 1D and 2D arrays,
+// our module is in principle not limited.
 //
-// The ArrayTraits is specialized for every supported array or container type (the default,
-// unspecialized, version of ArrayTraits exists only to tell you that something is *not* a
-// container, via the is_container flag).
-// ArrayTraits tells you the depth of a nested (or multidimensional) container, the value type,
-// and can provided a specialized sort of iterator (via `get_range`).  Ranges are sort of like
-// STL iterators, except that they have built-in knowledge of the end condition so you don't
-// have to carry around both a begin() and an end() iterator like in STL.
+// The ArrayTraits class is specialized for every supported array or container type (the
+// default, unspecialized, version of ArrayTraits exists only to tell you that something is
+// *not* a container, via the is_container flag).  ArrayTraits tells you the depth of a nested
+// (or multidimensional) container, as well as the value type, and provides a specialized
+// sort of iterator (a.k.a. "range").  Ranges are sort of like STL iterators, except that they
+// have built-in knowledge of the end condition so you don't have to carry around both a
+// begin() and an end() iterator like in STL.
 //
 // As an example of how this works, consider a std::pair of std::vectors.  Ultimately this gets
 // sent to gnuplot as two columns, so the two vectors need to be iterated in lockstep.
 // The `value_type` of `std::pair<std::vector<T>, std::vector<U>>` is then `std::pair<T, U>`
 // and this is what deferencing the range (iterator) gives.  Internally, this range is built
-// out of a pair of ranges (PairOfRange class), and the `inc()` (advance to next element)
-// method calls `inc()` on each of the children.  Tuples are handled as nexted pairs.
+// out of a pair of ranges (PairOfRange class), the `inc()` (advance to next element)
+// method calls `inc()` on each of the children, and `deref()` calls `deref()` on each child
+// and combines the results to return a `std::pair`.  Tuples are handled as nested pairs.
 //
-// In addition to PairOfRange, there is also a VecOfRange class that can be used to treat a
-// container as if it were a tuple.  This is used for the case where 2D data is sent to
-// send1d() or 3D data is sent to plot2d(): the inner dimension is treated as columns.
+// In addition to PairOfRange, there is also a VecOfRange class that can be used to treat the
+// outermost part of a nested container as if it were a tuple.  Since tuples are printed as
+// columns, this is like treating a multidimensional array as if it were column-major.  A
+// VecOfRange is obtained by calling `get_columns_range`.  This is used by, for instance,
+// `send1d_colmajor`.  The implementation is similar to that of PairOfRange.
 //
 // The range, accessed via `ArrayTraits<T>::get_range`, will be of a different class depending
-// on T (and this is defined by the ArrayTraits specialization for T).  It will always have
+// on T, and this is defined by the ArrayTraits specialization for T.  It will always have
 // methods `inc()` to advance to the next element and `is_end()` for checking whether one has
 // advanced past the final element.  For nested containers, `deref_subiter()` returns a range
-// iterator for the next nesting level.  When at the last level of nesting, `deref()` returns
-// the value of the entry the iterator points to (a scalar, pair, or tuple).  A range class
-// will have a typedef `value_type` that gives the return value of `deref()` and `subiter_type`
-// corresponding to the return type of `deref_subiter()`.  Only one of these two will be
-// available, depending on whether there are deeper levels of nesting.
+// iterator for the next nesting level.  When at the innermost level of nesting, `deref()`
+// returns the value of the entry the iterator points to (a scalar, pair, or tuple).
+// Only one of `deref()` or `deref_subiter()` will be available, depending on whether there are
+// deeper levels of nesting.  The typedefs `value_type` and `subiter_type` tell the return
+// types of these two methods.
+//
+// Support for standard C++ and boost containers and tuples of containers is provided in this
+// section.  Support for third party packages like Blitz and Armadillo is in a later section.
 
 // {{{2 ArrayTraits generic class and defaults
 
@@ -790,12 +801,21 @@ struct Error_InappropriateDeref { };
 template <typename T, typename Enable=void>
 class ArrayTraits {
 public:
+	// The value type of elements after all levels of nested containers have been dereferenced.
 	typedef Error_WasNotContainer value_type;
+	// The type of the range (a.k.a. iterator) that `get_range()` returns.
 	typedef Error_WasNotContainer range_type;
+	// Tells whether T is in fact a container type.
 	static const bool is_container = false;
+	// This flag supports the legacy behavior of automatically guessing whether the data should
+	// be treated as column major.  This guessing happens when `send()` is called rather than
+	// `send1d()` or `send2d()`.  This is deprecated, but is still supported for reverse
+	// compatibility.
 	static const bool allow_auto_unwrap = false;
+	// The number of levels of nesting, or the dimension of multidimensional arrays.
 	static const size_t depth = 0;
 
+	// Returns the range (iterator) for an array.
 	static range_type get_range(const T &) {
 		MY_STATIC_ASSERT_MSG((sizeof(T)==0), "argument was not a container");
 		throw std::logic_error("static assert should have been triggered by this point");
@@ -1055,7 +1075,11 @@ public:
 
 // }}}2
 
-// {{{2 Support column unwrap of container
+// {{{2 Support column unwrap of container (VecOfRange)
+//
+// VecOfRange (created via `get_columns_range()`) treats the outermost level of a nested
+// container as if it were a tuple.  Since tuples are sent to gnuplot as columns, this has the
+// effect of addressing a multidimensional array in column major order.
 
 template <typename RT>
 class VecOfRange {
@@ -1129,25 +1153,50 @@ get_columns_range(const T &arg) {
 // }}}1
 
 // {{{1 Array printing functions
+//
+// This section coordinates the sending of data to gnuplot.  The ArrayTraits mechanism tells us
+// about nested containers and provides iterators over them.  Here we make use of this,
+// deciding what dimensions should be treated as rows, columns, or blocks, telling gnuplot the
+// size of the array if needed, and so on.
 
+// If this is set, then text-mode data will be sent in a format that is not compatible with
+// gnuplot, but which helps the programmer tell what the library is thinking.  Basically it
+// puts brackets around groups of items and puts a message delineating blocks of data.
 static bool debug_array_print = 0;
 void set_debug_array_print(bool v) { debug_array_print = v; }
 
+// These tags define what our goal is, what sort of thing should ultimately be sent to the
+// ostream:
+//
+// ModeText   - Sends the data in an array in text format
+// ModeBinary - Sends the data in an array in binary format
+// ModeBinfmt - Sends the gnuplot format code for binary data (e.g. "%double%double")
+// ModeSize   - Sends the size of an array.  Needed when sending binary data.
 struct ModeText   { static const bool is_text = 1; static const bool is_binfmt = 0; static const bool is_size = 0; };
 struct ModeBinary { static const bool is_text = 0; static const bool is_binfmt = 0; static const bool is_size = 0; };
 struct ModeBinfmt { static const bool is_text = 0; static const bool is_binfmt = 1; static const bool is_size = 0; };
 struct ModeSize   { static const bool is_text = 0; static const bool is_binfmt = 0; static const bool is_size = 1; };
 
-struct ColunwrapNo  { };
-struct ColunwrapYes { };
+// Whether to treat the outermost level of a nested container as columns (column major mode).
+struct ColUnwrapNo  { };
+struct ColUnwrapYes { };
 
+// The user must give a hint to describe how nested containers are to be interpreted.  This is
+// done by calling e.g. `send1d_colmajor()` or `send2d()`.  This hint is then described by the
+// following tags.
 struct Mode1D       { static std::string class_name() { return "Mode1D"      ; } };
 struct Mode2D       { static std::string class_name() { return "Mode2D"      ; } };
 struct Mode1DUnwrap { static std::string class_name() { return "Mode1DUnwrap"; } };
 struct Mode2DUnwrap { static std::string class_name() { return "Mode2DUnwrap"; } };
+// Support for the legacy behavior that guesses which of the above four modes should be used.
 struct ModeAuto     { static std::string class_name() { return "ModeAuto"    ; } };
 
 // {{{2 ModeAutoDecoder
+//
+// ModeAuto guesses which of Mode1D, Mode2D, Mode1DUnwrap, or Mode2DUnwrap should be used.
+// This is provided for reverse compatibility; it is better to specify explicitly which mode to
+// use.  Since this is only for reverse compatibility, and shouldn't be used, I'm not going to
+// spell out what the rules are.  See below for details.
 
 template <typename T, typename Enable=void>
 struct ModeAutoDecoder { };
@@ -1315,14 +1364,14 @@ void generic_sender_level2(std::ostream &stream, T &arg, PrintMode) {
 }
 
 template <size_t Depth, typename T, typename PrintMode>
-void generic_sender_level1(std::ostream &stream, const T &arg, ColunwrapNo, PrintMode) {
+void generic_sender_level1(std::ostream &stream, const T &arg, ColUnwrapNo, PrintMode) {
 	MY_STATIC_ASSERT_MSG(ArrayTraits<T>::depth >= Depth, "container not deep enough");
 	typename ArrayTraits<T>::range_type range = ArrayTraits<T>::get_range(arg);
 	generic_sender_level2<Depth>(stream, range, PrintMode());
 }
 
 template <size_t Depth, typename T, typename PrintMode>
-void generic_sender_level1(std::ostream &stream, const T &arg, ColunwrapYes, PrintMode) {
+void generic_sender_level1(std::ostream &stream, const T &arg, ColUnwrapYes, PrintMode) {
 	MY_STATIC_ASSERT_MSG(ArrayTraits<T>::depth >= Depth+1, "container not deep enough");
 	VecOfRange<typename ArrayTraits<T>::range_type::subiter_type> cols = get_columns_range(arg);
 	generic_sender_level2<Depth>(stream, cols, PrintMode());
@@ -1330,22 +1379,22 @@ void generic_sender_level1(std::ostream &stream, const T &arg, ColunwrapYes, Pri
 
 template <typename T, typename PrintMode>
 void generic_sender_level0(std::ostream &stream, const T &arg, Mode1D, PrintMode) {
-	generic_sender_level1<1>(stream, arg, ColunwrapNo(), PrintMode());
+	generic_sender_level1<1>(stream, arg, ColUnwrapNo(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
 void generic_sender_level0(std::ostream &stream, const T &arg, Mode2D, PrintMode) {
-	generic_sender_level1<2>(stream, arg, ColunwrapNo(), PrintMode());
+	generic_sender_level1<2>(stream, arg, ColUnwrapNo(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
 void generic_sender_level0(std::ostream &stream, const T &arg, Mode1DUnwrap, PrintMode) {
-	generic_sender_level1<1>(stream, arg, ColunwrapYes(), PrintMode());
+	generic_sender_level1<1>(stream, arg, ColUnwrapYes(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
 void generic_sender_level0(std::ostream &stream, const T &arg, Mode2DUnwrap, PrintMode) {
-	generic_sender_level1<2>(stream, arg, ColunwrapYes(), PrintMode());
+	generic_sender_level1<2>(stream, arg, ColUnwrapYes(), PrintMode());
 }
 
 template <typename T, typename PrintMode>
