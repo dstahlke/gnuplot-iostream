@@ -1483,7 +1483,7 @@ void handle_organization_tag(std::ostream &stream, const T &arg, ModeAuto, Print
 // The allowed values for the OrganizationMode and PrintMode tags are defined in the beginning
 // of this section.
 template <typename T, typename OrganizationMode, typename PrintMode>
-void top_level_array_sender(std::ostream &stream, const T &arg, ModeAuto, PrintMode) {
+void top_level_array_sender(std::ostream &stream, const T &arg, OrganizationMode, PrintMode) {
 	handle_organization_tag(stream, arg, OrganizationMode(), PrintMode());
 }
 
@@ -1643,40 +1643,46 @@ private:
 	}
 
 public:
-	template <typename T, typename ArrayMode>
-	Gnuplot &send(const T &arg, ArrayMode) {
-		top_level_array_sender(*this, arg, ArrayMode(), ModeText());
+// {{{2 Generic sender routines.
+//
+// These are declared public, but are undocumented.  It is recommended to use the functions in
+// the next section, which serve as adapters that pass specific values for the OrganizationMode
+// tag.
+
+	template <typename T, typename OrganizationMode>
+	Gnuplot &send(const T &arg, OrganizationMode) {
+		top_level_array_sender(*this, arg, OrganizationMode(), ModeText());
 		*this << "e" << std::endl; // gnuplot's "end of array" token
 		do_flush(); // probably not really needed, but doesn't hurt
 		return *this;
 	}
 
-	template <typename T, typename ArrayMode>
-	Gnuplot &sendBinary(const T &arg, ArrayMode) {
-		top_level_array_sender(*this, arg, ArrayMode(), ModeBinary());
+	template <typename T, typename OrganizationMode>
+	Gnuplot &sendBinary(const T &arg, OrganizationMode) {
+		top_level_array_sender(*this, arg, OrganizationMode(), ModeBinary());
 		do_flush(); // probably not really needed, but doesn't hurt
 		return *this;
 	}
 
-	template <typename T, typename ArrayMode>
-	std::string binfmt(const T &arg, const std::string &arr_or_rec, ArrayMode) {
+	template <typename T, typename OrganizationMode>
+	std::string binfmt(const T &arg, const std::string &arr_or_rec, OrganizationMode) {
 		std::ostringstream tmp;
 		tmp << " format='";
-		top_level_array_sender(tmp, arg, ArrayMode(), ModeBinfmt());
+		top_level_array_sender(tmp, arg, OrganizationMode(), ModeBinfmt());
 		assert((arr_or_rec == "array") || (arr_or_rec == "record"));
 		tmp << "' " << arr_or_rec << "=(";
-		top_level_array_sender(tmp, arg, ArrayMode(), ModeSize());
+		top_level_array_sender(tmp, arg, OrganizationMode(), ModeSize());
 		tmp << ")";
 		tmp << " ";
 		return tmp.str();
 	}
 
 	// NOTE: empty filename makes temporary file
-	template <typename T, typename ArrayMode>
-	std::string file(const T &arg, std::string filename, ArrayMode) {
+	template <typename T, typename OrganizationMode>
+	std::string file(const T &arg, std::string filename, OrganizationMode) {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
-		top_level_array_sender(tmp_stream, arg, ArrayMode(), ModeText());
+		top_level_array_sender(tmp_stream, arg, OrganizationMode(), ModeText());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
@@ -1686,18 +1692,24 @@ public:
 	}
 
 	// NOTE: empty filename makes temporary file
-	template <typename T, typename ArrayMode>
-	std::string binaryFile(const T &arg, std::string filename, const std::string &arr_or_rec, ArrayMode) {
+	template <typename T, typename OrganizationMode>
+	std::string binaryFile(const T &arg, std::string filename, const std::string &arr_or_rec, OrganizationMode) {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out | std::fstream::binary);
-		top_level_array_sender(tmp_stream, arg, ArrayMode(), ModeBinary());
+		top_level_array_sender(tmp_stream, arg, OrganizationMode(), ModeBinary());
 		tmp_stream.close();
 
 		std::ostringstream cmdline;
 		// FIXME - hopefully filename doesn't contain quotes or such...
-		cmdline << " '" << filename << "' binary" << binfmt(arg, arr_or_rec, ArrayMode());
+		cmdline << " '" << filename << "' binary" << binfmt(arg, arr_or_rec, OrganizationMode());
 		return cmdline.str();
 	}
+
+// }}}2
+
+// {{{2 Deprecated data sending interface that guesses an appropriate OrganizationMode.  This is here
+// for reverse compatibility.  Don't use it.  A warning will be printed if
+// GNUPLOT_DEPRECATE_WARN is defined.
 
 	template <typename T> Gnuplot GNUPLOT_DEPRECATE("use send1d or send2d")
 		&send(const T &arg) { return send(arg, ModeAuto()); }
@@ -1716,6 +1728,13 @@ public:
 	template <typename T> std::string GNUPLOT_DEPRECATE("use binArr1d or binArr2d")
 		binaryFile(const T &arg, const std::string &filename="", const std::string &arr_or_rec="array")
 		{ return binaryFile(arg, filename, arr_or_rec,  ModeAuto()); }
+
+// }}}2
+
+// {{{2 Public (documented) data sending interface.
+//
+// It seems odd to define 16 different functions, but I think this ends up being the most
+// convenient in terms of usage by the end user.
 
 	template <typename T> Gnuplot &send1d         (const T &arg) { return send(arg, Mode1D      ()); }
 	template <typename T> Gnuplot &send2d         (const T &arg) { return send(arg, Mode2D      ()); }
@@ -1741,6 +1760,8 @@ public:
 	template <typename T> std::string binFile2d         (const T &arg, const std::string &arr_or_rec, const std::string &filename="") { return binaryFile(arg, filename, arr_or_rec,  Mode2D      ()); }
 	template <typename T> std::string binFile1d_colmajor(const T &arg, const std::string &arr_or_rec, const std::string &filename="") { return binaryFile(arg, filename, arr_or_rec,  Mode1DUnwrap()); }
 	template <typename T> std::string binFile2d_colmajor(const T &arg, const std::string &arr_or_rec, const std::string &filename="") { return binaryFile(arg, filename, arr_or_rec,  Mode2DUnwrap()); }
+
+// }}}2
 
 #ifdef GNUPLOT_ENABLE_FEEDBACK
 public:
@@ -1775,6 +1796,10 @@ private:
 //#elif defined GNUPLOT_USE_TMPFILE
 //// Currently this doesn't work since fscanf doesn't block (need something like "tail -f")
 //			feedback = new GnuplotFeedbackTmpfile(debug_messages);
+#else
+			// This shouldn't happen because we are in an `#ifdef GNUPLOT_ENABLE_FEEDBACK`
+			// block which should only be activated if GNUPLOT_ENABLE_PTY is defined.
+			GNUPLOT_STATIC_ASSERT_MSG((sizeof(T) == 0), "No feedback mechanism defined.");
 #endif
 			*this << "set print \"" << feedback->filename() << "\"" << std::endl;
 		}
@@ -1799,7 +1824,7 @@ public:
 } // namespace gnuplotio
 
 // The first version of this library didn't use namespaces, and now this must be here forever
-// for reverse compatibility:
+// for reverse compatibility.
 using gnuplotio::Gnuplot;
 
 #endif // GNUPLOT_IOSTREAM_H
