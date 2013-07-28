@@ -20,6 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+// This demonstrates all sorts of data types that can be plotted using send1d().  It is not
+// meant as a first tutorial; for that see example-misc.cc or the project wiki.
+
 #if (__cplusplus >= 201103)
 #define USE_CXX
 #endif

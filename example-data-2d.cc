@@ -20,6 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+// This demonstrates all sorts of data types that can be plotted using send2d().  It is not
+// meant as a first tutorial; for that see example-misc.cc or the project wiki.
+
 #define USE_CXX (__cplusplus >= 201103)
 
 #include <vector>
