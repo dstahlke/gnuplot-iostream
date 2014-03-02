@@ -336,6 +336,30 @@ void demo_NaN() {
 	pause_if_needed();
 }
 
+void demo_segments() {
+	// Demo of disconnected segments.  Plot a circle with some pieces missing.
+
+	Gnuplot gp;
+
+	std::vector<std::vector<std::pair<double, double> > > all_segments;
+	for(int j=0; j<10; j++) {
+		std::vector<std::pair<double, double> > segment;
+		for(int i=0; i<5; i++) {
+			double theta = double(j*10+i)/100*2*M_PI;
+			segment.push_back(std::make_pair(
+					std::cos(theta), std::sin(theta)
+				));
+		}
+		all_segments.push_back(segment);
+	}
+
+	gp << "plot '-' with linespoints\n";
+	// NOTE: send2d is used here, rather than send1d.  This puts a blank line between segments.
+	gp.send2d(all_segments);
+
+	pause_if_needed();
+}
+
 int main(int argc, char **argv) {
 	std::map<std::string, void (*)(void)> demos;
 
@@ -350,6 +374,7 @@ int main(int argc, char **argv) {
 	demos["script_external_binary"] = demo_external_binary;
 	demos["animation"]              = demo_animation;
 	demos["nan"]                    = demo_NaN;
+	demos["segments"]               = demo_segments;
 
 	if(argc < 2) {
 		printf("Usage: %s <demo_name>\n", argv[0]);
