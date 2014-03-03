@@ -1164,7 +1164,6 @@ get_columns_range(const T &arg) {
 // gnuplot, but which helps the programmer tell what the library is thinking.  Basically it
 // puts brackets around groups of items and puts a message delineating blocks of data.
 static bool debug_array_print = 0;
-void set_debug_array_print(bool v) { debug_array_print = v; }
 
 // {{{2 Tags (like enums for metaprogramming)
 
