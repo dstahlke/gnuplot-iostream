@@ -360,6 +360,46 @@ void demo_segments() {
 	pause_if_needed();
 }
 
+void demo_image() {
+	// Example of plotting an image.  Of course you are free (and encouraged) to
+	// use Blitz or Armadillo rather than std::vector in these situations.
+
+	Gnuplot gp;
+
+	std::vector<std::vector<double> > image;
+	for(int j=0; j<100; j++) {
+		std::vector<double> row;
+		for(int i=0; i<100; i++) {
+			double x = (i-50.0)/5.0;
+			double y = (j-50.0)/5.0;
+			double z = std::cos(sqrt(x*x+y*y));
+			row.push_back(z);
+		}
+		image.push_back(row);
+	}
+
+	// It may seem counterintuitive that send1d should be used rather than
+	// send2d.  The explanation is as follows.  The "send2d" method puts each
+	// value on its own line, with blank lines between rows.  This is what is
+	// expected by the splot command.  The two "dimensions" here are the lines
+	// and the blank-line-delimited blocks.  The "send1d" method doesn't group
+	// things into blocks.  So the elements of each row are printed as columns,
+	// as expected by Gnuplot's "matrix with image" command.  But images
+	// typically have lots of pixels, so sending as text is not the most
+	// efficient (although, it's not really that bad in the case of this
+	// example).  See the binary version below.
+	//
+	//gp << "plot '-' matrix with image\n";
+	//gp.send1d(image);
+
+	// To be honest, Gnuplot's documentation for "binary" and for "image" are
+	// both unclear to me.  The following example comes by trial-and-error.
+	gp << "plot '-' binary" << gp.binFmt2d(image, "array") << "with image\n";
+	gp.sendBinary2d(image);
+
+	pause_if_needed();
+}
+
 int main(int argc, char **argv) {
 	std::map<std::string, void (*)(void)> demos;
 
@@ -375,6 +415,7 @@ int main(int argc, char **argv) {
 	demos["animation"]              = demo_animation;
 	demos["nan"]                    = demo_NaN;
 	demos["segments"]               = demo_segments;
+	demos["image"]                  = demo_image;
 
 	if(argc < 2) {
 		printf("Usage: %s <demo_name>\n", argv[0]);
