@@ -870,12 +870,18 @@ public:
 	value_type deref() const {
 		GNUPLOT_STATIC_ASSERT_MSG(sizeof(TV) && !is_container,
 			"deref called on nested container");
+		if(is_end()) {
+			throw std::runtime_error("attepted to dereference past end of iterator");
+		}
 		return *it;
 	}
 
 	subiter_type deref_subiter() const {
 		GNUPLOT_STATIC_ASSERT_MSG(sizeof(TV) && is_container,
-			"deref_iter called on non-nested container");
+			"deref_subiter called on non-nested container");
+		if(is_end()) {
+			throw std::runtime_error("attepted to dereference past end of iterator");
+		}
 		return ArrayTraits<TV>::get_range(*it);
 	}
 
@@ -1165,6 +1171,13 @@ get_columns_range(const T &arg) {
 // puts brackets around groups of items and puts a message delineating blocks of data.
 static bool debug_array_print = 0;
 
+// This is thrown when an empty container is being plotted.  This exception should always
+// be caught and should not propagate to the user.
+class plotting_empty_container : public std::length_error {
+public:
+	plotting_empty_container() : std::length_error("plotting empty container") { }
+};
+
 // {{{2 Tags (like enums for metaprogramming)
 
 // These tags define what our goal is, what sort of thing should ultimately be sent to the
@@ -1308,8 +1321,10 @@ deref_and_print(std::ostream &stream, const T &arg, PrintMode) {
 template <typename T, typename PrintMode>
 typename boost::enable_if_c<T::is_container>::type
 deref_and_print(std::ostream &stream, const T &arg, PrintMode) {
-	if(debug_array_print && PrintMode::is_text) stream << "{";
+	if(arg.is_end()) throw plotting_empty_container();
 	typename T::subiter_type subrange = arg.deref_subiter();
+	if(PrintMode::is_binfmt && subrange.is_end()) throw plotting_empty_container();
+	if(debug_array_print && PrintMode::is_text) stream << "{";
 	bool first = true;
 	while(!subrange.is_end()) {
 		if(!first && PrintMode::is_text) stream << " ";
@@ -1331,6 +1346,7 @@ void deref_and_print(std::ostream &stream, const PairOfRange<T, U> &arg, PrintMo
 // VecOfRange is treated as columns.  In text mode, put a space between columns.
 template <typename T, typename PrintMode>
 void deref_and_print(std::ostream &stream, const VecOfRange<T> &arg, PrintMode) {
+	if(PrintMode::is_binfmt && arg.rvec.empty()) throw plotting_empty_container();
 	for(size_t i=0; i<arg.rvec.size(); i++) {
 		if(i && PrintMode::is_text) stream << " ";
 		deref_and_print(stream, arg.rvec[i], PrintMode());
@@ -1359,6 +1375,7 @@ void deref_and_print(std::ostream &stream, const VecOfRange<T> &arg, PrintMode) 
 template <size_t Depth, typename T, typename PrintMode>
 typename boost::enable_if_c<(Depth==1) && !PrintMode::is_size>::type
 print_block(std::ostream &stream, T &arg, PrintMode) {
+	if(PrintMode::is_binfmt && arg.is_end()) throw plotting_empty_container();
 	for(; !arg.is_end(); arg.inc()) {
 		//print_entry(arg.deref());
 		deref_and_print(stream, arg, PrintMode());
@@ -1374,6 +1391,7 @@ print_block(std::ostream &stream, T &arg, PrintMode) {
 template <size_t Depth, typename T, typename PrintMode>
 typename boost::enable_if_c<(Depth>1) && !PrintMode::is_size>::type
 print_block(std::ostream &stream, T &arg, PrintMode) {
+	if(PrintMode::is_binfmt && arg.is_end()) throw plotting_empty_container();
 	bool first = true;
 	for(; !arg.is_end(); arg.inc()) {
 		if(first) {
@@ -1382,6 +1400,7 @@ print_block(std::ostream &stream, T &arg, PrintMode) {
 			if(PrintMode::is_text) stream << std::endl;
 		}
 		if(debug_array_print && PrintMode::is_text) stream << "<block>" << std::endl;
+		if(arg.is_end()) throw plotting_empty_container();
 		typename T::subiter_type sub = arg.deref_subiter();
 		print_block<Depth-1>(stream, sub, PrintMode());
 		// If asked to print the binary format string, only the first element needs to be
@@ -1410,6 +1429,7 @@ print_block(std::ostream &stream, T &arg, PrintMode) {
 template <size_t Depth, typename T, typename PrintMode>
 typename boost::enable_if_c<(Depth>1) && PrintMode::is_size>::type
 print_block(std::ostream &stream, T &arg, PrintMode) {
+	if(arg.is_end()) throw plotting_empty_container();
 	// It seems that size for two dimensional arrays needs the fastest varying index first,
 	// contrary to intuition.  The gnuplot documentation is not too clear on this point.
 	typename T::subiter_type sub = arg.deref_subiter();
@@ -1665,15 +1685,21 @@ public:
 
 	template <typename T, typename OrganizationMode>
 	std::string binfmt(const T &arg, const std::string &arr_or_rec, OrganizationMode) {
-		std::ostringstream tmp;
-		tmp << " format='";
-		top_level_array_sender(tmp, arg, OrganizationMode(), ModeBinfmt());
 		assert((arr_or_rec == "array") || (arr_or_rec == "record"));
-		tmp << "' " << arr_or_rec << "=(";
-		top_level_array_sender(tmp, arg, OrganizationMode(), ModeSize());
-		tmp << ")";
-		tmp << " ";
-		return tmp.str();
+		std::string ret;
+		try {
+			std::ostringstream tmp;
+			tmp << " format='";
+			top_level_array_sender(tmp, arg, OrganizationMode(), ModeBinfmt());
+			tmp << "' " << arr_or_rec << "=(";
+			top_level_array_sender(tmp, arg, OrganizationMode(), ModeSize());
+			tmp << ")";
+			tmp << " ";
+			ret = tmp.str();
+		} catch(const plotting_empty_container &) {
+			ret = std::string(" format='' ") + arr_or_rec + "=(0) ";
+		}
+		return ret;
 	}
 
 	// NOTE: empty filename makes temporary file

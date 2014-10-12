@@ -5,6 +5,7 @@ example-interactive
 example-misc
 test-noncopyable
 test-outputs
+test-empty
 *.error.txt
 *.o
 # Windows compiled stuff

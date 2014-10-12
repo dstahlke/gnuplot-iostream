@@ -48,7 +48,7 @@ THE SOFTWARE.
 using namespace gnuplotio;
 
 Gnuplot gp;
-std::string basedir = "unittest-output";
+const std::string basedir = "unittest-output";
 
 template <typename T, typename ArrayMode>
 void test_given_mode(
