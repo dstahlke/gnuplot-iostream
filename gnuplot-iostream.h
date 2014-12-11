@@ -52,7 +52,11 @@ THE SOFTWARE.
 #ifdef GNUPLOT_ENABLE_PTY
 #	include <termios.h>
 #	include <unistd.h>
+#ifdef __APPLE__
+#	include <util.h>
+#else
 #	include <pty.h>
+#endif
 #endif // GNUPLOT_ENABLE_PTY
 
 // C++ system includes
