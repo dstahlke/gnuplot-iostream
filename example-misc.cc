@@ -26,8 +26,6 @@ THE SOFTWARE.
 #include <limits>
 #include <cmath>
 #include <cstdio>
-#include <boost/tuple/tuple.hpp>
-#include <boost/foreach.hpp>
 
 // Warn about use of deprecated functions.
 #define GNUPLOT_DEPRECATE_WARN
@@ -68,20 +66,20 @@ void pause_if_needed() {
 void demo_basic() {
 	Gnuplot gp;
 	// For debugging or manual editing of commands:
-	//Gnuplot gp(std::fopen("plot.gnu"));
+	//Gnuplot gp(std::fopen("plot.gnu", "w"));
 	// or
 	//Gnuplot gp("tee plot.gnu | gnuplot -persist");
 
-	std::vector<std::pair<double, double> > xy_pts_A;
+	std::vector<std::pair<double, double>> xy_pts_A;
 	for(double x=-2; x<2; x+=0.01) {
 		double y = x*x*x;
-		xy_pts_A.push_back(std::make_pair(x, y));
+		xy_pts_A.emplace_back(x, y);
 	}
 
-	std::vector<std::pair<double, double> > xy_pts_B;
+	std::vector<std::pair<double, double>> xy_pts_B;
 	for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
 		double theta = alpha*2.0*3.14159;
-		xy_pts_B.push_back(std::make_pair(cos(theta), sin(theta)));
+		xy_pts_B.emplace_back(cos(theta), sin(theta));
 	}
 
 	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
@@ -95,16 +93,16 @@ void demo_basic() {
 void demo_binary() {
 	Gnuplot gp;
 
-	std::vector<std::pair<double, double> > xy_pts_A;
+	std::vector<std::pair<double, double>> xy_pts_A;
 	for(double x=-2; x<2; x+=0.01) {
 		double y = x*x*x;
-		xy_pts_A.push_back(std::make_pair(x, y));
+		xy_pts_A.emplace_back(x, y);
 	}
 
-	std::vector<std::pair<double, double> > xy_pts_B;
+	std::vector<std::pair<double, double>> xy_pts_B;
 	for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
 		double theta = alpha*2.0*3.14159;
-		xy_pts_B.push_back(std::make_pair(cos(theta), sin(theta)));
+		xy_pts_B.emplace_back(cos(theta), sin(theta));
 	}
 
 	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
@@ -119,16 +117,16 @@ void demo_binary() {
 void demo_tmpfile() {
 	Gnuplot gp;
 
-	std::vector<std::pair<double, double> > xy_pts_A;
+	std::vector<std::pair<double, double>> xy_pts_A;
 	for(double x=-2; x<2; x+=0.01) {
 		double y = x*x*x;
-		xy_pts_A.push_back(std::make_pair(x, y));
+		xy_pts_A.emplace_back(x, y);
 	}
 
-	std::vector<std::pair<double, double> > xy_pts_B;
+	std::vector<std::pair<double, double>> xy_pts_B;
 	for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
 		double theta = alpha*2.0*3.14159;
-		xy_pts_B.push_back(std::make_pair(cos(theta), sin(theta)));
+		xy_pts_B.emplace_back(cos(theta), sin(theta));
 	}
 
 	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
@@ -161,16 +159,16 @@ void demo_png() {
 	gp << "plot '-' with lines, sin(x/200) with lines\n";
 	gp.send1d(y_pts);
 
-	std::vector<std::pair<double, double> > xy_pts_A;
+	std::vector<std::pair<double, double>> xy_pts_A;
 	for(double x=-2; x<2; x+=0.01) {
 		double y = x*x*x;
-		xy_pts_A.push_back(std::make_pair(x, y));
+		xy_pts_A.emplace_back(x, y);
 	}
 
-	std::vector<std::pair<double, double> > xy_pts_B;
+	std::vector<std::pair<double, double>> xy_pts_B;
 	for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
 		double theta = alpha*2.0*3.14159;
-		xy_pts_B.push_back(std::make_pair(cos(theta), sin(theta)));
+		xy_pts_B.emplace_back(cos(theta), sin(theta));
 	}
 
 	std::cout << "Creating my_graph_2.png" << std::endl;
@@ -184,13 +182,13 @@ void demo_png() {
 void demo_vectors() {
 	Gnuplot gp;
 
-	std::vector<boost::tuple<double, double, double, double> > vecs;
+	std::vector<std::tuple<double, double, double, double>> vecs;
 	for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
 		double theta = alpha*2.0*3.14159;
-		vecs.push_back(boost::make_tuple(
+		vecs.emplace_back(
 			 cos(theta),      sin(theta),
 			-cos(theta)*0.1, -sin(theta)*0.1
-		));
+		);
 	}
 
 	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
@@ -200,15 +198,15 @@ void demo_vectors() {
 	pause_if_needed();
 }
 
-std::vector<boost::tuple<double, double, double> > get_trefoil() {
-	std::vector<boost::tuple<double, double, double> > vecs;
+std::vector<std::tuple<double, double, double>> get_trefoil() {
+	std::vector<std::tuple<double, double, double>> vecs;
 	for(double alpha=0; alpha<1; alpha+=1.0/120.0) {
 		double theta = alpha*2.0*3.14159;
-		vecs.push_back(boost::make_tuple(
+		vecs.emplace_back(
 			(2+cos(3*theta))*cos(2*theta),
 			(2+cos(3*theta))*sin(2*theta),
 			sin(3*theta)
-		));
+		);
 	}
 	return vecs;
 }
@@ -218,7 +216,7 @@ void demo_inline_text() {
 	// This file handle will be closed automatically when gp goes out of scope.
 	Gnuplot gp(std::fopen("inline_text.gnu", "w"));
 
-	std::vector<boost::tuple<double, double, double> > vecs = get_trefoil();
+	std::vector<std::tuple<double, double, double>> vecs = get_trefoil();
 
 	gp << "splot '-' with lines notitle\n";
 	gp.send1d(vecs);
@@ -231,7 +229,7 @@ void demo_inline_binary() {
 	// This file handle will be closed automatically when gp goes out of scope.
 	Gnuplot gp(std::fopen("inline_binary.gnu", "wb"));
 
-	std::vector<boost::tuple<double, double, double> > vecs = get_trefoil();
+	std::vector<std::tuple<double, double, double>> vecs = get_trefoil();
 
 	gp << "splot '-' binary" << gp.binFmt1d(vecs, "record") << "with lines notitle\n";
 	gp.sendBinary1d(vecs);
@@ -244,7 +242,7 @@ void demo_external_text() {
 	// This file handle will be closed automatically when gp goes out of scope.
 	Gnuplot gp(std::fopen("external_text.gnu", "w"));
 
-	std::vector<boost::tuple<double, double, double> > vecs = get_trefoil();
+	std::vector<std::tuple<double, double, double>> vecs = get_trefoil();
 
 	std::cout << "Creating external_text.dat" << std::endl;
 	gp << "splot" << gp.file1d(vecs, "external_text.dat") << "with lines notitle\n";
@@ -257,7 +255,7 @@ void demo_external_binary() {
 	// This file handle will be closed automatically when gp goes out of scope.
 	Gnuplot gp(std::fopen("external_binary.gnu", "w"));
 
-	std::vector<boost::tuple<double, double, double> > vecs = get_trefoil();
+	std::vector<std::tuple<double, double, double>> vecs = get_trefoil();
 
 	std::cout << "Creating external_binary.dat" << std::endl;
 	gp << "splot" << gp.binFile1d(vecs, "record", "external_binary.dat")
@@ -310,15 +308,15 @@ void demo_NaN() {
 
 	Gnuplot gp;
 
-	std::vector<std::pair<double, double> > xy_pts;
+	std::vector<std::pair<double, double>> xy_pts;
 	for(int i=0; i<100; i++) {
 		double theta = double(i)/100*2*M_PI;
 		if((i/5)%2) {
-			xy_pts.push_back(std::make_pair(
+			xy_pts.emplace_back(
 					std::cos(theta), std::sin(theta)
-				));
+				);
 		} else {
-			xy_pts.push_back(std::make_pair(nan, nan));
+			xy_pts.emplace_back(nan, nan);
 		}
 	}
 
@@ -341,14 +339,14 @@ void demo_segments() {
 
 	Gnuplot gp;
 
-	std::vector<std::vector<std::pair<double, double> > > all_segments;
+	std::vector<std::vector<std::pair<double, double>>> all_segments;
 	for(int j=0; j<10; j++) {
-		std::vector<std::pair<double, double> > segment;
+		std::vector<std::pair<double, double>> segment;
 		for(int i=0; i<5; i++) {
 			double theta = double(j*10+i)/100*2*M_PI;
-			segment.push_back(std::make_pair(
+			segment.emplace_back(
 					std::cos(theta), std::sin(theta)
-				));
+				);
 		}
 		all_segments.push_back(segment);
 	}
@@ -366,7 +364,7 @@ void demo_image() {
 
 	Gnuplot gp;
 
-	std::vector<std::vector<double> > image;
+	std::vector<std::vector<double>> image;
 	for(int j=0; j<100; j++) {
 		std::vector<double> row;
 		for(int i=0; i<100; i++) {
@@ -400,6 +398,55 @@ void demo_image() {
 	pause_if_needed();
 }
 
+void demo_plotgroup() {
+	Gnuplot gp;
+	// For debugging or manual editing of commands:
+	//Gnuplot gp(std::fopen("plot.gnu", "w"));
+	// or
+	//Gnuplot gp("tee plot.gnu | gnuplot -persist");
+
+    // FIXME do these work?
+	// To send data as text rather than binary (slower but more compatible):
+	//gp.transportBinary(false);
+	// To use temporary files rather then sending data through gnuplot's stdin:
+	//gp.useTmpFile(true);
+
+	std::vector<std::pair<double, double>> xy_pts_A;
+	for(double x=-2; x<2; x+=0.01) {
+		double y = x*x*x;
+		xy_pts_A.emplace_back(x, y);
+	}
+
+	std::vector<std::pair<double, double>> xy_pts_B;
+	for(double alpha=0; alpha<1; alpha+=1.0/24.0) {
+		double theta = alpha*2.0*3.14159;
+		xy_pts_B.emplace_back(cos(theta), sin(theta));
+	}
+
+	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
+
+    if(0) {
+        // One way to do it:
+        auto plots = gp.plotGroup();
+        plots.add_plot1d(xy_pts_A, "with lines title 'cubic'");
+        // For this one, save the data in a file and plot that file (rather than sending
+        // directly to gnuplot's stdin).
+        plots.add_plot1d(xy_pts_B, "with points title 'circle'").file("circle.dat");
+        plots.add_plot("sin(x)");
+        gp << plots;
+    } else {
+        // Alternative way:
+        gp << gp.plotGroup()
+            .add_plot1d(xy_pts_A, "with lines title 'cubic'")
+            // For this one, save the data in a file and plot that file (rather than sending
+            // directly to gnuplot's stdin).
+            .add_plot1d(xy_pts_B, "with points title 'circle'").file("circle.dat")
+            .add_plot("sin(x)");
+    }
+
+	pause_if_needed();
+}
+
 int main(int argc, char **argv) {
 	std::map<std::string, void (*)(void)> demos;
 
@@ -416,12 +463,13 @@ int main(int argc, char **argv) {
 	demos["nan"]                    = demo_NaN;
 	demos["segments"]               = demo_segments;
 	demos["image"]                  = demo_image;
+	demos["plotgroup"]              = demo_plotgroup;
 
 	if(argc < 2) {
 		printf("Usage: %s <demo_name>\n", argv[0]);
 		printf("Choose one of the following demos:\n");
 		typedef std::pair<std::string, void (*)(void)> demo_pair;
-		BOOST_FOREACH(const demo_pair &pair, demos) {
+		for(const demo_pair &pair : demos) {
 			printf("    %s\n", pair.first.c_str());
 		}
 		return 0;

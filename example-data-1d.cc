@@ -23,16 +23,10 @@ THE SOFTWARE.
 // This demonstrates all sorts of data types that can be plotted using send1d().  It is not
 // meant as a first tutorial; for that see example-misc.cc or the project wiki.
 
-#if (__cplusplus >= 201103)
-#define USE_CXX
-#endif
-
 #include <vector>
 #include <complex>
 #include <cmath>
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/array.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/bind.hpp>
@@ -81,7 +75,7 @@ struct MyTriple {
 // Tells gnuplot-iostream how to print objects of class MyTriple.
 namespace gnuplotio {
 	template<typename T>
-	struct BinfmtSender<MyTriple<T> > {
+	struct BinfmtSender<MyTriple<T>> {
 		static void send(std::ostream &stream) {
 			BinfmtSender<T>::send(stream);
 			BinfmtSender<T>::send(stream);
@@ -90,7 +84,7 @@ namespace gnuplotio {
 	};
 
 	template <typename T>
-	struct BinarySender<MyTriple<T> > {
+	struct BinarySender<MyTriple<T>> {
 		static void send(std::ostream &stream, const MyTriple<T> &v) {
 			BinarySender<T>::send(stream, v.x);
 			BinarySender<T>::send(stream, v.y);
@@ -100,7 +94,7 @@ namespace gnuplotio {
 
 	// We don't use text mode in this demo.  This is just here to show how it would go.
 	template<typename T>
-	struct TextSender<MyTriple<T> > {
+	struct TextSender<MyTriple<T>> {
 		static void send(std::ostream &stream, const MyTriple<T> &v) {
 			TextSender<T>::send(stream, v.x);
 			stream << " ";
@@ -116,14 +110,17 @@ int main() {
 	// for debugging, prints to console
 	//Gnuplot gp(stdout);
 
-	int num_examples = 11;
+	// To send data as text rather than binary (slower but more compatible):
+    // FIXME function doesn't exist
+	//gp.transportBinary(false);
+	// To use temporary files rather then sending data through gnuplot's stdin:
+	//gp.useTmpFile(true);
+
+	int num_examples = 14;
 #ifdef USE_ARMA
 	num_examples += 4;
 #endif
 #ifdef USE_BLITZ
-	num_examples += 3;
-#endif
-#ifdef USE_CXX
 	num_examples += 3;
 #endif
 
@@ -131,46 +128,42 @@ int main() {
 
 	gp << "set zrange [-1:1]\n";
 
-	// I use temporary files rather than stdin because the syntax ends up being easier when
-	// plotting several datasets.  With the stdin method you have to give the full plot
-	// command, then all the data.  But I would rather give the portion of the plot command for
-	// the first dataset, then give the data, then the command for the second dataset, then the
-	// data, etc.
-
-	gp << "splot ";
+	auto plots = gp.splotGroup();
 
 	{
-		std::vector<std::pair<std::pair<double, double>, double> > pts;
+		std::vector<std::pair<std::pair<double, double>, double>> pts;
 		for(int i=0; i<num_steps; i++) {
-			pts.push_back(std::make_pair(std::make_pair(get_x(i, shift), get_y(i, shift)), get_z(i, shift)));
+			pts.emplace_back(
+					std::make_pair(get_x(i, shift), get_y(i, shift)),
+					get_z(i, shift));
 		}
-		gp << gp.binFile1d(pts, "record") << "with lines title 'vector of nested std::pair'";
+		plots.add_plot1d(pts, "with lines title 'vector of nested std::pair'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
 		// complex is treated as if it were a pair
-		std::vector<std::pair<std::complex<double>, double> > pts;
+		std::vector<std::pair<std::complex<double>, double>> pts;
 		for(int i=0; i<num_steps; i++) {
-			pts.push_back(std::make_pair(std::complex<double>(get_x(i, shift), get_y(i, shift)), get_z(i, shift)));
+			pts.emplace_back(
+					std::complex<double>(get_x(i, shift), get_y(i, shift)),
+					get_z(i, shift));
 		}
-		gp << gp.binFile1d(pts, "record") << "with lines title 'vector of pair of cplx and double'";
+		plots.add_plot1d(pts, "with lines title 'vector of pair of cplx and double'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
-		std::vector<boost::tuple<double, double, double> > pts;
+		std::vector<std::tuple<double, double, double>> pts;
 		for(int i=0; i<num_steps; i++) {
-			pts.push_back(boost::make_tuple(get_x(i, shift), get_y(i, shift), get_z(i, shift)));
+			pts.emplace_back(
+					get_x(i, shift), get_y(i, shift), get_z(i, shift));
 		}
-		gp << gp.binFile1d(pts, "record") << "with lines title 'vector of boost::tuple'";
+		plots.add_plot1d(pts, "with lines title 'vector of std::tuple'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
@@ -180,101 +173,95 @@ int main() {
 			y_pts.push_back(get_y(i, shift));
 			z_pts.push_back(get_z(i, shift));
 		}
-		gp << gp.binFile1d(boost::make_tuple(x_pts, y_pts, z_pts), "record") << "with lines title 'boost::tuple of vector'";
+		plots.add_plot1d(std::make_tuple(x_pts, y_pts, z_pts),
+				"with lines title 'std::tuple of vector'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
-		std::vector<boost::array<double, 3> > pts(num_steps);
+		std::vector<std::array<double, 3>> pts(num_steps);
 		for(int i=0; i<num_steps; i++) {
 			pts[i][0] = get_x(i, shift);
 			pts[i][1] = get_y(i, shift);
 			pts[i][2] = get_z(i, shift);
 		}
-		gp << gp.binFile1d(pts, "record") << "with lines title 'vector of boost::array'";
+		plots.add_plot1d(pts, "with lines title 'vector of std::array'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
-		std::vector<std::vector<double> > pts(num_steps);
+		std::vector<std::vector<double>> pts(num_steps);
 		for(int i=0; i<num_steps; i++) {
 			pts[i].push_back(get_x(i, shift));
 			pts[i].push_back(get_y(i, shift));
 			pts[i].push_back(get_z(i, shift));
 		}
-		gp << gp.binFile1d(pts, "record") << "with lines title 'vector of vector'";
+		plots.add_plot1d(pts, "with lines title 'vector of vector'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
-		std::vector<std::vector<double> > pts(3);
+		std::vector<std::vector<double>> pts(3);
 		for(int i=0; i<num_steps; i++) {
 			pts[0].push_back(get_x(i, shift));
 			pts[1].push_back(get_y(i, shift));
 			pts[2].push_back(get_z(i, shift));
 		}
-		gp << gp.binFile1d_colmajor(pts, "record") << "with lines title 'vector of vector (colmajor)'";
+		plots.add_plot1d_colmajor(pts, "with lines title 'vector of vector (colmajor)'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
-		std::vector<MyTriple<double> > pts;
+		std::vector<MyTriple<double>> pts;
 		for(int i=0; i<num_steps; i++) {
 			pts.push_back(MyTriple<double>(get_x(i, shift), get_y(i, shift), get_z(i, shift)));
 		}
-		gp << gp.binFile1d(pts, "record") << "with lines title 'vector of MyTriple'";
+		plots.add_plot1d(pts, "with lines title 'vector of MyTriple'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
 		// Note: C style arrays seem to work, but are a bit fragile since they easily decay to
 		// pointers, causing them to forget their lengths.  It is highly recommended that you
-		// use boost::array or std::array instead.  These have the same size and efficiency of
-		// C style arrays, but act like STL containers.
+        // use std::array instead.  These have the same size and efficiency of C style
+        // arrays, but act like STL containers.
 		double pts[num_steps][3];
 		for(int i=0; i<num_steps; i++) {
 			pts[i][0] = get_x(i, shift);
 			pts[i][1] = get_y(i, shift);
 			pts[i][2] = get_z(i, shift);
 		}
-		gp << gp.binFile1d(pts, "record") << "with lines title 'double[N][3]'";
+		plots.add_plot1d(pts, "with lines title 'double[N][3]'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
 		// Note: C style arrays seem to work, but are a bit fragile since they easily decay to
 		// pointers, causing them to forget their lengths.  It is highly recommended that you
-		// use boost::array or std::array instead.  These have the same size and efficiency of
-		// C style arrays, but act like STL containers.
+        // use std::array instead.  These have the same size and efficiency of C style
+        // arrays, but act like STL containers.
 		double pts[3][num_steps];
 		for(int i=0; i<num_steps; i++) {
 			pts[0][i] = get_x(i, shift);
 			pts[1][i] = get_y(i, shift);
 			pts[2][i] = get_z(i, shift);
 		}
-		gp << gp.binFile1d_colmajor(pts, "record") << "with lines title 'double[N][3] (colmajor)'";
+		plots.add_plot1d_colmajor(pts, "with lines title 'double[N][3] (colmajor)'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
 		// Note: C style arrays seem to work, but are a bit fragile since they easily decay to
 		// pointers, causing them to forget their lengths.  It is highly recommended that you
-		// use boost::array or std::array instead.  These have the same size and efficiency of
-		// C style arrays, but act like STL containers.
+        // use std::array instead.  These have the same size and efficiency of C style
+        // arrays, but act like STL containers.
 		double x_pts[num_steps];
 		double y_pts[num_steps];
 		double z_pts[num_steps];
@@ -283,12 +270,11 @@ int main() {
 			y_pts[i] = get_y(i, shift);
 			z_pts[i] = get_z(i, shift);
 		}
-		gp << gp.binFile1d(boost::make_tuple(x_pts, y_pts, z_pts), "record") <<
-			"with lines title 'boost::tuple of double[N]'";
+		plots.add_plot1d(std::forward_as_tuple(x_pts, y_pts, z_pts),
+				"with lines title 'std::tuple of double[N]'");
 	}
 
 #ifdef USE_ARMA
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
@@ -298,10 +284,9 @@ int main() {
 			pts(i, 1) = get_y(i, shift);
 			pts(i, 2) = get_z(i, shift);
 		}
-		gp << gp.binFile1d(pts, "record") << "with lines title 'armadillo N*3'";
+		plots.add_plot1d(pts, "with lines title 'armadillo N*3'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
@@ -311,10 +296,9 @@ int main() {
 			pts(1, i) = get_y(i, shift);
 			pts(2, i) = get_z(i, shift);
 		}
-		gp << gp.binFile1d_colmajor(pts, "record") << "with lines title 'armadillo 3*N (colmajor)'";
+		plots.add_plot1d_colmajor(pts, "with lines title 'armadillo 3*N (colmajor)'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
@@ -326,28 +310,26 @@ int main() {
 			y_pts(i) = get_y(i, shift);
 			z_pts(i) = get_z(i, shift);
 		}
-		gp << gp.binFile1d(boost::make_tuple(x_pts, y_pts, z_pts), "record")
-			<< "with lines title 'boost tuple of arma Row,Col,Col'";
+		plots.add_plot1d(std::make_tuple(x_pts, y_pts, z_pts),
+				"with lines title 'tuple of arma Row,Col,Col'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
-		arma::field<boost::tuple<double,double,double> > pts(num_steps);
+		arma::field<std::tuple<double,double,double>> pts(num_steps);
 		for(int i=0; i<num_steps; i++) {
-			pts(i) = boost::make_tuple(
+			pts(i) = std::make_tuple(
 				get_x(i, shift),
 				get_y(i, shift),
 				get_z(i, shift)
 			);
 		}
-		gp << gp.binFile1d(pts, "record") << "with lines title 'armadillo field of boost tuple'";
+		plots.add_plot1d(pts, "with lines title 'armadillo field of tuple'");
 	}
 #endif
 
 #ifdef USE_BLITZ
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
@@ -357,10 +339,9 @@ int main() {
 			pts(i)[1] = get_y(i, shift);
 			pts(i)[2] = get_z(i, shift);
 		}
-		gp << gp.binFile1d(pts, "record") << "with lines title 'blitz::Array<blitz::TinyVector<double, 3>, 1>'";
+		plots.add_plot1d(pts, "with lines title 'blitz::Array<blitz::TinyVector<double, 3>, 1>'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
@@ -370,10 +351,9 @@ int main() {
 			pts(i, 1) = get_y(i, shift);
 			pts(i, 2) = get_z(i, shift);
 		}
-		gp << gp.binFile1d(pts, "record") << "with lines title 'blitz<double>(N*3)'";
+		plots.add_plot1d(pts, "with lines title 'blitz<double>(N*3)'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
@@ -383,44 +363,40 @@ int main() {
 			pts(1, i) = get_y(i, shift);
 			pts(2, i) = get_z(i, shift);
 		}
-		gp << gp.binFile1d_colmajor(pts, "record") << "with lines title 'blitz<double>(3*N) (colmajor)'";
+		plots.add_plot1d_colmajor(pts, "with lines title 'blitz<double>(3*N) (colmajor)'");
 	}
 #endif
 
-#ifdef USE_CXX
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
-		std::function<boost::tuple<double,double,double>(int)> f = [&shift](int i) {
-			return boost::make_tuple(get_x(i, shift), get_y(i, shift), get_z(i, shift)); };
+		std::function<std::tuple<double,double,double>(int)> f = [&shift](int i) {
+			return std::make_tuple(get_x(i, shift), get_y(i, shift), get_z(i, shift)); };
 
 		auto pts = boost::irange(0, num_steps) | boost::adaptors::transformed(f);
 
-		gp << gp.binFile1d(pts, "record") << "with lines title 'boost transform to tuple'";
+		plots.add_plot1d(pts, "with lines title 'boost transform to tuple'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
 		auto steps = boost::irange(0, num_steps);
 
-		gp << gp.binFile1d(boost::make_tuple(
+		plots.add_plot1d(std::make_tuple(
 				steps | boost::adaptors::transformed(boost::bind(get_x, _1, shift)),
 				steps | boost::adaptors::transformed(boost::bind(get_y, _1, shift)),
 				steps | boost::adaptors::transformed(boost::bind(get_z, _1, shift))
-			), "record") << "with lines title 'tuple of boost transform'";
+			), "with lines title 'tuple of boost transform'");
 	}
 
-	gp << ", ";
 	shift += 1.0/num_examples;
 
 	{
 		// Note: C style arrays seem to work, but are a bit fragile since they easily decay to
 		// pointers, causing them to forget their lengths.  It is highly recommended that you
-		// use boost::array or std::array instead.  These have the same size and efficiency of
-		// C style arrays, but act like STL containers.
+        // use std::array instead.  These have the same size and efficiency of C style
+        // arrays, but act like STL containers.
 		double x_pts[num_steps];
 		double y_pts[num_steps];
 		double z_pts[num_steps];
@@ -431,12 +407,11 @@ int main() {
 		}
 		// Note: std::make_tuple doesn't work here since it makes the arrays decay to pointers,
 		// and as a result they forget their lengths.
-		gp << gp.binFile1d(std::tie(x_pts, y_pts, z_pts), "record") <<
-			"with lines title 'std::tie of double[N]'";
+		plots.add_plot1d(std::tie(x_pts, y_pts, z_pts),
+				"with lines title 'std::tie of double[N]'");
 	}
-#endif
 
-	gp << std::endl;
+	gp << plots;
 
 	shift += 1.0/num_examples;
 	//std::cout << shift << std::endl;

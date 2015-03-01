@@ -26,12 +26,13 @@
 
 # The -O0 option speeds up the compile, which is good for testing.  This should
 # never be used for production since the generated code is extremely slow!
-CXXFLAGS+=-Wall -Wextra -O0 -g -D_GLIBCXX_DEBUG
+CXXFLAGS+=--std=c++11 -Wall -Wextra -O0 -g -D_GLIBCXX_DEBUG
 LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
 
 # This makes the examples and tests more complete, but only works if you have the corresponding
 # libraries installed.
-#CXXFLAGS+=--std=c++11 -DUSE_ARMA=1 -DUSE_BLITZ=1
+#CXXFLAGS+=-DUSE_ARMA=1
+#CXXFLAGS+=-DUSE_BLITZ=1
 
 ALL_EXAMPLES=example-misc example-data-1d example-data-2d example-interactive
 TEST_BINARIES=test-noncopyable test-outputs test-empty
