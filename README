@@ -29,7 +29,7 @@ but also you can look at the example programs (starting with
 Getting the source code
 =======================
 
-git clone git://gitorious.org/gnuplot-iostream/gnuplot-iostream.git
+git clone https://github.com/dstahlke/gnuplot-iostream.git
 
 
 Usage
@@ -45,7 +45,7 @@ Note for Windows users
 ======================
 
 Windows support basically works, but there are some troubles.  For hints, see:
-	https://gitorious.org/gnuplot-iostream/pages/Portability
+	https://github.com/dstahlke/gnuplot-iostream/wiki/Portability
 
 Contributors
 ============

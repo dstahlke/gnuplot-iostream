@@ -24,7 +24,7 @@ THE SOFTWARE.
 
 /* A C++ interface to gnuplot.
  * Web page: http://www.stahlke.org/dan/gnuplot-iostream
- * Documentation: https://gitorious.org/gnuplot-iostream/pages/Home
+ * Documentation: https://github.com/dstahlke/gnuplot-iostream/wiki
  *
  * The whole library consists of this monolithic header file, for ease of installation (the
  * Makefile and *.cc files are only for examples and tests).
