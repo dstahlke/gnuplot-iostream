@@ -1711,6 +1711,7 @@ public:
 	std::string file(const T &arg, std::string filename, OrganizationMode) {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
+		tmp_stream << std::setprecision(16);
 		top_level_array_sender(tmp_stream, arg, OrganizationMode(), ModeText());
 		tmp_stream.close();
 
