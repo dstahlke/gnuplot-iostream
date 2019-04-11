@@ -1599,7 +1599,7 @@ public:
 		tmp_files(),
 		debug_messages(false)
 	{
-		*this << std::scientific << std::setprecision(18);  // refer <iomanip>
+		*this << std::scientific << std::setprecision(17);  // refer <iomanip>
 	}
 
 	explicit Gnuplot(FILE *_fh) :
@@ -1616,7 +1616,7 @@ public:
 		tmp_files(),
 		debug_messages(false)
 	{
-		*this << std::scientific << std::setprecision(18);  // refer <iomanip>
+		*this << std::scientific << std::setprecision(17);  // refer <iomanip>
 	}
 
 private:
@@ -1711,6 +1711,7 @@ public:
 	std::string file(const T &arg, std::string filename, OrganizationMode) {
 		if(filename.empty()) filename = make_tmpfile();
 		std::fstream tmp_stream(filename.c_str(), std::fstream::out);
+		tmp_stream << std::scientific << std::setprecision(17);
 		top_level_array_sender(tmp_stream, arg, OrganizationMode(), ModeText());
 		tmp_stream.close();
 
