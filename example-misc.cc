@@ -134,7 +134,7 @@ void demo_tmpfile() {
 	gp << "set xrange [-2:2]\nset yrange [-2:2]\n";
 	// Data will be sent via a temporary file.  These are erased when you call
 	// gp.clearTmpfiles() or when gp goes out of scope.  If you pass a filename
-	// (i.e. "gp.file1d(pts, 'mydata.dat')"), then the named file will be created
+	// (i.e. `gp.file1d(pts, "mydata.dat")`), then the named file will be created
 	// and won't be deleted.
 	//
 	// Note: you need std::endl here in order to flush the buffer.  The send1d()
