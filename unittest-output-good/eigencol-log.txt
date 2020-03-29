@@ -1,0 +1,4 @@
+--- eigencol -------------------------------------
+depth=1
+ModeAutoDecoder=Mode1D
+* Mode1D ->  'unittest-output/eigencol-Mode1D.bin' binary format='%double' record=(3) 

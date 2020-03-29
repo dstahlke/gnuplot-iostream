@@ -35,6 +35,10 @@ THE SOFTWARE.
 #include <armadillo>
 #endif
 
+#ifdef USE_EIGEN
+#include <Eigen/Dense>
+#endif
+
 #ifdef USE_BLITZ
 #include <blitz/array.h>
 #endif
@@ -118,6 +122,9 @@ int main() {
 
     int num_examples = 14;
 #ifdef USE_ARMA
+    num_examples += 4;
+#endif
+#ifdef USE_EIGEN
     num_examples += 4;
 #endif
 #ifdef USE_BLITZ
@@ -327,7 +334,63 @@ int main() {
         }
         plots.add_plot1d(pts, "with lines title 'armadillo field of tuple'");
     }
-#endif
+#endif // USE_ARMA
+
+#ifdef USE_EIGEN
+    shift += 1.0/num_examples;
+
+    {
+        Eigen::MatrixXf pts(num_steps, 3);
+        for(int i=0; i<num_steps; i++) {
+            pts(i, 0) = get_x(i, shift);
+            pts(i, 1) = get_y(i, shift);
+            pts(i, 2) = get_z(i, shift);
+        }
+        plots.add_plot1d(pts, "with lines title 'eigen N*3'");
+    }
+
+    shift += 1.0/num_examples;
+
+    {
+        Eigen::MatrixXf pts(3, num_steps);
+        for(int i=0; i<num_steps; i++) {
+            pts(0, i) = get_x(i, shift);
+            pts(1, i) = get_y(i, shift);
+            pts(2, i) = get_z(i, shift);
+        }
+        plots.add_plot1d_colmajor(pts, "with lines title 'eigen 3*N (colmajor)'");
+    }
+
+    shift += 1.0/num_examples;
+
+    {
+        Eigen::VectorXf x_pts(num_steps);
+        Eigen::VectorXf y_pts(num_steps);
+        Eigen::VectorXf z_pts(num_steps);
+        for(int i=0; i<num_steps; i++) {
+            x_pts(i) = get_x(i, shift);
+            y_pts(i) = get_y(i, shift);
+            z_pts(i) = get_z(i, shift);
+        }
+        plots.add_plot1d(std::make_tuple(x_pts, y_pts, z_pts),
+                "with lines title 'tuple of eigen Col,Col,Col'");
+    }
+
+    shift += 1.0/num_examples;
+
+    {
+        Eigen::RowVectorXf x_pts(num_steps);
+        Eigen::RowVectorXf y_pts(num_steps);
+        Eigen::RowVectorXf z_pts(num_steps);
+        for(int i=0; i<num_steps; i++) {
+            x_pts(i) = get_x(i, shift);
+            y_pts(i) = get_y(i, shift);
+            z_pts(i) = get_z(i, shift);
+        }
+        plots.add_plot1d(std::make_tuple(x_pts, y_pts, z_pts),
+                "with lines title 'tuple of eigen Row,Row,Row'");
+    }
+#endif // USE_EIGEN
 
 #ifdef USE_BLITZ
     shift += 1.0/num_examples;
@@ -365,7 +428,7 @@ int main() {
         }
         plots.add_plot1d_colmajor(pts, "with lines title 'blitz<double>(3*N) (colmajor)'");
     }
-#endif
+#endif // USE_BLITZ
 
     shift += 1.0/num_examples;
 

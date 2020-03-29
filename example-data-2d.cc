@@ -31,6 +31,10 @@ THE SOFTWARE.
 #include <armadillo>
 #endif
 
+#ifdef USE_EIGEN
+#include <Eigen/Dense>
+#endif
+
 #ifdef USE_BLITZ
 #include <blitz/array.h>
 #endif
@@ -113,6 +117,9 @@ int main() {
     int num_examples = 7;
 #ifdef USE_ARMA
     num_examples += 3;
+#endif
+#ifdef USE_EIGEN
+    num_examples += 1;
 #endif
 #ifdef USE_BLITZ
     num_examples += 3;
@@ -289,7 +296,25 @@ int main() {
         }
         plots.add_plot2d(pts, "with lines title 'arma::field'");
     }
-#endif
+#endif // USE_ARMA
+
+#ifdef USE_EIGEN
+    shift += num_v_each-1;
+
+    {
+        Eigen::MatrixXd ptsx(num_u, num_v_each);
+        Eigen::MatrixXd ptsy(num_u, num_v_each);
+        Eigen::MatrixXd ptsz(num_u, num_v_each);
+        for(int u=0; u<num_u; u++) {
+            for(int v=0; v<num_v_each; v++) {
+                ptsx(u, v) = get_point(u, v+shift).x;
+                ptsy(u, v) = get_point(u, v+shift).y;
+                ptsz(u, v) = get_point(u, v+shift).z;
+            }
+        }
+        plots.add_plot2d(std::tuple{ptsx, ptsy, ptsz}, "with lines title 'tuple<eigen, eigen, eigen>'");
+    }
+#endif // USE_EIGEN
 
 #ifdef USE_BLITZ
     shift += num_v_each-1;
@@ -333,7 +358,7 @@ int main() {
         }
         plots.add_plot2d_colmajor(pts, "with lines title 'blitz<double>(3*U*V) (colmajor)'");
     }
-#endif
+#endif // USE_BLITZ
 
     gp << plots;
 

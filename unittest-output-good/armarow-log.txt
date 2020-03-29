@@ -1,0 +1,4 @@
+--- armarow -------------------------------------
+depth=1
+ModeAutoDecoder=Mode1D
+* Mode1D ->  'unittest-output/armarow-Mode1D.bin' binary format='%double' record=(3) 

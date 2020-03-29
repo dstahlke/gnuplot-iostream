@@ -34,6 +34,10 @@ THE SOFTWARE.
 #include <armadillo>
 #endif
 
+#ifdef USE_EIGEN
+#include <Eigen/Dense>
+#endif
+
 #include "gnuplot-iostream.h"
 
 #if USE_BLITZ
@@ -81,6 +85,8 @@ template <typename T, typename DoBinary>
 typename boost::enable_if_c<(ArrayTraits<T>::depth == 2)>::type
 runtest_inner(std::ostream &log_fh, std::string header, const T &arg) {
     test_given_mode<T>(log_fh, header, arg, Mode2D(), DoBinary());
+    // FIXME need to make baselines for these
+    //test_given_mode<T>(log_fh, header, arg, Mode1D(), DoBinary());
     test_given_mode<T>(log_fh, header, arg, Mode1DUnwrap(), DoBinary());
 }
 
@@ -210,17 +216,38 @@ int main() {
 
 #if USE_ARMA
     arma::vec armacol(NX);
+    arma::rowvec armarow(NX);
     arma::mat armamat(NX, NY);
 
     for(int x=0; x<NX; x++) {
         armacol(x) = x+0.123;
+        armarow(x) = x+0.123;
         for(int y=0; y<NY; y++) {
             armamat(x, y) = x*10+y+0.123;
         }
     }
 
     runtest("armacol", armacol);
+    runtest("armarow", armarow);
     runtest("armamat", armamat);
+#endif
+
+#if USE_EIGEN
+    Eigen::VectorXd eigencol(NX);
+    Eigen::RowVectorXd eigenrow(NX);
+    Eigen::MatrixXd eigenmat(NX, NY);
+
+    for(int x=0; x<NX; x++) {
+        eigencol(x) = x+0.123;
+        eigenrow(x) = x+0.123;
+        for(int y=0; y<NY; y++) {
+            eigenmat(x, y) = x*10+y+0.123;
+        }
+    }
+
+    runtest("eigencol", eigencol);
+    runtest("eigenrow", eigenrow);
+    runtest("eigenmat", eigenmat);
 #endif
 
 #if USE_BLITZ

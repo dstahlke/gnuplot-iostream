@@ -162,7 +162,7 @@ namespace gnuplotio {
 
 // This can be specialized as needed, in order to not use the STL interfaces for specific
 // classes.
-template <typename T>
+template <typename T, typename=void>
 static constexpr bool dont_treat_as_stl_container = false;
 
 
@@ -178,6 +178,7 @@ static constexpr bool is_like_stl_container<T, std::void_t<
 
 static_assert( is_like_stl_container<std::vector<int>>);
 static_assert(!is_like_stl_container<int>);
+
 
 template <typename T>
 static constexpr bool is_boost_tuple_nulltype =
@@ -2400,6 +2401,164 @@ public:
 } // namespace gnuplotio
 #endif // GNUPLOT_ARMADILLO_SUPPORT_LOADED
 #endif // ARMA_INCLUDES
+
+// }}}2
+
+// {{{2 Eigen support
+
+// This is outside of the main header guard so that it will be compiled when people do
+// something like this:
+//    #include "gnuplot-iostream.h"
+//    #include <Eigen/Dense>
+//    #include "gnuplot-iostream.h"
+// Note that it has its own header guard to avoid double inclusion.
+
+#ifdef EIGEN_CORE_H
+#ifndef GNUPLOT_EIGEN_SUPPORT_LOADED
+#define GNUPLOT_EIGEN_SUPPORT_LOADED
+namespace gnuplotio {
+
+template <typename T, typename=void>
+static constexpr bool is_eigen_matrix = false;
+
+template <typename T>
+static constexpr bool is_eigen_matrix<T,
+    std::enable_if_t<std::is_base_of_v<Eigen::EigenBase<T>, T>>> = true;
+
+static_assert( is_eigen_matrix<Eigen::MatrixXf>);
+static_assert(!is_eigen_matrix<int>);
+
+template <typename T>
+static constexpr bool dont_treat_as_stl_container<T, typename std::enable_if_t<is_eigen_matrix<T>>> = true;
+
+static_assert(dont_treat_as_stl_container<Eigen::MatrixXf>);
+
+// {{{3 Matrix
+
+template <typename RF>
+class ArrayTraits_Eigen1D : public ArrayTraitsDefaults<typename RF::value_type> {
+    class IdxRange {
+    public:
+        IdxRange() : p(NULL), idx(0) { }
+        explicit IdxRange(const RF *_p) :
+            p(_p), idx(0) { }
+
+        using value_type = typename RF::value_type;
+        typedef Error_WasNotContainer subiter_type;
+        static constexpr bool is_container = false;
+
+        bool is_end() const { return idx == p->size(); }
+
+        void inc() { ++idx; }
+
+        value_type deref() const {
+            return (*p)(idx);
+        }
+
+        subiter_type deref_subiter() const {
+            static_assert((sizeof(value_type) == 0), "argument was not a container");
+            throw std::logic_error("static assert should have been triggered by this point");
+        }
+
+    private:
+        const RF *p;
+        Eigen::Index idx;
+    };
+
+public:
+    static constexpr bool allow_auto_unwrap = false;
+    static constexpr size_t depth = ArrayTraits<typename RF::value_type>::depth + 1;
+
+    typedef IdxRange range_type;
+
+    static range_type get_range(const RF &arg) {
+        //std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;
+        return range_type(&arg);
+    }
+};
+
+template <typename RF>
+class ArrayTraits_Eigen2D : public ArrayTraitsDefaults<typename RF::value_type> {
+    class ColRange {
+    public:
+        ColRange() : p(NULL), row(0), col(0) { }
+        explicit ColRange(const RF *_p, Eigen::Index _row) :
+            p(_p), row(_row), col(0) { }
+
+        using value_type = typename RF::value_type;
+        typedef Error_WasNotContainer subiter_type;
+        static constexpr bool is_container = false;
+
+        bool is_end() const { return col == p->cols(); }
+
+        void inc() { ++col; }
+
+        value_type deref() const {
+            return (*p)(row, col);
+        }
+
+        subiter_type deref_subiter() const {
+            static_assert((sizeof(value_type) == 0), "argument was not a container");
+            throw std::logic_error("static assert should have been triggered by this point");
+        }
+
+    private:
+        const RF *p;
+        Eigen::Index row, col;
+    };
+
+    class RowRange {
+    public:
+        RowRange() : p(NULL), row(0) { }
+        explicit RowRange(const RF *_p) : p(_p), row(0) { }
+
+        using value_type = typename RF::value_type;
+        typedef ColRange subiter_type;
+        static constexpr bool is_container = true;
+
+        bool is_end() const { return row == p->rows(); }
+
+        void inc() { ++row; }
+
+        value_type deref() const {
+            static_assert((sizeof(value_type) == 0), "can't call deref on an eigen matrix row");
+            throw std::logic_error("static assert should have been triggered by this point");
+        }
+
+        subiter_type deref_subiter() const {
+            return subiter_type(p, row);
+        }
+
+    private:
+        const RF *p;
+        Eigen::Index row;
+    };
+
+public:
+    static constexpr bool allow_auto_unwrap = false;
+    static constexpr size_t depth = ArrayTraits<typename RF::value_type>::depth + 2;
+
+    typedef RowRange range_type;
+
+    static range_type get_range(const RF &arg) {
+        //std::cout << arg.n_elem << "," << arg.n_rows << "," << arg.n_cols << std::endl;
+        return range_type(&arg);
+    }
+};
+
+template <typename T>
+class ArrayTraits<T, typename std::enable_if_t<is_eigen_matrix<T>>> :
+    public std::conditional_t<
+        T::RowsAtCompileTime == 1 || T::ColsAtCompileTime == 1,
+        ArrayTraits_Eigen1D<T>,
+        ArrayTraits_Eigen2D<T>
+    > { };
+
+// }}}3
+
+} // namespace gnuplotio
+#endif // GNUPLOT_EIGEN_SUPPORT_LOADED
+#endif // EIGEN_CORE_H
 
 // }}}2
 
