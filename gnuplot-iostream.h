@@ -30,7 +30,6 @@ THE SOFTWARE.
  * Makefile and *.cc files are only for examples and tests).
  *
  * TODO:
- *     What version of boost is currently required?
  *     Callbacks via gnuplot's 'bind' function.  This would allow triggering user functions when
  *     keys are pressed in the gnuplot window.  However, it would require a PTY reader thread.
  *     Maybe temporary files read in a thread can replace PTY stuff.
@@ -68,13 +67,13 @@ THE SOFTWARE.
 #include <cstdlib>
 #include <cmath>
 #include <tuple>
+#include <type_traits>
 
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/version.hpp>
 #include <boost/utility.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <boost/mpl/bool.hpp>
 // This is the version of boost which has v3 of the filesystem libraries by default.
 #if BOOST_VERSION >= 104600
 #    define GNUPLOT_USE_TMPFILE
@@ -164,69 +163,41 @@ namespace gnuplotio {
 // This can be specialized as needed, in order to not use the STL interfaces for specific
 // classes.
 template <typename T>
-struct dont_treat_as_stl_container {
-    typedef boost::mpl::bool_<false> type;
-};
+static constexpr bool dont_treat_as_stl_container = false;
 
-BOOST_MPL_HAS_XXX_TRAIT_DEF(value_type)
-BOOST_MPL_HAS_XXX_TRAIT_DEF(const_iterator)
 
-template <typename T>
-struct is_like_stl_container {
-    typedef boost::mpl::and_<
-            typename has_value_type<T>::type,
-            typename has_const_iterator<T>::type,
-            boost::mpl::not_<dont_treat_as_stl_container<T>>
-        > type;
-    static constexpr bool value = type::value;
-};
+template <typename T, typename=void>
+static constexpr bool is_like_stl_container = false;
 
 template <typename T>
-struct is_boost_tuple_nulltype {
-    static constexpr bool value = false;
-    typedef boost::mpl::bool_<value> type;
-};
+static constexpr bool is_like_stl_container<T, std::void_t<
+        decltype(std::declval<T>().begin()),
+        decltype(std::declval<T>().end()),
+        typename T::value_type
+    >> = !dont_treat_as_stl_container<T>;
 
-template <>
-struct is_boost_tuple_nulltype<boost::tuples::null_type> {
-    static constexpr bool value = true;
-    typedef boost::mpl::bool_<value> type;
-};
-
-BOOST_MPL_HAS_XXX_TRAIT_DEF(head_type)
-BOOST_MPL_HAS_XXX_TRAIT_DEF(tail_type)
+static_assert( is_like_stl_container<std::vector<int>>);
+static_assert(!is_like_stl_container<int>);
 
 template <typename T>
-struct is_boost_tuple {
-    typedef boost::mpl::and_<
-            typename has_head_type<T>::type,
-            typename has_tail_type<T>::type
-        > type;
-    static constexpr bool value = type::value;
-};
+static constexpr bool is_boost_tuple_nulltype =
+    std::is_same_v<T, boost::tuples::null_type>;
 
-// More fine-grained, but doesn't compile!
-//template <typename T>
-//struct is_boost_tuple {
-//    typedef boost::mpl::and_<
-//        typename boost::is_class<T>::type,
-//        typename boost::mpl::and_<
-//            typename has_head_type<T>::type,
-//            typename boost::mpl::and_<
-//                typename has_tail_type<T>::type,
-//                typename boost::mpl::or_<
-//                    typename is_boost_tuple_nulltype<typename T::tail_type>::type,
-//                    typename is_boost_tuple<typename T::tail_type>::type
-//                >::type
-//            >::type
-//        >::type
-//    > type;
-//};
-//
-//template <>
-//struct is_boost_tuple<boost::tuples::null_type> {
-//    typedef boost::mpl::bool_<false> type;
-//};
+static_assert(is_boost_tuple_nulltype<boost::tuples::null_type>);
+
+template <typename T, typename=void>
+static constexpr bool is_boost_tuple = false;
+
+template <typename T>
+static constexpr bool is_boost_tuple<T, std::void_t<
+        typename T::head_type,
+        typename T::tail_type
+    >> = is_boost_tuple<typename T::tail_type> || is_boost_tuple_nulltype<typename T::tail_type>;
+
+static_assert( is_boost_tuple<boost::tuple<int>>);
+static_assert( is_boost_tuple<boost::tuple<int, int>>);
+static_assert(!is_boost_tuple<std::tuple<int>>);
+static_assert(!is_boost_tuple<std::tuple<int, int>>);
 
 // }}}1
 
@@ -602,90 +573,39 @@ struct BinarySender<std::complex<T>> {
 
 template <typename T>
 struct TextSender<T,
-    typename boost::enable_if<
-        boost::mpl::and_<
-            is_boost_tuple<T>,
-            boost::mpl::not_<is_boost_tuple_nulltype<typename T::tail_type>>
-        >
-    >::type
+    typename std::enable_if_t<is_boost_tuple<T>>
 > {
     static void send(std::ostream &stream, const T &v) {
         TextSender<typename T::head_type>::send(stream, v.get_head());
-        stream << " ";
-        TextSender<typename T::tail_type>::send(stream, v.get_tail());
-    }
-};
-
-template <typename T>
-struct TextSender<T,
-    typename boost::enable_if<
-        boost::mpl::and_<
-            is_boost_tuple<T>,
-            is_boost_tuple_nulltype<typename T::tail_type>
-        >
-    >::type
-> {
-    static void send(std::ostream &stream, const T &v) {
-        TextSender<typename T::head_type>::send(stream, v.get_head());
+        if constexpr (!is_boost_tuple_nulltype<typename T::tail_type>) {
+            stream << " ";
+            TextSender<typename T::tail_type>::send(stream, v.get_tail());
+        }
     }
 };
 
 template <typename T>
 struct BinfmtSender<T,
-    typename boost::enable_if<
-        boost::mpl::and_<
-            is_boost_tuple<T>,
-            boost::mpl::not_<is_boost_tuple_nulltype<typename T::tail_type>>
-        >
-    >::type
+    typename std::enable_if_t<is_boost_tuple<T>>
 > {
     static void send(std::ostream &stream) {
         BinfmtSender<typename T::head_type>::send(stream);
-        stream << " ";
-        BinfmtSender<typename T::tail_type>::send(stream);
-    }
-};
-
-template <typename T>
-struct BinfmtSender<T,
-    typename boost::enable_if<
-        boost::mpl::and_<
-            is_boost_tuple<T>,
-            is_boost_tuple_nulltype<typename T::tail_type>
-        >
-    >::type
-> {
-    static void send(std::ostream &stream) {
-        BinfmtSender<typename T::head_type>::send(stream);
+        if constexpr (!is_boost_tuple_nulltype<typename T::tail_type>) {
+            stream << " ";
+            BinfmtSender<typename T::tail_type>::send(stream);
+        }
     }
 };
 
 template <typename T>
 struct BinarySender<T,
-    typename boost::enable_if<
-        boost::mpl::and_<
-            is_boost_tuple<T>,
-            boost::mpl::not_<is_boost_tuple_nulltype<typename T::tail_type>>
-        >
-    >::type
+    typename std::enable_if_t<is_boost_tuple<T>>
 > {
     static void send(std::ostream &stream, const T &v) {
         BinarySender<typename T::head_type>::send(stream, v.get_head());
-        BinarySender<typename T::tail_type>::send(stream, v.get_tail());
-    }
-};
-
-template <typename T>
-struct BinarySender<T,
-    typename boost::enable_if<
-        boost::mpl::and_<
-            is_boost_tuple<T>,
-            is_boost_tuple_nulltype<typename T::tail_type>
-        >
-    >::type
-> {
-    static void send(std::ostream &stream, const T &v) {
-        BinarySender<typename T::head_type>::send(stream, v.get_head());
+        if constexpr (!is_boost_tuple_nulltype<typename T::tail_type>) {
+            BinarySender<typename T::tail_type>::send(stream, v.get_tail());
+        }
     }
 };
 
@@ -821,10 +741,6 @@ struct Error_WasNotContainer {
     typedef void subiter_type;
 };
 
-// Error messages involving this stem from calling deref instead of deref_subiter for a nested
-// container.
-struct Error_InappropriateDeref { };
-
 // The unspecialized version of this class gives traits for things that are *not* arrays.
 template <typename T, typename Enable=void>
 class ArrayTraits {
@@ -883,9 +799,13 @@ public:
     IteratorRange(const TI &_it, const TI &_end) : it(_it), end(_end) { }
 
     static constexpr bool is_container = ArrayTraits<TV>::is_container;
-    typedef typename boost::mpl::if_c<is_container,
-            Error_InappropriateDeref, TV>::type value_type;
-    typedef typename ArrayTraits<TV>::range_type subiter_type;
+
+    // Error messages involving this stem from calling deref instead of deref_subiter for a nested
+    // container.
+    struct Error_InappropriateDeref { };
+    using value_type = typename std::conditional_t<is_container, Error_InappropriateDeref, TV>;
+
+    using subiter_type = typename ArrayTraits<TV>::range_type;
 
     bool is_end() const { return it == end; }
 
@@ -915,7 +835,7 @@ private:
 
 template <typename T>
 class ArrayTraits<T,
-    typename boost::enable_if<is_like_stl_container<T>>::type
+    typename std::enable_if_t<is_like_stl_container<T>>
 > : public ArrayTraitsDefaults<typename T::value_type> {
 public:
     typedef IteratorRange<typename T::const_iterator, typename T::value_type> range_type;
@@ -1012,12 +932,9 @@ public:
 
 template <typename T>
 class ArrayTraits<T,
-    typename boost::enable_if<
-        boost::mpl::and_<
-            is_boost_tuple<T>,
-            boost::mpl::not_<is_boost_tuple_nulltype<typename T::tail_type>>
-        >
-    >::type
+    typename std::enable_if_t<
+        is_boost_tuple<T> && !is_boost_tuple_nulltype<typename T::tail_type>
+    >
 > : public ArrayTraits<
     typename std::pair<
         typename T::head_type,
@@ -1040,12 +957,9 @@ public:
 
 template <typename T>
 class ArrayTraits<T,
-    typename boost::enable_if<
-        boost::mpl::and_<
-            is_boost_tuple<T>,
-            is_boost_tuple_nulltype<typename T::tail_type>
-        >
-    >::type
+    typename std::enable_if_t<
+        is_boost_tuple<T> && is_boost_tuple_nulltype<typename T::tail_type>
+    >
 > : public ArrayTraits<
     typename T::head_type
 > {
@@ -1241,49 +1155,49 @@ struct ModeAutoDecoder { };
 
 template <typename T>
 struct ModeAutoDecoder<T,
-    typename boost::enable_if_c<
+    typename std::enable_if_t<
         (ArrayTraits<T>::depth == 1)
-    >::type>
+    >>
 {
     typedef Mode1D mode;
 };
 
 template <typename T>
 struct ModeAutoDecoder<T,
-    typename boost::enable_if_c<
+    typename std::enable_if_t<
         (ArrayTraits<T>::depth == 2) &&
         !ArrayTraits<T>::allow_auto_unwrap
-    >::type>
+    >>
 {
     typedef Mode2D mode;
 };
 
 template <typename T>
 struct ModeAutoDecoder<T,
-    typename boost::enable_if_c<
+    typename std::enable_if_t<
         (ArrayTraits<T>::depth == 2) &&
         ArrayTraits<T>::allow_auto_unwrap
-    >::type>
+    >>
 {
     typedef Mode1DUnwrap mode;
 };
 
 template <typename T>
 struct ModeAutoDecoder<T,
-    typename boost::enable_if_c<
+    typename std::enable_if_t<
         (ArrayTraits<T>::depth > 2) &&
         ArrayTraits<T>::allow_auto_unwrap
-    >::type>
+    >>
 {
     typedef Mode2DUnwrap mode;
 };
 
 template <typename T>
 struct ModeAutoDecoder<T,
-    typename boost::enable_if_c<
+    typename std::enable_if_t<
         (ArrayTraits<T>::depth > 2) &&
         !ArrayTraits<T>::allow_auto_unwrap
-    >::type>
+    >>
 {
     typedef Mode2D mode;
 };
@@ -1329,7 +1243,7 @@ void send_scalar(std::ostream &stream, const T &, ModeBinfmt) {
 
 // If arg is not a container, then print it via send_scalar().
 template <typename T, typename PrintMode>
-typename boost::disable_if_c<T::is_container>::type
+typename std::enable_if_t<!T::is_container>
 deref_and_print(std::ostream &stream, const T &arg, PrintMode) {
     const typename T::value_type &v = arg.deref();
     send_scalar(stream, v, PrintMode());
@@ -1339,7 +1253,7 @@ deref_and_print(std::ostream &stream, const T &arg, PrintMode) {
 // treat the contents as columns, iterating over the contents recursively.  If outputting in
 // text mode, put a space between columns.
 template <typename T, typename PrintMode>
-typename boost::enable_if_c<T::is_container>::type
+typename std::enable_if_t<T::is_container>
 deref_and_print(std::ostream &stream, const T &arg, PrintMode) {
     if(arg.is_end()) throw plotting_empty_container();
     typename T::subiter_type subrange = arg.deref_subiter();
@@ -1393,7 +1307,7 @@ void deref_and_print(std::ostream &stream, const VecOfRange<T> &arg, PrintMode) 
 // Depth==1 and we are not asked to print the size of the array.  Send each element of the
 // range to deref_and_print() for further processing into columns.
 template <size_t Depth, typename T, typename PrintMode>
-typename boost::enable_if_c<(Depth==1) && !PrintMode::is_size>::type
+typename std::enable_if_t<(Depth==1) && !PrintMode::is_size>
 print_block(std::ostream &stream, T &arg, PrintMode) {
     if(PrintMode::is_binfmt && arg.is_end()) throw plotting_empty_container();
     for(; !arg.is_end(); arg.inc()) {
@@ -1409,7 +1323,7 @@ print_block(std::ostream &stream, T &arg, PrintMode) {
 // Depth>1 and we are not asked to print the size of the array.  Loop over the range and
 // recurse into print_block() with Depth -> Depth-1.
 template <size_t Depth, typename T, typename PrintMode>
-typename boost::enable_if_c<(Depth>1) && !PrintMode::is_size>::type
+typename std::enable_if_t<(Depth>1) && !PrintMode::is_size>
 print_block(std::ostream &stream, T &arg, PrintMode) {
     if(PrintMode::is_binfmt && arg.is_end()) throw plotting_empty_container();
     bool first = true;
@@ -1440,14 +1354,14 @@ size_t get_range_size(const T &arg) {
 
 // Depth==1 and we are asked to print the size of the array.
 template <size_t Depth, typename T, typename PrintMode>
-typename boost::enable_if_c<(Depth==1) && PrintMode::is_size>::type
+typename std::enable_if_t<(Depth==1) && PrintMode::is_size>
 print_block(std::ostream &stream, T &arg, PrintMode) {
     stream << get_range_size(arg);
 }
 
 // Depth>1 and we are asked to print the size of the array.
 template <size_t Depth, typename T, typename PrintMode>
-typename boost::enable_if_c<(Depth>1) && PrintMode::is_size>::type
+typename std::enable_if_t<(Depth>1) && PrintMode::is_size>
 print_block(std::ostream &stream, T &arg, PrintMode) {
     if(arg.is_end()) throw plotting_empty_container();
     // It seems that size for two dimensional arrays needs the fastest varying index first,
@@ -2258,11 +2172,11 @@ public:
 #define GNUPLOT_ARMADILLO_SUPPORT_LOADED
 namespace gnuplotio {
 
-template <typename T> struct dont_treat_as_stl_container<arma::Row  <T>> { typedef boost::mpl::bool_<true> type; };
-template <typename T> struct dont_treat_as_stl_container<arma::Col  <T>> { typedef boost::mpl::bool_<true> type; };
-template <typename T> struct dont_treat_as_stl_container<arma::Mat  <T>> { typedef boost::mpl::bool_<true> type; };
-template <typename T> struct dont_treat_as_stl_container<arma::Cube <T>> { typedef boost::mpl::bool_<true> type; };
-template <typename T> struct dont_treat_as_stl_container<arma::field<T>> { typedef boost::mpl::bool_<true> type; };
+template <typename T> static constexpr bool dont_treat_as_stl_container<arma::Row  <T>> = true;
+template <typename T> static constexpr bool dont_treat_as_stl_container<arma::Col  <T>> = true;
+template <typename T> static constexpr bool dont_treat_as_stl_container<arma::Mat  <T>> = true;
+template <typename T> static constexpr bool dont_treat_as_stl_container<arma::Cube <T>> = true;
+template <typename T> static constexpr bool dont_treat_as_stl_container<arma::field<T>> = true;
 
 // {{{3 Cube
 
