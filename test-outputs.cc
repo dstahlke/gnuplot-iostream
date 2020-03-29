@@ -130,6 +130,8 @@ void basic_datatype_test_float(std::string name) {
 }
 
 int main() {
+    gp << std::setprecision(6);
+
     const int NX=3, NY=4, NZ=2;
     std::vector<double> vd;
     std::vector<int> vi;

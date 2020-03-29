@@ -1693,7 +1693,7 @@ public:
         debug_messages(false),
         transport_tmpfile(false)
     {
-        *this << std::scientific << std::setprecision(17);  // refer <iomanip>
+        set_stream_options(*this);
     }
 
     explicit Gnuplot(FILE *_fh) :
@@ -1711,13 +1711,13 @@ public:
         debug_messages(false),
         transport_tmpfile(false)
     {
-        *this << std::scientific << std::setprecision(17);  // refer <iomanip>
+        set_stream_options(*this);
     }
 
 private:
     // noncopyable
-    Gnuplot(const Gnuplot &);
-    const Gnuplot& operator=(const Gnuplot &);
+    Gnuplot(const Gnuplot &) = delete;
+    const Gnuplot& operator=(const Gnuplot &) = delete;
 
 public:
     ~Gnuplot() {
@@ -1755,6 +1755,11 @@ public:
 private:
     std::string make_tmpfile() {
         return tmp_files->make_tmpfile();
+    }
+
+    void set_stream_options(std::ostream &os) const
+    {
+        os << std::defaultfloat << std::setprecision(17);  // refer <iomanip>
     }
 
 public:
@@ -1803,7 +1808,7 @@ public:
     std::string file(const T &arg, std::string filename, OrganizationMode) {
         if(filename.empty()) filename = make_tmpfile();
         std::fstream tmp_stream(filename.c_str(), std::fstream::out);
-        tmp_stream << std::scientific << std::setprecision(17);
+        tmp_stream.copyfmt(*this);
         top_level_array_sender(tmp_stream, arg, OrganizationMode(), ModeText());
         tmp_stream.close();
 
