@@ -49,28 +49,28 @@ const std::string basedir = "unittest-output";
 
 template <typename T>
 void go(Gnuplot &gp, const T &data) {
-	gp << "plot '-' binary" << gp.binFmt1d(data, "record") << std::endl;
-	gp.sendBinary1d(data);
-	gp << "plot '-' binary" << gp.binFmt2d(data, "record") << std::endl;
-	gp.sendBinary2d(data);
-	gp << "plot '-'\n" << std::endl;
-	gp.send1d(data);
-	gp << "plot '-'\n" << std::endl;
-	gp.send2d(data);
+    gp << "plot '-' binary" << gp.binFmt1d(data, "record") << std::endl;
+    gp.sendBinary1d(data);
+    gp << "plot '-' binary" << gp.binFmt2d(data, "record") << std::endl;
+    gp.sendBinary2d(data);
+    gp << "plot '-'\n" << std::endl;
+    gp.send1d(data);
+    gp << "plot '-'\n" << std::endl;
+    gp.send2d(data);
 }
 
 int main() {
-	Gnuplot gp(std::fopen((basedir + "/test-empty.gnu").c_str(), "w"));
+    Gnuplot gp(std::fopen((basedir + "/test-empty.gnu").c_str(), "w"));
 
-	std::vector<std::vector<std::vector<std::pair<double, int> > > > data;
-	go(gp, data);
+    std::vector<std::vector<std::vector<std::pair<double, int> > > > data;
+    go(gp, data);
 
-	data.resize(1);
-	go(gp, data);
+    data.resize(1);
+    go(gp, data);
 
-	data[0].resize(1);
-	go(gp, data);
+    data[0].resize(1);
+    go(gp, data);
 
-	data[0][0].push_back(std::make_pair(0.0, 0));
-	go(gp, data);
+    data[0][0].push_back(std::make_pair(0.0, 0));
+    go(gp, data);
 }

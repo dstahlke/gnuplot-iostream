@@ -31,33 +31,33 @@ THE SOFTWARE.
 #include "gnuplot-iostream.h"
 
 int main() {
-	Gnuplot gp;
+    Gnuplot gp;
 
-	// Create field of arrows at random locations.
-	std::vector<boost::tuple<double,double,double,double> > arrows;
-	for(size_t i=0; i<100; i++) {
-		double x = rand() / double(RAND_MAX);
-		double y = rand() / double(RAND_MAX);
-		arrows.push_back(boost::make_tuple(x, y, 0, 0));
-	}
+    // Create field of arrows at random locations.
+    std::vector<boost::tuple<double,double,double,double> > arrows;
+    for(size_t i=0; i<100; i++) {
+        double x = rand() / double(RAND_MAX);
+        double y = rand() / double(RAND_MAX);
+        arrows.push_back(boost::make_tuple(x, y, 0, 0));
+    }
 
-	double mx=0.5, my=0.5;
-	int mb=1;
-	while(mb != 3 && mb >= 0) {
-		// Make the arrows point towards the mouse click.
-		for(size_t i=0; i<arrows.size(); i++) {
-			double x = arrows[i].get<0>();
-			double y = arrows[i].get<1>();
-			double dx = (mx-x) * 0.1;
-			double dy = (my-y) * 0.1;
-			arrows[i] = boost::make_tuple(x, y, dx, dy);
-		}
+    double mx=0.5, my=0.5;
+    int mb=1;
+    while(mb != 3 && mb >= 0) {
+        // Make the arrows point towards the mouse click.
+        for(size_t i=0; i<arrows.size(); i++) {
+            double x = arrows[i].get<0>();
+            double y = arrows[i].get<1>();
+            double dx = (mx-x) * 0.1;
+            double dy = (my-y) * 0.1;
+            arrows[i] = boost::make_tuple(x, y, dx, dy);
+        }
 
-		gp << "plot '-' with vectors notitle\n";
-		gp.send1d(arrows);
+        gp << "plot '-' with vectors notitle\n";
+        gp.send1d(arrows);
 
-		gp.getMouse(mx, my, mb, "Left click to aim arrows, right click to exit.");
-		printf("You pressed mouse button %d at x=%f y=%f\n", mb, mx, my);
-		if(mb < 0) printf("The gnuplot window was closed.\n");
-	}
+        gp.getMouse(mx, my, mb, "Left click to aim arrows, right click to exit.");
+        printf("You pressed mouse button %d at x=%f y=%f\n", mb, mx, my);
+        if(mb < 0) printf("The gnuplot window was closed.\n");
+    }
 }

@@ -25,13 +25,13 @@ THE SOFTWARE.
 #include "gnuplot-iostream.h"
 
 int main() {
-	Gnuplot gp;
+    Gnuplot gp;
 
-	std::vector<int> pts;
-	// This should be okay.
-	gp << gp.sendBinary1d(pts);
-	// This should throw a compilation error.
-	gp << gp.sendBinary2d(pts);
+    std::vector<int> pts;
+    // This should be okay.
+    gp << gp.sendBinary1d(pts);
+    // This should throw a compilation error.
+    gp << gp.sendBinary2d(pts);
 
-	return 0;
+    return 0;
 }

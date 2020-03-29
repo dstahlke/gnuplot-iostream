@@ -45,7 +45,7 @@ Note for Windows users
 ======================
 
 Windows support basically works, but there are some troubles.  For hints, see:
-	https://github.com/dstahlke/gnuplot-iostream/wiki/Portability
+    https://github.com/dstahlke/gnuplot-iostream/wiki/Portability
 
 Contributors
 ============
