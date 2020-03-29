@@ -26,20 +26,6 @@ THE SOFTWARE.
 
 #include <fstream>
 #include <vector>
-#if GNUPLOT_ENABLE_CXX11
-#include <tuple>
-#include <array>
-#endif
-
-#include <boost/array.hpp>
-
-#if USE_ARMA
-#include <armadillo>
-#endif
-
-#if USE_BLITZ
-#include <blitz/array.h>
-#endif
 
 #include "gnuplot-iostream.h"
 

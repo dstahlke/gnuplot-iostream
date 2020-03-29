@@ -141,7 +141,7 @@ int main() {
         std::vector<std::pair<std::pair<double, double>, double>> pts;
         for(int i=0; i<num_steps; i++) {
             pts.emplace_back(
-                    std::make_pair(get_x(i, shift), get_y(i, shift)),
+                    std::pair(get_x(i, shift), get_y(i, shift)),
                     get_z(i, shift));
         }
         plots.add_plot1d(pts, "with lines title 'vector of nested std::pair'");
@@ -180,7 +180,7 @@ int main() {
             y_pts.push_back(get_y(i, shift));
             z_pts.push_back(get_z(i, shift));
         }
-        plots.add_plot1d(std::make_tuple(x_pts, y_pts, z_pts),
+        plots.add_plot1d(std::tuple(x_pts, y_pts, z_pts),
                 "with lines title 'std::tuple of vector'");
     }
 
@@ -225,7 +225,7 @@ int main() {
     {
         std::vector<MyTriple<double>> pts;
         for(int i=0; i<num_steps; i++) {
-            pts.push_back(MyTriple<double>(get_x(i, shift), get_y(i, shift), get_z(i, shift)));
+            pts.emplace_back(get_x(i, shift), get_y(i, shift), get_z(i, shift));
         }
         plots.add_plot1d(pts, "with lines title 'vector of MyTriple'");
     }
@@ -317,7 +317,7 @@ int main() {
             y_pts(i) = get_y(i, shift);
             z_pts(i) = get_z(i, shift);
         }
-        plots.add_plot1d(std::make_tuple(x_pts, y_pts, z_pts),
+        plots.add_plot1d(std::tuple(x_pts, y_pts, z_pts),
                 "with lines title 'tuple of arma Row,Col,Col'");
     }
 
@@ -326,7 +326,7 @@ int main() {
     {
         arma::field<std::tuple<double,double,double>> pts(num_steps);
         for(int i=0; i<num_steps; i++) {
-            pts(i) = std::make_tuple(
+            pts(i) = std::tuple(
                 get_x(i, shift),
                 get_y(i, shift),
                 get_z(i, shift)
@@ -372,7 +372,7 @@ int main() {
             y_pts(i) = get_y(i, shift);
             z_pts(i) = get_z(i, shift);
         }
-        plots.add_plot1d(std::make_tuple(x_pts, y_pts, z_pts),
+        plots.add_plot1d(std::tuple(x_pts, y_pts, z_pts),
                 "with lines title 'tuple of eigen Col,Col,Col'");
     }
 
@@ -387,7 +387,7 @@ int main() {
             y_pts(i) = get_y(i, shift);
             z_pts(i) = get_z(i, shift);
         }
-        plots.add_plot1d(std::make_tuple(x_pts, y_pts, z_pts),
+        plots.add_plot1d(std::tuple(x_pts, y_pts, z_pts),
                 "with lines title 'tuple of eigen Row,Row,Row'");
     }
 #endif // USE_EIGEN
@@ -434,7 +434,7 @@ int main() {
 
     {
         std::function<std::tuple<double,double,double>(int)> f = [&shift](int i) {
-            return std::make_tuple(get_x(i, shift), get_y(i, shift), get_z(i, shift)); };
+            return std::tuple(get_x(i, shift), get_y(i, shift), get_z(i, shift)); };
 
         auto pts = boost::irange(0, num_steps) | boost::adaptors::transformed(f);
 
@@ -446,7 +446,7 @@ int main() {
     {
         auto steps = boost::irange(0, num_steps);
 
-        plots.add_plot1d(std::make_tuple(
+        plots.add_plot1d(std::tuple(
                 steps | boost::adaptors::transformed(boost::bind(get_x, _1, shift)),
                 steps | boost::adaptors::transformed(boost::bind(get_y, _1, shift)),
                 steps | boost::adaptors::transformed(boost::bind(get_z, _1, shift))
@@ -468,7 +468,7 @@ int main() {
             y_pts[i] = get_y(i, shift);
             z_pts[i] = get_z(i, shift);
         }
-        // Note: std::make_tuple doesn't work here since it makes the arrays decay to pointers,
+        // Note: std::tuple doesn't work here since it makes the arrays decay to pointers,
         // and as a result they forget their lengths.
         plots.add_plot1d(std::tie(x_pts, y_pts, z_pts),
                 "with lines title 'std::tie of double[N]'");

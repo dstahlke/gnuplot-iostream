@@ -29,11 +29,11 @@ int main() {
 
     std::vector<std::vector<int> > pts;
     // These should be okay.
-    gp << gp.sendBinary1d(pts);
-    gp << gp.sendBinary1d_colmajor(pts);
-    gp << gp.sendBinary2d(pts);
+    gp.sendBinary1d(pts);
+    gp.sendBinary1d_colmajor(pts);
+    gp.sendBinary2d(pts);
     // This should throw a compilation error.
-    gp << gp.sendBinary2d_colmajor(pts);
+    gp.sendBinary2d_colmajor(pts);
 
     return 0;
 }

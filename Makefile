@@ -39,6 +39,8 @@ CXXFLAGS+=-DUSE_EIGEN=1 -isystem /usr/include/eigen3
 ALL_EXAMPLES=example-misc example-data-1d example-data-2d example-interactive
 TEST_BINARIES=test-noncopyable test-outputs test-empty
 
+.DELETE_ON_ERROR:
+
 all: $(ALL_EXAMPLES)
 
 %.o: %.cc gnuplot-iostream.h
@@ -65,23 +67,26 @@ test-outputs: test-outputs.o
 test-empty: test-empty.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-test-asserts: test-assert-depth.error.txt test-assert-depth-colmajor.error.txt
+test-asserts: unittest-errors/test-assert-depth.error.txt unittest-errors/test-assert-depth-colmajor.error.txt
+	diff -r unittest-errors-good unittest-errors
 
-%.error.txt: %.cc gnuplot-iostream.h
+unittest-errors/%.error.txt: %.cc gnuplot-iostream.h
+	mkdir -p unittest-errors
 	# These are programs that are supposed to *not* compile.
 	# The "!" causes "make" to throw an error if the compile succeeds.
-	! $(CXX) $(CXXFLAGS) -c $< -o $<.o 2> $@
-	grep -q 'container not deep enough\|boost::STATIC_ASSERTION_FAILURE' $@
+	! $(CXX) $(CXXFLAGS) -c $< -o $<.o 2> $@.orig
+	grep 'error:' $@.orig |sed 's/.*error:/error:/' > $@
+	rm -f $@.orig
 
 test: $(TEST_BINARIES) test-asserts
 	mkdir -p unittest-output
 	rm -f unittest-output/*
 	./test-outputs
-	diff -qr unittest-output unittest-output-good
+	diff -r unittest-output-good unittest-output
 
 clean:
 	rm -f *.o
-	rm -f *.error.txt
+	rm -rf unittest-errors unittest-output
 	rm -f $(ALL_EXAMPLES) $(TEST_BINARIES)
 	# Windows compilation
 	rm -f *.exe *.obj

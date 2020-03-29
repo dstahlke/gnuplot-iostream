@@ -29,9 +29,9 @@ int main() {
 
     std::vector<int> pts;
     // This should be okay.
-    gp << gp.sendBinary1d(pts);
+    gp.sendBinary1d(pts);
     // This should throw a compilation error.
-    gp << gp.sendBinary2d(pts);
+    gp.sendBinary2d(pts);
 
     return 0;
 }

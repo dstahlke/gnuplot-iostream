@@ -64,6 +64,7 @@ THE SOFTWARE.
 #include <iomanip>
 #include <vector>
 #include <complex>
+#include <cstdint>
 #include <cstdlib>
 #include <cmath>
 #include <tuple>
@@ -79,9 +80,6 @@ THE SOFTWARE.
 #    define GNUPLOT_USE_TMPFILE
 #    include <boost/filesystem.hpp>
 #endif // BOOST_VERSION
-
-// This is used because VS2008 doesn't have stdint.h.
-#include <boost/cstdint.hpp>
 
 // Note: this is here for reverse compatibility.  The new way to enable blitz support is to
 // just include the gnuplot-iostream.h header after you include the blitz header (likewise for
@@ -302,12 +300,12 @@ class GnuplotFeedbackPty : public GnuplotFeedback {
 public:
     explicit GnuplotFeedbackPty(bool debug_messages) :
         pty_fn(),
-        pty_fh(NULL),
+        pty_fh(nullptr),
         master_fd(-1),
         slave_fd(-1)
     {
     // adapted from http://www.gnuplot.info/files/gpReadMouseTest.c
-        if(0 > openpty(&master_fd, &slave_fd, NULL, NULL, NULL)) {
+        if(0 > openpty(&master_fd, &slave_fd, nullptr, nullptr, nullptr)) {
             perror("openpty");
             throw std::runtime_error("openpty failed");
         }
@@ -371,7 +369,7 @@ private:
 //public:
 //    explicit GnuplotFeedbackTmpfile(bool debug_messages) :
 //        tmp_file(),
-//        fh(NULL)
+//        fh(nullptr)
 //    {
 //        if(debug_messages) {
 //            std::cerr << "feedback_fn=" << filename() << std::endl;
@@ -463,30 +461,29 @@ struct BinfmtSender {
 };
 
 // BinfmtSender implementations for basic data types supported by gnuplot.
-// Types from boost/cstdint.hpp are used because VS2008 doesn't have stdint.h.
 template<> struct BinfmtSender< float> { static void send(std::ostream &stream) { stream << "%float";  } };
 template<> struct BinfmtSender<double> { static void send(std::ostream &stream) { stream << "%double"; } };
-template<> struct BinfmtSender<boost::  int8_t> { static void send(std::ostream &stream) { stream << "%int8";   } };
-template<> struct BinfmtSender<boost:: uint8_t> { static void send(std::ostream &stream) { stream << "%uint8";  } };
-template<> struct BinfmtSender<boost:: int16_t> { static void send(std::ostream &stream) { stream << "%int16";  } };
-template<> struct BinfmtSender<boost::uint16_t> { static void send(std::ostream &stream) { stream << "%uint16"; } };
-template<> struct BinfmtSender<boost:: int32_t> { static void send(std::ostream &stream) { stream << "%int32";  } };
-template<> struct BinfmtSender<boost::uint32_t> { static void send(std::ostream &stream) { stream << "%uint32"; } };
-template<> struct BinfmtSender<boost:: int64_t> { static void send(std::ostream &stream) { stream << "%int64";  } };
-template<> struct BinfmtSender<boost::uint64_t> { static void send(std::ostream &stream) { stream << "%uint64"; } };
+template<> struct BinfmtSender<  int8_t> { static void send(std::ostream &stream) { stream << "%int8";   } };
+template<> struct BinfmtSender< uint8_t> { static void send(std::ostream &stream) { stream << "%uint8";  } };
+template<> struct BinfmtSender< int16_t> { static void send(std::ostream &stream) { stream << "%int16";  } };
+template<> struct BinfmtSender<uint16_t> { static void send(std::ostream &stream) { stream << "%uint16"; } };
+template<> struct BinfmtSender< int32_t> { static void send(std::ostream &stream) { stream << "%int32";  } };
+template<> struct BinfmtSender<uint32_t> { static void send(std::ostream &stream) { stream << "%uint32"; } };
+template<> struct BinfmtSender< int64_t> { static void send(std::ostream &stream) { stream << "%int64";  } };
+template<> struct BinfmtSender<uint64_t> { static void send(std::ostream &stream) { stream << "%uint64"; } };
 
 // BinarySender implementations for basic data types supported by gnuplot.  These types can
 // just be sent as stored in memory, so all these senders inherit from FlatBinarySender.
 template<> struct BinarySender< float> : public FlatBinarySender< float> { };
 template<> struct BinarySender<double> : public FlatBinarySender<double> { };
-template<> struct BinarySender<boost::  int8_t> : public FlatBinarySender<boost::  int8_t> { };
-template<> struct BinarySender<boost:: uint8_t> : public FlatBinarySender<boost:: uint8_t> { };
-template<> struct BinarySender<boost:: int16_t> : public FlatBinarySender<boost:: int16_t> { };
-template<> struct BinarySender<boost::uint16_t> : public FlatBinarySender<boost::uint16_t> { };
-template<> struct BinarySender<boost:: int32_t> : public FlatBinarySender<boost:: int32_t> { };
-template<> struct BinarySender<boost::uint32_t> : public FlatBinarySender<boost::uint32_t> { };
-template<> struct BinarySender<boost:: int64_t> : public FlatBinarySender<boost:: int64_t> { };
-template<> struct BinarySender<boost::uint64_t> : public FlatBinarySender<boost::uint64_t> { };
+template<> struct BinarySender<  int8_t> : public FlatBinarySender<  int8_t> { };
+template<> struct BinarySender< uint8_t> : public FlatBinarySender< uint8_t> { };
+template<> struct BinarySender< int16_t> : public FlatBinarySender< int16_t> { };
+template<> struct BinarySender<uint16_t> : public FlatBinarySender<uint16_t> { };
+template<> struct BinarySender< int32_t> : public FlatBinarySender< int32_t> { };
+template<> struct BinarySender<uint32_t> : public FlatBinarySender<uint32_t> { };
+template<> struct BinarySender< int64_t> : public FlatBinarySender< int64_t> { };
+template<> struct BinarySender<uint64_t> : public FlatBinarySender<uint64_t> { };
 
 // Make char types print as integers, not as characters.
 template <typename T>
@@ -1689,7 +1686,7 @@ public:
             false
 #endif
         ),
-        feedback(NULL),
+        feedback(nullptr),
         tmp_files(new GnuplotTmpfileCollection()),
         debug_messages(false),
         transport_tmpfile(false)
@@ -1707,7 +1704,7 @@ public:
             false
 #endif
         ),
-        feedback(NULL),
+        feedback(nullptr),
         tmp_files(new GnuplotTmpfileCollection()),
         debug_messages(false),
         transport_tmpfile(false)
@@ -2074,7 +2071,7 @@ class Error_WasBlitzPartialSlice { };
 template <typename T, int ArrayDim, int SliceDim>
 class BlitzIterator {
 public:
-    BlitzIterator() : p(NULL) { }
+    BlitzIterator() : p(nullptr) { }
     BlitzIterator(
         const blitz::Array<T, ArrayDim> *_p,
         const blitz::TinyVector<int, ArrayDim> _idx
@@ -2110,7 +2107,7 @@ private:
 template <typename T, int ArrayDim>
 class BlitzIterator<T, ArrayDim, 1> {
 public:
-    BlitzIterator() : p(NULL) { }
+    BlitzIterator() : p(nullptr) { }
     BlitzIterator(
         const blitz::Array<T, ArrayDim> *_p,
         const blitz::TinyVector<int, ArrayDim> _idx
@@ -2190,7 +2187,7 @@ template <typename T>
 class ArrayTraits<arma::Cube<T>> : public ArrayTraitsDefaults<T> {
     class SliceRange {
     public:
-        SliceRange() : p(NULL), col(0), slice(0) { }
+        SliceRange() : p(nullptr), col(0), slice(0) { }
         explicit SliceRange(const arma::Cube<T> *_p, size_t _row, size_t _col) :
             p(_p), row(_row), col(_col), slice(0) { }
 
@@ -2218,7 +2215,7 @@ class ArrayTraits<arma::Cube<T>> : public ArrayTraitsDefaults<T> {
 
     class ColRange {
     public:
-        ColRange() : p(NULL), row(0), col(0) { }
+        ColRange() : p(nullptr), row(0), col(0) { }
         explicit ColRange(const arma::Cube<T> *_p, size_t _row) :
             p(_p), row(_row), col(0) { }
 
@@ -2246,7 +2243,7 @@ class ArrayTraits<arma::Cube<T>> : public ArrayTraitsDefaults<T> {
 
     class RowRange {
     public:
-        RowRange() : p(NULL), row(0) { }
+        RowRange() : p(nullptr), row(0) { }
         explicit RowRange(const arma::Cube<T> *_p) : p(_p), row(0) { }
 
         typedef T value_type;
@@ -2291,7 +2288,7 @@ template <typename RF, typename T>
 class ArrayTraits_ArmaMatOrField : public ArrayTraitsDefaults<T> {
     class ColRange {
     public:
-        ColRange() : p(NULL), row(0), col(0) { }
+        ColRange() : p(nullptr), row(0), col(0) { }
         explicit ColRange(const RF *_p, size_t _row) :
             p(_p), row(_row), col(0) { }
 
@@ -2319,7 +2316,7 @@ class ArrayTraits_ArmaMatOrField : public ArrayTraitsDefaults<T> {
 
     class RowRange {
     public:
-        RowRange() : p(NULL), row(0) { }
+        RowRange() : p(nullptr), row(0) { }
         explicit RowRange(const RF *_p) : p(_p), row(0) { }
 
         typedef T value_type;
@@ -2439,7 +2436,7 @@ template <typename RF>
 class ArrayTraits_Eigen1D : public ArrayTraitsDefaults<typename RF::value_type> {
     class IdxRange {
     public:
-        IdxRange() : p(NULL), idx(0) { }
+        IdxRange() : p(nullptr), idx(0) { }
         explicit IdxRange(const RF *_p) :
             p(_p), idx(0) { }
 
@@ -2481,7 +2478,7 @@ template <typename RF>
 class ArrayTraits_Eigen2D : public ArrayTraitsDefaults<typename RF::value_type> {
     class ColRange {
     public:
-        ColRange() : p(NULL), row(0), col(0) { }
+        ColRange() : p(nullptr), row(0), col(0) { }
         explicit ColRange(const RF *_p, Eigen::Index _row) :
             p(_p), row(_row), col(0) { }
 
@@ -2509,7 +2506,7 @@ class ArrayTraits_Eigen2D : public ArrayTraitsDefaults<typename RF::value_type> 
 
     class RowRange {
     public:
-        RowRange() : p(NULL), row(0) { }
+        RowRange() : p(nullptr), row(0) { }
         explicit RowRange(const RF *_p) : p(_p), row(0) { }
 
         using value_type = typename RF::value_type;
