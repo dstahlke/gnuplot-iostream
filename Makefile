@@ -44,33 +44,43 @@ TEST_BINARIES=test-noncopyable test-outputs test-empty
 all: $(ALL_EXAMPLES)
 
 %.o: %.cc gnuplot-iostream.h
+	@echo Compiling $@
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 example-misc: example-misc.o
+	@echo Linking $@
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 example-data-1d: example-data-1d.o
+	@echo Linking $@
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 example-data-2d: example-data-2d.o
+	@echo Linking $@
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 example-interactive: example-interactive.o
+	@echo Linking $@
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 test-noncopyable: test-noncopyable.o
+	@echo Linking $@
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 test-outputs: test-outputs.o
+	@echo Linking $@
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 test-empty: test-empty.o
+	@echo Linking $@
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 test-asserts: unittest-errors/test-assert-depth.error.txt unittest-errors/test-assert-depth-colmajor.error.txt
+	@echo Running $@
 	diff -r unittest-errors-good unittest-errors
 
 unittest-errors/%.error.txt: %.cc gnuplot-iostream.h
+	@echo Generating $@
 	mkdir -p unittest-errors
 	# These are programs that are supposed to *not* compile.
 	# The "!" causes "make" to throw an error if the compile succeeds.
@@ -79,6 +89,7 @@ unittest-errors/%.error.txt: %.cc gnuplot-iostream.h
 	rm -f $@.orig
 
 test: $(TEST_BINARIES) test-asserts
+	@echo Running $@
 	mkdir -p unittest-output
 	rm -f unittest-output/*
 	./test-outputs
@@ -94,7 +105,8 @@ clean:
 	rm -f my_graph_*.png external_binary.dat external_binary.gnu external_text.dat external_text.gnu inline_binary.gnu inline_text.gnu
 
 lint:
-	cpplint.py --filter=-whitespace,-readability/streams,-build/header_guard gnuplot-iostream.h
+	cpplint.py --filter=-whitespace,-readability/streams,-build/header_guard,-build/include_order,-runtime/references *.h *.cc \
+		2>&1 |grep -v 'Include the directory when naming'
 
 cppcheck:
-	cppcheck *.cc *.h --template gcc --enable=all -q
+	cppcheck *.cc *.h --template gcc --enable=all -q --force --std=c++17

@@ -1,7 +1,7 @@
 // vim:foldmethod=marker
 
 /*
-Copyright (c) 2013 Daniel Stahlke (dan@stahlke.org)
+Copyright (c) 2020 Daniel Stahlke (dan@stahlke.org)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -205,7 +205,7 @@ static_assert(!is_boost_tuple<std::tuple<int, int>>);
 // RAII temporary file.  File is removed when this object goes out of scope.
 class GnuplotTmpfile {
 public:
-    GnuplotTmpfile(bool _debug_messages) :
+    explicit GnuplotTmpfile(bool _debug_messages) :
         file(boost::filesystem::unique_path(
             boost::filesystem::temp_directory_path() /
             "tmp-gnuplot-%%%%-%%%%-%%%%-%%%%")),
@@ -432,7 +432,7 @@ struct TextSender {
 
 class BinarySenderNotImplemented : public std::logic_error {
 public:
-    BinarySenderNotImplemented(const std::string &w) : std::logic_error(w) { }
+    explicit BinarySenderNotImplemented(const std::string &w) : std::logic_error(w) { }
 };
 
 // Default BinarySender, raises a compile time error.
@@ -489,7 +489,7 @@ template<> struct BinarySender<uint64_t> : public FlatBinarySender<uint64_t> { }
 template <typename T>
 struct CastIntTextSender {
     static void send(std::ostream &stream, const T &v) {
-        stream << int(v);
+        stream << static_cast<int>(v);
     }
 };
 template<> struct TextSender<          char> : public CastIntTextSender<          char> { };

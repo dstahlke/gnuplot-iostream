@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013 Daniel Stahlke
+Copyright (c) 2020 Daniel Stahlke
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -92,7 +92,7 @@ namespace gnuplotio {
             TextSender<T>::send(stream, v.z);
         }
     };
-}
+} // namespace gnuplotio
 
 MyTriple<double> get_point(int u, int v) {
     double a = 2.0*M_PI*u/(num_u-1);

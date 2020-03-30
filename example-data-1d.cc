@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013 Daniel Stahlke
+Copyright (c) 2020 Daniel Stahlke
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ THE SOFTWARE.
 #include <vector>
 #include <complex>
 #include <cmath>
+#include <array>
 
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/irange.hpp>
@@ -49,7 +50,7 @@ THE SOFTWARE.
 #    define M_PI 3.14159265358979323846
 #endif
 
-const int num_steps = 100;
+static constexpr int num_steps = 100;
 
 double get_x(int step, double shift) {
     double theta = 2.0*M_PI*step/(num_steps-1);
@@ -107,7 +108,7 @@ namespace gnuplotio {
             TextSender<T>::send(stream, v.z);
         }
     };
-}
+} // namespace gnuplotio
 
 int main() {
     Gnuplot gp;

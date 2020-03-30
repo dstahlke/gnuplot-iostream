@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013 Daniel Stahlke
+Copyright (c) 2020 Daniel Stahlke
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -36,8 +36,8 @@ int main() {
     // Create field of arrows at random locations.
     std::vector<std::tuple<double,double,double,double>> arrows;
     for(size_t i=0; i<100; i++) {
-        double x = rand() / double(RAND_MAX);
-        double y = rand() / double(RAND_MAX);
+        double x = rand() / static_cast<double>(RAND_MAX);
+        double y = rand() / static_cast<double>(RAND_MAX);
         arrows.emplace_back(x, y, 0, 0);
     }
 
