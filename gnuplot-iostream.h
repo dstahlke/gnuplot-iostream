@@ -40,7 +40,7 @@ THE SOFTWARE.
 
 // {{{1 Includes and defines
 
-#define GNUPLOT_IOSTREAM_VERSION 2
+#define GNUPLOT_IOSTREAM_VERSION 3
 
 // C system includes
 #include <cstdio>

@@ -3,6 +3,13 @@ However, I will bump up the GNUPLOT_IOSTREAM_VERSION macro whenever
 something major changes (but note that prior to version 2 this macro is not
 defined).
 
+Version 3:
+	* New subplots interface allows easily creating many plots in one window.
+	  example-data-1d.cc and example-data-2d.cc use this new interface.
+	* We now require C++17.  Code has been modernized to use standard metaprogramming
+	  functions rather than boost::mpl.
+	* Support for Eigen matrix library.
+
 Version 2:
 	* Major rewrite.
 	* Nearly every combination of container and tuple types is supported.
