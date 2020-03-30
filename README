@@ -11,7 +11,7 @@ be the lowest hanging fruit.  In other words, if you know how gnuplot works
 it should only take 30 seconds to learn this library.  Basically it is just
 an iostream pipe to gnuplot with some extra functions for pushing data
 arrays and getting mouse clicks.  Data sources include STL containers (eg.
-vector), Blitz++, and armadillo.  You can use nested data types like
+vector), Blitz++, Eigen, and armadillo.  You can use nested data types like
 std::vector<std::vector<std::pair<double, double>>> (as well as even more
 exotic types).  Support for custom data types is possible.
 
