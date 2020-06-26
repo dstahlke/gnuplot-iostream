@@ -1,16 +1,18 @@
 cmake_minimum_required(VERSION 3.10)
 Project(GnuPlot_iostream)
 
+# packages.
+find_package(Boost REQUIRED COMPONENTS
+    iostreams system filesystem
+)
+
 # Target.
 add_library(gnuplot_iostream INTERFACE)
 target_include_directories(gnuplot_iostream INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>
     $<INSTALL_INTERFACE:>)
-
-
-
-find_package(Boost REQUIRED COMPONENTS
-    iostreams system filesystem
+target_link_libraries(gnuplot_iostream INTERFACE
+    boost_iostreams boost_system boost_filesystem
 )
 
 set(GnuPlotIostream_tests
@@ -45,9 +47,6 @@ foreach(an_example ${GnuPlotIostream_examples})
     target_compile_options(${an_example} PRIVATE -Wall -Wextra)
     target_link_libraries(${an_example} PRIVATE 
         gnuplot_iostream
-        boost_iostreams
-        boost_system
-        boost_filesystem
         util
     )
 endforeach()
