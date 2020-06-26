@@ -12,7 +12,9 @@ target_include_directories(gnuplot_iostream INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>
     $<INSTALL_INTERFACE:>)
 target_link_libraries(gnuplot_iostream INTERFACE
-    boost_iostreams boost_system boost_filesystem
+    Boost::iostreams
+    Boost::system
+    Boost::filesystem
 )
 
 set(GnuPlotIostream_tests
