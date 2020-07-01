@@ -21,3 +21,6 @@ cmake_install.cmake
 my_graph_*.png
 unittest-output/
 unittest-errors/
+
+# vscode
+.vscode/
