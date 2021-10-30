@@ -69,6 +69,7 @@ THE SOFTWARE.
 #include <cmath>
 #include <tuple>
 #include <type_traits>
+#include <valarray>
 
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -854,6 +855,21 @@ public:
 
     static range_type get_range(const T (&arg)[N]) {
         return range_type(arg, arg+N);
+    }
+};
+
+// }}}2
+
+// {{{2 std::valarray support
+
+template <typename T>
+class ArrayTraits<std::valarray<T>> : public ArrayTraitsDefaults<T> {
+public:
+    // Iterator type for valarray is implementation dependent
+    typedef IteratorRange<decltype(std::begin(std::declval<const std::valarray<T>>())), T> range_type;
+
+    static range_type get_range(const std::valarray<T> &arg) {
+        return range_type(std::begin(arg), std::end(arg));
     }
 };
 
