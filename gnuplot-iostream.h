@@ -178,6 +178,16 @@ static_assert( is_like_stl_container<std::vector<int>>);
 static_assert(!is_like_stl_container<int>);
 
 
+template <typename T, typename=void>
+static constexpr bool is_like_stl_container2 = false;
+
+template <typename T>
+static constexpr bool is_like_stl_container2<T, std::void_t<
+        decltype(begin(std::declval<T>())),
+        decltype(end  (std::declval<T>()))
+    >> = !is_like_stl_container<T> && !dont_treat_as_stl_container<T>;
+
+
 template <typename T>
 static constexpr bool is_boost_tuple_nulltype =
     std::is_same_v<T, boost::tuples::null_type>;
@@ -840,6 +850,20 @@ public:
 
     static range_type get_range(const T &arg) {
         return range_type(arg.begin(), arg.end());
+    }
+};
+
+template <typename T>
+class ArrayTraits<T,
+    typename std::enable_if_t<is_like_stl_container2<T>>
+> : public ArrayTraitsDefaults<typename std::iterator_traits<decltype(begin(std::declval<T const>()))>::value_type> {
+    using IterType = decltype(begin(std::declval<T const>()));
+    using ValType = typename std::iterator_traits<IterType>::value_type;
+public:
+    typedef IteratorRange<IterType, ValType> range_type;
+
+    static range_type get_range(const T &arg) {
+        return range_type(begin(arg), end(arg));
     }
 };
 

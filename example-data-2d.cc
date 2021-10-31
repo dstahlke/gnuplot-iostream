@@ -26,6 +26,7 @@ THE SOFTWARE.
 #include <vector>
 #include <complex>
 #include <cmath>
+#include <valarray>
 
 #ifdef USE_ARMA
 #include <armadillo>
@@ -114,7 +115,7 @@ int main() {
     // To use temporary files rather then sending data through gnuplot's stdin:
     //gp.useTmpFile(true);
 
-    int num_examples = 7;
+    int num_examples = 8;
 #ifdef USE_ARMA
     num_examples += 3;
 #endif
@@ -254,6 +255,27 @@ int main() {
             }
         }
         plots.add_plot2d_colmajor(pts, "with lines title 'vec vec vec (colmajor)'");
+    }
+
+    shift += num_v_each-1;
+
+    {
+        std::valarray<std::tuple<
+                std::valarray<double>,
+                std::valarray<double>,
+                std::valarray<double>
+            >> pts(num_u);
+        for(int u=0; u<num_u; u++) {
+            std::get<0>(pts[u]).resize(num_v_each);
+            std::get<1>(pts[u]).resize(num_v_each);
+            std::get<2>(pts[u]).resize(num_v_each);
+            for(int v=0; v<num_v_each; v++) {
+                std::get<0>(pts[u])[v] = get_point(u, v+shift).x;
+                std::get<1>(pts[u])[v] = get_point(u, v+shift).y;
+                std::get<2>(pts[u])[v] = get_point(u, v+shift).z;
+            }
+        }
+        plots.add_plot2d(pts, "with lines title 'valarray of std::tuple of valarray'");
     }
 
 #ifdef USE_ARMA

@@ -27,6 +27,7 @@ THE SOFTWARE.
 #include <complex>
 #include <cmath>
 #include <array>
+#include <valarray>
 
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/irange.hpp>
@@ -121,7 +122,7 @@ int main() {
     // To use temporary files rather then sending data through gnuplot's stdin:
     //gp.useTmpFile(true);
 
-    int num_examples = 14;
+    int num_examples = 15;
 #ifdef USE_ARMA
     num_examples += 4;
 #endif
@@ -280,6 +281,17 @@ int main() {
         }
         plots.add_plot1d(std::forward_as_tuple(x_pts, y_pts, z_pts),
                 "with lines title 'std::tuple of double[N]'");
+    }
+
+    shift += 1.0/num_examples;
+
+    {
+        std::valarray<std::tuple<double, double, double>> pts(num_steps);
+        for(int i=0; i<num_steps; i++) {
+            pts[i] = std::tuple(
+                    get_x(i, shift), get_y(i, shift), get_z(i, shift));
+        }
+        plots.add_plot1d(pts, "with lines title 'valarray of std::tuple'");
     }
 
 #ifdef USE_ARMA
