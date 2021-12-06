@@ -447,6 +447,25 @@ void demo_plotgroup() {
     pause_if_needed();
 }
 
+void demo_fit() {
+    Gnuplot gp;
+
+    std::vector<std::pair<double, double>> xy_pts;
+    for(double x=-2; x<2; x+=0.5) {
+        double y = 0.12 + 0.34*x + 0.56*x*x;
+        xy_pts.emplace_back(x, y);
+    }
+
+    gp << "set xrange [-2:2]\n";
+    gp << "f(x) = a + b*x + c*x*x\n";
+    gp << "fit f(x) '-' via a,b,c\n";
+    gp.send1d(xy_pts);
+    gp << "plot '-' with points title 'input', f(x) with lines title 'fit'\n";
+    gp.send1d(xy_pts);
+
+    pause_if_needed();
+}
+
 int main(int argc, char **argv) {
     std::map<std::string, void (*)(void)> demos;
 
@@ -464,6 +483,7 @@ int main(int argc, char **argv) {
     demos["segments"]               = demo_segments;
     demos["image"]                  = demo_image;
     demos["plotgroup"]              = demo_plotgroup;
+    demos["fit"]                    = demo_fit;
 
     if(argc < 2) {
         printf("Usage: %s <demo_name>\n", argv[0]);
