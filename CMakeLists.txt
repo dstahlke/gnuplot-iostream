@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 Project(GnuPlot_iostream)
 
 #options.
-option(GnuPlot_BuildTests "build gnuplot tests" ON)
-option(GnuPlot_BuildExamples "build gnuplot examples" ON)
+option(GnuPlotIostream_BuildTests "build gnuplot iostream tests" ON)
+option(GnuPlotIostream_BuildExamples "build gnuplot iostream examples" ON)
 
 # packages.
 find_package(Boost REQUIRED COMPONENTS
@@ -21,7 +21,7 @@ target_link_libraries(gnuplot_iostream INTERFACE
     Boost::filesystem
 )
 
-if(GnuPlot_BuildTests)
+if(GnuPlotIostream_BuildTests)
   set(GnuPlotIostream_tests
     test-assert-depth
     test-assert-depth-colmajor
@@ -42,7 +42,7 @@ if(GnuPlot_BuildTests)
   endforeach()
 endif()
 
-if(GnuPlot_BuildExamples)
+if(GnuPlotIostream_BuildExamples)
   set(GnuPlotIostream_examples
     example-data-1d
     example-data-2d
