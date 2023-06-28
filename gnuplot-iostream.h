@@ -103,7 +103,6 @@ THE SOFTWARE.
 
 // Patch for Windows by Damien Loison
 #ifdef _WIN32
-#    include <windows.h>
 #    define GNUPLOT_PCLOSE _pclose
 #    define GNUPLOT_POPEN  _popen
 #    define GNUPLOT_FILENO _fileno
@@ -111,14 +110,6 @@ THE SOFTWARE.
 #    define GNUPLOT_PCLOSE pclose
 #    define GNUPLOT_POPEN  popen
 #    define GNUPLOT_FILENO fileno
-#endif
-
-#ifdef _WIN32
-#    define GNUPLOT_ISNAN _isnan
-#else
-// cppreference.com says std::isnan is only for C++11.  However, this seems to work on Linux
-// and I am assuming that if isnan exists in math.h then std::isnan exists in cmath.
-#    define GNUPLOT_ISNAN std::isnan
 #endif
 
 // MSVC gives a warning saying that fopen and getenv are not secure.  But they are secure.
@@ -141,9 +132,9 @@ THE SOFTWARE.
 // "pgnuplot" is considered deprecated according to the Internet.  It may be faster.  It
 // doesn't seem to handle binary data though.
 //#    define GNUPLOT_DEFAULT_COMMAND "pgnuplot -persist"
-// On Windows, gnuplot echos commands to stderr.  So we forward its stderr to the bit bucket.
-// Unfortunately, this means you will miss out on legitimate error messages.
-#    define GNUPLOT_DEFAULT_COMMAND "gnuplot -persist 2> NUL"
+// The default install path for gnuplot is written here.  This way the user doesn't have to add
+// anything to their %PATH% environment variable.
+#    define GNUPLOT_DEFAULT_COMMAND "\"C:\\Program Files\\gnuplot\\bin\\gnuplot.exe\" -persist"
 #else
 #    define GNUPLOT_DEFAULT_COMMAND "gnuplot -persist"
 #endif
@@ -510,7 +501,7 @@ template<> struct TextSender< unsigned char> : public CastIntTextSender< unsigne
 template <typename T>
 struct FloatTextSender {
     static void send(std::ostream &stream, const T &v) {
-        if(GNUPLOT_ISNAN(v)) { stream << "nan"; } else { stream << v; }
+        if(std::isnan(v)) { stream << "nan"; } else { stream << v; }
     }
 };
 template<> struct TextSender<      float> : FloatTextSender<      float> { };
@@ -1642,7 +1633,9 @@ struct FileHandleWrapper {
     void fh_close() {
         if(should_use_pclose) {
             if(GNUPLOT_PCLOSE(wrapped_fh)) {
-                std::cerr << "pclose returned error: " << strerror(errno) << std::endl;
+                char msg[1000];
+                strerror_s(msg, sizeof(msg), errno);
+                std::cerr << "pclose returned error: " << msg << std::endl;
             }
         } else {
             if(fclose(wrapped_fh)) {
