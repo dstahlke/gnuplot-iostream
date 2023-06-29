@@ -1633,9 +1633,10 @@ struct FileHandleWrapper {
     void fh_close() {
         if(should_use_pclose) {
             if(GNUPLOT_PCLOSE(wrapped_fh)) {
-                char msg[1000];
-                strerror_s(msg, sizeof(msg), errno);
-                std::cerr << "pclose returned error: " << msg << std::endl;
+                perror("pclose");
+                //char msg[1000];
+                //strerror_s(msg, sizeof(msg), errno);
+                //std::cerr << "pclose returned error: " << msg << std::endl;
             }
         } else {
             if(fclose(wrapped_fh)) {
