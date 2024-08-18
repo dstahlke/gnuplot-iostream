@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 Project(GnuPlot_iostream)
 
+if(POLICY CMP0167)
+cmake_policy(SET CMP0167 NEW)
+endif(POLICY CMP0167)
+
 #options.
 option(GnuPlotIostream_BuildTests "build gnuplot iostream tests" ON)
 option(GnuPlotIostream_BuildExamples "build gnuplot iostream examples" ON)
