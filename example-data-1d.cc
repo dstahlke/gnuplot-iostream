@@ -31,7 +31,9 @@ THE SOFTWARE.
 
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/irange.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
+
+using namespace boost::placeholders;
 
 #ifdef USE_ARMA
 #include <armadillo>

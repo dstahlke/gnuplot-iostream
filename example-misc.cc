@@ -488,8 +488,7 @@ int main(int argc, char **argv) {
     if(argc < 2) {
         printf("Usage: %s <demo_name>\n", argv[0]);
         printf("Choose one of the following demos:\n");
-        typedef std::pair<std::string, void (*)(void)> demo_pair;
-        for(const demo_pair &pair : demos) {
+        for(const auto &pair : demos) {
             printf("    %s\n", pair.first.c_str());
         }
         return 0;
