@@ -23,8 +23,9 @@ target_link_libraries(gnuplot_iostream INTERFACE
 
 if(GnuPlotIostream_BuildTests)
   set(GnuPlotIostream_tests
-    test-assert-depth
-    test-assert-depth-colmajor
+    # These two are not supposed to compile.
+    #test-assert-depth
+    #test-assert-depth-colmajor
     test-empty
     test-noncopyable
     test-outputs
