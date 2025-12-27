@@ -11,7 +11,7 @@ option(GnuPlotIostream_BuildExamples "build gnuplot iostream examples" ON)
 
 # packages.
 find_package(Boost REQUIRED COMPONENTS
-    iostreams system filesystem
+    iostreams filesystem
 )
 
 # Target.
@@ -21,7 +21,6 @@ target_include_directories(gnuplot_iostream INTERFACE
     $<INSTALL_INTERFACE:>)
 target_link_libraries(gnuplot_iostream INTERFACE
     Boost::iostreams
-    Boost::system
     Boost::filesystem
 )
 
@@ -41,7 +40,6 @@ if(GnuPlotIostream_BuildTests)
     target_link_libraries(${atest} PRIVATE
       gnuplot_iostream
       boost_iostreams
-      boost_system
       boost_filesystem
       )
   endforeach()

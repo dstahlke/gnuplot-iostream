@@ -28,7 +28,7 @@
 # never be used for production since the generated code is extremely slow!
 CXXFLAGS+=--std=c++17 -Wall -Wextra -O0 -g -D_GLIBCXX_DEBUG
 CXXFLAGS+=-fdiagnostics-color=auto
-LDFLAGS+=-lutil -lboost_iostreams -lboost_system -lboost_filesystem
+LDFLAGS+=-lutil -lboost_iostreams -lboost_filesystem
 
 # This makes the examples and tests more complete, but only works if you have the corresponding
 # libraries installed.
