@@ -26,7 +26,7 @@ find_package(Boost REQUIRED COMPONENTS
 add_library(gnuplot_iostream INTERFACE)
 target_include_directories(gnuplot_iostream INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>
-    $<INSTALL_INTERFACE:>)
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_FULL_INCLUDEDIR}/>)
 target_link_libraries(gnuplot_iostream INTERFACE
     Boost::iostreams
     Boost::filesystem
