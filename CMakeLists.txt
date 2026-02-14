@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-Project(GnuPlot_iostream)
+Project(GnuPlot_iostream LANGUAGES CXX)
 
 if(POLICY CMP0167)
 cmake_policy(SET CMP0167 NEW)
