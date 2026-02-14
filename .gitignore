@@ -24,3 +24,6 @@ unittest-errors/
 
 # vscode
 .vscode/
+
+# clangd
+.cache/
