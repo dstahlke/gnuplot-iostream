@@ -5,6 +5,7 @@ if(CMAKE_BINARY_DIR STREQUAL CMAKE_SOURCE_DIR)
   message(FATAL_ERROR "In-source builds are not allowed. Please make a separate build directory.")
 endif()
 
+include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
 if(POLICY CMP0167)
