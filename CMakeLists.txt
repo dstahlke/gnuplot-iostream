@@ -32,6 +32,35 @@ target_link_libraries(gnuplot_iostream INTERFACE
     Boost::iostreams
     Boost::filesystem
 )
+set_target_properties(gnuplot_iostream PROPERTIES PUBLIC_HEADER gnuplot-iostream.h)
+
+write_basic_package_version_file(
+    "${PROJECT_BINARY_DIR}/GnuplotIostreamConfigVersion.cmake"
+    VERSION 0.1
+    COMPATIBILITY AnyNewerVersion
+)
+
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/GnuplotIostreamConfig.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gnuplot_iostream
+)
+
+install(TARGETS gnuplot_iostream
+  EXPORT gnuplot_iostreamTargets
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gnuplot_iostream
+)
+
+install(EXPORT gnuplot_iostreamTargets
+  FILE GnuplotIostreamTargets.cmake
+  NAMESPACE gnuplot_iostream::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gnuplot_iostream
+)
+
+install(FILES
+          "${CMAKE_CURRENT_BINARY_DIR}/GnuplotIostreamConfig.cmake"
+          "${CMAKE_CURRENT_BINARY_DIR}/GnuplotIostreamConfigVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gnuplot_iostream
+)
 
 if(GnuPlotIostream_BuildTests)
   set(GnuPlotIostream_tests
