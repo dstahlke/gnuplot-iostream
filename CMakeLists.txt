@@ -11,6 +11,8 @@ if(POLICY CMP0167)
 cmake_policy(SET CMP0167 NEW)
 endif(POLICY CMP0167)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 #options.
 option(GnuPlotIostream_BuildTests "build gnuplot iostream tests" ON)
 option(GnuPlotIostream_BuildExamples "build gnuplot iostream examples" ON)
